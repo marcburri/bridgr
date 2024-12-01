@@ -26,12 +26,13 @@ This is a basic example which shows you how to solve a common problem:
 ``` r
 library(bridgr)
 
-bridge_instance <- bridge(target = gdp, 
-                          indic = fcurve, 
-                          indic_predict = "mean", 
-                          indic_lags = 2, 
-                          target_lags=2, 
-                          h=1
-                          )
+bridge <- bridge(
+  target = gdp, 
+  indic = fcurve, 
+  indic_predict = "mean", 
+  indic_lags = 2, 
+  target_lags=2, 
+  h=1
+)
 #> Dependent variable: gdp | Frequency: quarter | Estimation sample: 2004-01-01 - 2022-10-01 | Forecast horizon: 1 quarter(s)
 ```
