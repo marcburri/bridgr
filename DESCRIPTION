@@ -1,0 +1,41 @@
+Package: bridgr
+Type: Package
+Title: Bridging Time Series Frequencies for Nowcasting
+Version: 0.1.0
+Authors@R: c(
+    person("Marc", "Burri", ,"marc.burri91@gmail.com", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0001-8974-9090"))
+  )
+Maintainer: Marc Burri <marc.burri91@gmail.com>
+Description: The bridgr package provides a comprehensive framework for working 
+    with mixed-frequency time series data, empowering analysts to bridge the gap
+    between high- and low-frequency indicators for nowcasting and 
+    short-term forecasting. Designed with flexibility and integration in mind, 
+    bridgr facilitates seamless application alongside popular R packages such 
+    as forecast, while introducing advanced modeling capabilities tailored to 
+    the unique challenges of mixed-frequency analysis.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+LazyData: true
+Imports: 
+    magrittr,
+    dplyr,
+    rlang,
+    tsbox,
+    lubridate,
+    S7
+Suggests:
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Depends: 
+    R (>= 3.5)
+Collate: 
+    'validators.R'
+    'bridge.R'
+    'bridgr-package.R'
+    'data-indicators.R'
+    'forecast.R'
+    'utils.R'
+    'zzz.R'
