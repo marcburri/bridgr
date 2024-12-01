@@ -39,3 +39,5 @@ Collate:
     'forecast.R'
     'utils.R'
     'zzz.R'
+URL: https://github.com/marcburri/bridgr
+BugReports: https://github.com/marcburri/bridgr/issues
