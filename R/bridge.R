@@ -1,49 +1,19 @@
-#' @include validators.R
-#' Define the Bridge class
-#'
-#' @keywords internal
-#' @noRd
-bridge_model <- S7::new_class(
-  name = "bridge_model",
-  properties = list(
-    # User inputs
-    target = S7::new_property(class = S7::class_any),
-    indic = S7::new_property(class = S7::class_any),
-    indic_predict = S7::new_property(class = S7::class_any, default = "mean"),
-    indic_aggregate = S7::new_property(class = S7::class_any, default = "mean"),
-    indic_lags = S7::new_property(class = S7::class_numeric, default = 0),
-    target_lags = S7::new_property(class = S7::class_numeric, default = 0),
-    h = S7::new_property(class = S7::class_numeric, default = 1),
-    frequency_conversions = S7::new_property( # TODO: Add validators
-      class = S7::class_numeric,
-      default = c("dpw" = 5,             # Days per week
-                  "wpm" = 4,             # Weeks per month
-                  "mpq" = 3,             # Months per quarter
-                  "qpy" = 4              # Quarters per year
-    )),
-    # Internal properties
-    model = S7::new_property(class = S7::class_any),
-    estimation_set = S7::new_property(class = S7::class_any),
-    forecast_set = S7::new_property(class = S7::class_any)
-  ),
-  validator = validate_bridge
-)
-
 #' Estimate Bridge Model
 #'
 #' This function estimates a bridge model for nowcasting or forecasting purposes.
 #' The bridge model aligns high-frequency indicator variables (`indic`) with a
-#' lower-frequency target variable (`target`) and performs nowcasting or forecasting
-#' based on user-specified parameters.
+#' lower-frequency target variable (`target`) and performs nowcasting or forecasting.
 #'
 #' @param target A time series or data frame representing the target variable (dependent variable).
-#' It should be in a format compatible with the `tsbox` package.
-#' @param indic A time series, list of time series, or data frame containing the indicator variables
-#' (independent variables). It must be in a format compatible with the `tsbox` package.
+#' It should be in a format compatible with the [tsbox](https://docs.ropensci.org/tsbox/) package
+#' (See [tsbox::ts_boxable()]).
+#' @param indic A time series, listof time series, or data frame containing the indicator variables
+#' (independent variables). It must be in a format compatible with the [tsbox](https://docs.ropensci.org/tsbox/)
+#' package (See [tsbox::ts_boxable()]).
 #' @param indic_predict A character string or vector specifying the prediction method(s) for the
 #' indicator variables. Defaults to `"mean"`. Future updates will add support for methods
 #' from the `forecast` package.
-#' @param indic_aggregate A character string or vector specifying the aggregation method(s)
+#' @param indic_aggregators A character string or vector specifying the aggregation method(s)
 #' for aligning indicator variables with the target variable. Defaults to `"mean"`. Future updates
 #' will support custom weighting functions.
 #' @param indic_lags An integer or vector of integers specifying the number of lags to include
@@ -53,7 +23,8 @@ bridge_model <- S7::new_class(
 #' @param h An integer specifying the forecast horizon (in terms of the target variable's frequency).
 #' Defaults to `1` (next period).
 #' @param frequency_conversions A named vector specifying the conversion factors for different
-#' time frequencies (e.g., days per week, weeks per month). Defaults to `c("dpw" = 5, "wpm" = 4, "mpq" = 3, "qpy" = 4)`.
+#' time frequencies (e.g., days per week, weeks per month).
+#' Defaults to `c("dpw" = 5, "wpm" = 4, "mpq" = 3, "qpy" = 4)`.
 #' @param ... Additional arguments to be passed to the model, such as parameters for forecasting
 #' methods from the `forecast` package (to be implemented in future versions).
 #'
@@ -61,7 +32,7 @@ bridge_model <- S7::new_class(
 #' - `target`: The standardized target variable.
 #' - `indic`: The standardized indicator variables.
 #' - `indic_predict`: The prediction methods applied to the indicators.
-#' - `indic_aggregate`: The aggregation methods used for indicators.
+#' - `indic_aggregators`: The aggregation methods used for indicators.
 #' - `final_forecasting_date`: The calculated end date for forecasting.
 #' - Additional internal parameters and summary statistics.
 #'
@@ -80,8 +51,8 @@ bridge_model <- S7::new_class(
 bridge <- function(
     target,
     indic,
-    indic_predict = "mean", # TODO: add support for forecast package methods
-    indic_aggregate = "mean", # TODO: add support for custom weighting functions
+    indic_predict = NULL, # TODO: add support for forecast package methods
+    indic_aggregators = NULL, # TODO: add support for custom weighting functions
     indic_lags = 0,
     target_lags = 0,
     h = 1, # Nowcast horizon, always in terms of the target frequency
@@ -94,7 +65,7 @@ bridge <- function(
     target = target,
     indic = indic,
     indic_predict = indic_predict,
-    indic_aggregate = indic_aggregate,
+    indic_aggregators = indic_aggregators,
     indic_lags = indic_lags,
     target_lags = target_lags,
     h = h,
@@ -125,16 +96,29 @@ bridge <- function(
     )
   }
 
+  # Get frequency of the target and indic variables
+  target_summary <-  suppressMessages(tsbox::ts_summary(bridge_model@target))
+  indic_summaries <- suppressMessages(tsbox::ts_summary(bridge_model@indic))
+
   # Check if indic_predict is a single value or a list
-  num_indic_series <-  unique(bridge_model@indic$id) %>% length()
-  if (length(indic_predict) == 1 && num_indic_series > 1) {
-    warning("Only one value provided for @indic_predict. Assuming the same value for all time series in @indic.")
-    bridge_model@indic_predict <- rep(indic_predict, num_indic_series)
+  num_indic_series <-  nrow(indic_summaries)
+  if(!is.null(indic_predict)) {
+    if (length(indic_predict) == 1 && num_indic_series > 1) {
+      warning("Only one value provided for @indic_predict. Assuming the same value for all time series in @indic.")
+      bridge_model@indic_predict <- rep(indic_predict, num_indic_series)
+    }
+  } else {
+    bridge_model@indic_predict <- rep("auto.arima", num_indic_series)
   }
-  # Check if indic_aggregate is a single value or a list
-  if (length(indic_aggregate) == 1 && num_indic_series > 1) {
-    warning("Only one value provided for @indic_aggregate. Assuming the same value for all time series in @indic.")
-    bridge_model@indic_aggregate <- rep(indic_aggregate, num_indic_series)
+
+  # Check if indic_aggregators is a single value or a list
+  if (!is.null(indic_aggregators)) {
+    if (length(indic_aggregators) == 1 && num_indic_series > 1) {
+      warning("Only one value provided for @indic_aggregators. Assuming the same value for all time series in @indic.")
+      bridge_model@indic_aggregators <- rep(indic_aggregators, num_indic_series)
+    }
+  } else {
+    bridge_model@indic_aggregators <- rep("mean", num_indic_series)
   }
 
   # Some definitions of frequencies
@@ -149,10 +133,6 @@ bridge <- function(
   wpy <- wpm*mpq*qpy   # Weeks per year
   mpy <- mpq*qpy       # Months per year
 
-
-  # Get frequency of the target and indic variables
-  target_summary <-  suppressMessages(tsbox::ts_summary(bridge_model@target))
-  indic_summaries <- suppressMessages(tsbox::ts_summary(bridge_model@indic))
 
   target_freq <- target_summary$freq
   if(is.null(names(target_freq))) names(target_freq) <- target_name
@@ -309,7 +289,7 @@ bridge <- function(
       dplyr::ungroup() %>%
       dplyr::select(-n_rows)
 
-  } else if(round(target_freq$frquency) %in% c( 52)) {
+  } else if(round(target_freq$frquency) %in% c(35, 52)) {
     target_start <- paste0(
       lubridate::year(target_summary$start), "-",
       lubridate::week(target_summary$start)
@@ -336,7 +316,7 @@ bridge <- function(
       na.omit() %>%
       dplyr::mutate(
         year = lubridate::year(time),
-        month = lubridate::month(time),
+        month = lubridate::week(time),
         ind_freq = dplyr::case_when(
           round(indic_freqs[id]) == 365 ~ "daily",
           round(indic_freqs[id]) == 52 ~ "weekly",
@@ -344,7 +324,7 @@ bridge <- function(
         )
       ) %>%
       dplyr::left_join(slicing_rules, by = "ind_freq") %>%  # Add the slicing rule for each group
-      dplyr::group_by(year, month, ind_freq) %>%
+      dplyr::group_by(year, week, ind_freq) %>%
       dplyr::group_map(~ {
         n_rows <- unique(.x$n_rows)  # Get the slicing rule
         n_rows <- min(n_rows, nrow(.x))  # Ensure it doesn't exceed available rows
@@ -395,17 +375,18 @@ bridge <- function(
 
   # Forecast the indics
   indic_forecasts <- dplyr::tibble()
+  indic_models <- list()
   for (ind_id in unique(indics$id)) {
     ind_nr <- 1
     indic_predict <- bridge_model@indic_predict[ind_nr]
-    indic_aggregate <- bridge_model@indic_aggregate[ind_nr]
+    indic_aggregators <- bridge_model@indic_aggregators[ind_nr]
 
-    indic <- indics %>%
+    indic_single <- indics %>%
       dplyr::filter(id == ind_id)
 
     indic_unit <- indic_freqs[indic_freqs$id == ind_id,]$freq_label
 
-    last_date <- max(indic$time)
+    last_date <- max(indic_single$time)
     last_indic_date <- lubridate::floor_date(final_forecasting_date, indic_unit)
 
     # Calculate the number of periods to forecast
@@ -428,25 +409,31 @@ bridge <- function(
     # Forecast the indicator variable
     if (indic_predict == "last") {
       # write last value forward until final_forecasting_date
-      last_value <- tail(indic$values, 1)
-      indic <- suppressMessages(tsbox::ts_bind(indic, rep(last_value, indic_horizon )))
+      last_value <- tail(indic_single$values, 1)
+      indic_single <- suppressMessages(tsbox::ts_bind(indic_single, rep(last_value, indic_horizon )))
     } else if (indic_predict == "mean") {
       # write mean value forward until final_forecasting_date
-      mean_value <- mean(indic$values, na.rm=T)
-      indic <- suppressMessages(tsbox::ts_bind(indic, rep(mean_value, indic_horizon)))
-    } else if (indic_predict == "arp") {
+      mean_value <- tsbox::ts_span(indic_single, start = target_summary$end)$values %>%
+        mean( na.rm=T) %>% suppressMessages()
+      indic_single <- suppressMessages(tsbox::ts_bind(indic_single, rep(mean_value, indic_horizon)))
+    } else if (indic_predict == "auto.arima") {
+      # fit an ARIMA model to the indicator variable and forecast
+      indic_models[[ind_nr]] <- indic_single %>% tsbox::ts_xts() %>%
+        forecast::auto.arima() %>% suppressMessages()
+      indic_fcst <- forecast::forecast(indic_models[[ind_nr]], h = indic_horizon)
+      indic_single <- suppressMessages(tsbox::ts_bind(indic_single, as.numeric(indic_fcst$mean)))
     }
 
     # Aggregate the indicator to the target frequency
-    if (indic_aggregate == "last") {
-      indic <- indic %>% tsbox::ts_frequency(to = target_freq$freq_label, aggregate = "last", na.rm=TRUE) %>%
+    if (indic_aggregators == "last") {
+      indic_single <- indic_single %>% tsbox::ts_frequency(to = target_freq$freq_label, aggregate = "last", na.rm=TRUE) %>%
         suppressMessages()
-    } else if (indic_aggregate == "mean") {
-      indic <- indic %>% tsbox::ts_frequency(to = target_freq$freq_label, aggregate = "mean", na.rm=TRUE) %>%
+    } else if (indic_aggregators == "mean") {
+      indic_single <- indic_single %>% tsbox::ts_frequency(to = target_freq$freq_label, aggregate = "mean", na.rm=TRUE) %>%
         suppressMessages()
     }
 
-    indic_forecasts <- dplyr::bind_rows(indic_forecasts, indic %>% dplyr::mutate(id = ind_id))
+    indic_forecasts <- dplyr::bind_rows(indic_forecasts, indic_single %>% dplyr::mutate(id = ind_id))
     ind_nr <- ind_nr + 1
   }
 
@@ -482,16 +469,18 @@ bridge <- function(
     }
   }
 
-  bridge_model@target <- target_lagged
-  bridge_model@indic <- indic_forecasts_lagged
 
   # Full dataset
-  full_data <- dplyr::bind_rows(indic_forecasts_lagged, target_lagged)
+  full_data <- dplyr::bind_rows(
+    indic_forecasts_lagged,
+    #target_lagged
+    target %>%
+      dplyr::mutate( id = target_name)
+    )
 
   # Split the target into estimation and forecast periods
   estimation_set <- full_data %>%
     dplyr::filter(time <= as.Date(final_sample_date))
-
 
   forecast_set <- full_data %>%
     dplyr::filter(time > as.Date(final_sample_date))
@@ -503,6 +492,7 @@ bridge <- function(
     paste(unique(estimation_set$id)[!unique(estimation_set$id) %in% c("time", target_name)],
           collapse = " + ")
     ))
+  bridge_model@formula <- formula
 
   estimation_set <- tsbox::ts_wide(estimation_set) %>%
     na.omit() %>% suppressMessages()
@@ -510,18 +500,49 @@ bridge <- function(
   forecast_set <- tsbox::ts_wide(forecast_set) %>%
     na.omit() %>% suppressMessages()
 
-  bridge_model@model <- lm(formula, data = estimation_set)
-  bridge_model@estimation_set <- estimation_set
-  bridge_model@forecast_set <- forecast_set
+  bridge_model@estimation_set <- estimation_set <- tsbox::ts_xts(tsbox::ts_long(estimation_set))
+  bridge_model@forecast_set <- forecast_set <- tsbox::ts_xts(tsbox::ts_long(forecast_set))
+
+
+  # bridge_model@model <- lm(formula, data = estimation_set) # TODO: hac robust standard errors
+  bridge_model@model <- forecast::Arima(
+    estimation_set[,target_name],
+    order = c(target_lags,0,0),
+    xreg =  estimation_set[,!colnames(estimation_set) == target_name]
+    )
+
 
   return(bridge_model)
-
 }
 
-
-
-
-
-
-
-
+#' Define the Bridge class
+#'
+#' @include validators.R
+#' @keywords internal
+#' @noRd
+bridge_model <- S7::new_class(
+  name = "bridge_model",
+  properties = list(
+    # User inputs
+    target = S7::new_property(class = S7::class_any),
+    indic = S7::new_property(class = S7::class_any),
+    indic_predict = S7::new_property(class = S7::class_any, default = NULL),
+    indic_aggregators = S7::new_property(class = S7::class_any, default = NULL),
+    indic_lags = S7::new_property(class = S7::class_numeric, default = 0),
+    target_lags = S7::new_property(class = S7::class_numeric, default = 0),
+    h = S7::new_property(class = S7::class_numeric, default = 1),
+    frequency_conversions = S7::new_property( # TODO: Add validators
+      class = S7::class_numeric,
+      default = c("dpw" = 5,             # Days per week
+                  "wpm" = 4,             # Weeks per month
+                  "mpq" = 3,             # Months per quarter
+                  "qpy" = 4              # Quarters per year
+      )),
+    # Internal properties
+    model = S7::new_property(class = S7::class_any),
+    estimation_set = S7::new_property(class = S7::class_any),
+    forecast_set = S7::new_property(class = S7::class_any),
+    formula = S7::new_property(class = S7::class_any)
+  ),
+  validator = validate_bridge
+)

@@ -7,8 +7,8 @@
 bridge(
   target,
   indic,
-  indic_predict = "mean",
-  indic_aggregate = "mean",
+  indic_predict = NULL,
+  indic_aggregators = NULL,
   indic_lags = 0,
   target_lags = 0,
   h = 1,
@@ -18,16 +18,18 @@ bridge(
 }
 \arguments{
 \item{target}{A time series or data frame representing the target variable (dependent variable).
-It should be in a format compatible with the \code{tsbox} package.}
+It should be in a format compatible with the \href{https://docs.ropensci.org/tsbox/}{tsbox} package
+(See \code{\link[tsbox:ts_boxable]{tsbox::ts_boxable()}}).}
 
-\item{indic}{A time series, list of time series, or data frame containing the indicator variables
-(independent variables). It must be in a format compatible with the \code{tsbox} package.}
+\item{indic}{A time series, listof time series, or data frame containing the indicator variables
+(independent variables). It must be in a format compatible with the \href{https://docs.ropensci.org/tsbox/}{tsbox}
+package (See \code{\link[tsbox:ts_boxable]{tsbox::ts_boxable()}}).}
 
 \item{indic_predict}{A character string or vector specifying the prediction method(s) for the
 indicator variables. Defaults to \code{"mean"}. Future updates will add support for methods
 from the \code{forecast} package.}
 
-\item{indic_aggregate}{A character string or vector specifying the aggregation method(s)
+\item{indic_aggregators}{A character string or vector specifying the aggregation method(s)
 for aligning indicator variables with the target variable. Defaults to \code{"mean"}. Future updates
 will support custom weighting functions.}
 
@@ -41,7 +43,8 @@ Defaults to \code{0} (no lags).}
 Defaults to \code{1} (next period).}
 
 \item{frequency_conversions}{A named vector specifying the conversion factors for different
-time frequencies (e.g., days per week, weeks per month). Defaults to \code{c("dpw" = 5, "wpm" = 4, "mpq" = 3, "qpy" = 4)}.}
+time frequencies (e.g., days per week, weeks per month).
+Defaults to \code{c("dpw" = 5, "wpm" = 4, "mpq" = 3, "qpy" = 4)}.}
 
 \item{...}{Additional arguments to be passed to the model, such as parameters for forecasting
 methods from the \code{forecast} package (to be implemented in future versions).}
@@ -52,7 +55,7 @@ An object of class \code{bridge_model}, containing the following elements:
 \item \code{target}: The standardized target variable.
 \item \code{indic}: The standardized indicator variables.
 \item \code{indic_predict}: The prediction methods applied to the indicators.
-\item \code{indic_aggregate}: The aggregation methods used for indicators.
+\item \code{indic_aggregators}: The aggregation methods used for indicators.
 \item \code{final_forecasting_date}: The calculated end date for forecasting.
 \item Additional internal parameters and summary statistics.
 }
@@ -60,8 +63,7 @@ An object of class \code{bridge_model}, containing the following elements:
 \description{
 This function estimates a bridge model for nowcasting or forecasting purposes.
 The bridge model aligns high-frequency indicator variables (\code{indic}) with a
-lower-frequency target variable (\code{target}) and performs nowcasting or forecasting
-based on user-specified parameters.
+lower-frequency target variable (\code{target}) and performs nowcasting or forecasting.
 }
 \details{
 The bridge model aligns time series of different frequencies by slicing and aggregating
