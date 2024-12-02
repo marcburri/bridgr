@@ -7,7 +7,15 @@
 \title{bridgr: Bridging Time Series Frequencies for Nowcasting}
 \description{
 To learn more about bridger, start with the vignettes:
-\code{browseVignettes(package = "bridger")}
+\code{browseVignettes(package = "bridgr")}
+}
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/marcburri/bridgr}
+  \item Report bugs at \url{https://github.com/marcburri/bridgr/issues}
+}
+
 }
 \author{
 \strong{Maintainer}: Marc Burri \email{marc.burri91@gmail.com} (\href{https://orcid.org/0000-0001-8974-9090}{ORCID})

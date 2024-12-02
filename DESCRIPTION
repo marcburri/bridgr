@@ -25,7 +25,8 @@ Imports:
     rlang,
     tsbox,
     lubridate,
-    S7
+    S7,
+    forecast
 Suggests:
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
@@ -37,6 +38,7 @@ Collate:
     'bridgr-package.R'
     'data-indicators.R'
     'forecast.R'
+    'summary.R'
     'utils.R'
     'zzz.R'
 URL: https://github.com/marcburri/bridgr

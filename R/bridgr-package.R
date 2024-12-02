@@ -1,9 +1,9 @@
 #' @description
 #' To learn more about bridger, start with the vignettes:
-#' `browseVignettes(package = "bridger")`
+#' `browseVignettes(package = "bridgr")`
 #' @keywords internal
 "_PACKAGE"
-utils::globalVariables(c(".", "id", "ind_freq", "month", "n_rows", "quarter", "time", "year"))
+utils::globalVariables(c(".", "id", "ind_freq", "month", "week", "n_rows", "quarter", "time", "year"))
 
 ## usethis namespace: start
 #' @importFrom magrittr %>%
