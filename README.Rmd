@@ -20,7 +20,9 @@ knitr::opts_chunk$set(
 <!-- badges: end -->
 
 
-`bridgr` is an R package designed to simplify the implementation and evaluation of bridge models, which are useful in nowcasting and forecasting frameworks. The package is still under development and is not yet available on CRAN.
+`bridgr` is an R package designed to simplify the implementation and evaluation of bridge models, which are useful in nowcasting and forecasting frameworks. 
+
+The package is still under development and is not yet available on CRAN. Therefore, the package is not yet stable and may contain bugs.
 
 
 
@@ -40,6 +42,8 @@ This is a basic example:
 ```{r example}
 library(bridgr)
 
+gdp <- suppressMessages(tsbox::ts_pc(bridgr::gdp))
+
 bridge_model <- bridge(
   target = gdp, 
   indic = baro, 
@@ -50,5 +54,7 @@ bridge_model <- bridge(
 )
 
 forecast(bridge_model)
+
+summary(bridge_model)
 ```
 
