@@ -45,19 +45,18 @@
 #' Future extensions will include:
 #' - Support for more sophisticated forecasting methods from the `forecast` package.
 #' - Custom weighting functions for indicator aggregation.
-#' - Enhanced validation and flexibility in specifying prediction and aggregation strategies.
 #'
 #' @export
 bridge <- function(
     target,
     indic,
-    indic_predict = NULL, # TODO: add support for forecast package methods
+    indic_predict = NULL, # TODO: add support for forecast package methods (ets, tbats, etc.)
     indic_aggregators = NULL, # TODO: add support for custom weighting functions
     indic_lags = 0,
     target_lags = 0,
     h = 1, # Nowcast horizon, always in terms of the target frequency
     frequency_conversions = c("dpw" = 5, "wpm" = 4, "mpq" = 3, "qpy" = 4),
-    ... # Additional arguments to be passed to the model (i.e. for forecasting package)
+    ... # TODO: Additional arguments to be passed to the model (i.e. for forecasting package)
     )
   {
   # Create a new instance of the Bridge class and validate inputs
@@ -376,8 +375,8 @@ bridge <- function(
   # Forecast the indics
   indic_forecasts <- dplyr::tibble()
   indic_models <- list()
+  ind_nr <- 1
   for (ind_id in unique(indics$id)) {
-    ind_nr <- 1
     indic_predict <- bridge_model@indic_predict[ind_nr]
     indic_aggregators <- bridge_model@indic_aggregators[ind_nr]
 
@@ -437,6 +436,9 @@ bridge <- function(
     ind_nr <- ind_nr + 1
   }
 
+  # Save the indicator models
+  bridge_model@indic_models <- indic_models
+
   # Get the final sample date
   final_sample_date <- target_summary$end %>%
     lubridate::ceiling_date(target_freq$freq_label) %m-%
@@ -453,7 +455,6 @@ bridge <- function(
       indic_forecasts_lagged <- dplyr::bind_rows(indic_forecasts_lagged, lagged_indic_tmp)
     }
   }
-
 
   # Add target lags if specified
   target_lagged  <- target %>%
@@ -477,6 +478,9 @@ bridge <- function(
     target %>%
       dplyr::mutate( id = target_name)
     )
+
+  bridge_model@target_name <- target_name
+  bridge_model@indic_name <- indic_name
 
   # Split the target into estimation and forecast periods
   estimation_set <- full_data %>%
@@ -503,8 +507,7 @@ bridge <- function(
   bridge_model@estimation_set <- estimation_set <- tsbox::ts_xts(tsbox::ts_long(estimation_set))
   bridge_model@forecast_set <- forecast_set <- tsbox::ts_xts(tsbox::ts_long(forecast_set))
 
-
-  # bridge_model@model <- lm(formula, data = estimation_set) # TODO: hac robust standard errors
+  # Fit the model
   bridge_model@model <- forecast::Arima(
     estimation_set[,target_name],
     order = c(target_lags,0,0),
@@ -539,10 +542,13 @@ bridge_model <- S7::new_class(
                   "qpy" = 4              # Quarters per year
       )),
     # Internal properties
+    target_name = S7::new_property(class = S7::class_character),
+    indic_name = S7::new_property(class = S7::class_character),
     model = S7::new_property(class = S7::class_any),
     estimation_set = S7::new_property(class = S7::class_any),
     forecast_set = S7::new_property(class = S7::class_any),
-    formula = S7::new_property(class = S7::class_any)
+    formula = S7::new_property(class = S7::class_any),
+    indic_models = S7::new_property(class = S7::class_any)
   ),
   validator = validate_bridge
 )
