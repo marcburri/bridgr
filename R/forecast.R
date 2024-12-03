@@ -1,18 +1,16 @@
-#' Forecast method for bridge_model
-#' Implement the `forecast` method for `bridge`
-#' @param bridge_model A `bridge` object.
-#' @param xreg A matrix of external regressors. If not supplied by the user,
-#' the forecast set will be used.
+#' Implement the `forecast` method for `bridge_model` class
 #'
-#' @export
-forecast <- S7::new_generic(
-  "forecast",
-  dispatch_args ="bridge_model",
-  function(bridge_model, xreg = NULL, ...) {S7::S7_dispatch()}
-)
+#' This method is used to forecast the target variable using the fitted model.
+#' @param bridge_model A `bridge_model` object.
+#' @param xreg A matrix of external regressors. If not supplied by the user,
+#' the forecast set will be used. This is useful for made up scenarios.
+forecast.bridge_model <- S7::new_external_generic("generics", "forecast", "bridge_model")
 
-
-S7::method(forecast, bridge_model) <- function(bridge_model, xreg = NULL, ...) {
+#' Define the `forecast` method for `bridge_model`
+#'
+#' @keywords internal
+#' @noRd
+S7::method(forecast.bridge_model, bridge_model) <- function(bridge_model, xreg = NULL, ...) {
 
   # Forecast the target using the fitted model
   fcst <- forecast::forecast(bridge_model@model, xreg = bridge_model@forecast_set)
