@@ -23,6 +23,7 @@ Imports:
     magrittr,
     dplyr,
     rlang,
+    generics,
     tsbox,
     lubridate,
     S7,
