@@ -75,6 +75,5 @@ Future extensions will include:
 \itemize{
 \item Support for more sophisticated forecasting methods from the \code{forecast} package.
 \item Custom weighting functions for indicator aggregation.
-\item Enhanced validation and flexibility in specifying prediction and aggregation strategies.
 }
 }

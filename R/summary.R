@@ -2,13 +2,15 @@
 #'
 #' Implement the `summary` method for `bridge_model` class
 #' @param bridge_model A `bridge_model` object.
-#'
+#' @noRd
 summary.bridge_model <- S7::new_external_generic("base", "summary", "bridge_model")
 
-#' Define the `summary` method for `bridge_model`
+#' Defines the `summary` method for `bridge_model`
 #'
 #' @keywords internal
-#' @noRd
+#' This method is summarizes the bridge model.
+#' @param bridge_model A `bridge_model` object.
+#' @name summary
 S7::method(summary.bridge_model, bridge_model) <- function(bridge_model, ...) {
 
   cat("Bridge model summary\n")
