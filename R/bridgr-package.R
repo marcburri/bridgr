@@ -3,7 +3,7 @@
 #' `browseVignettes(package = "bridgr")`
 #' @keywords internal
 "_PACKAGE"
-utils::globalVariables(c(".", "id", "ind_freq", "month", "week", "n_rows", "quarter", "time", "year"))
+utils::globalVariables(c(".", "id", "ind_freq", "month", "week", "n_rows", "quarter", "time", "year", "n", "values"))
 
 #' @importFrom magrittr %>%
 #' @importFrom rlang %||%
@@ -13,10 +13,11 @@ utils::globalVariables(c(".", "id", "ind_freq", "month", "week", "n_rows", "quar
 #' @importFrom generics forecast
 NULL
 
-#' Generics to re-export
+# Objects for re export
 
 #' @export
 generics::forecast
+
 
 # enable usage of <S7_object>@name in package code
 #' @rawNamespace if (getRversion() < "4.3.0") importFrom("S7", "@")

@@ -28,7 +28,7 @@
 #' @param ... Additional arguments to be passed to the model, such as parameters for forecasting
 #' methods from the `forecast` package (to be implemented in future versions).
 #'
-#' @return An object of class `bridge_model`, containing the following elements:
+#' @return An object of class `model`, containing the following elements:
 #' - `target`: The standardized target variable.
 #' - `indic`: The standardized indicator variables.
 #' - `indic_predict`: The prediction methods applied to the indicators.
@@ -47,7 +47,7 @@
 #' - Custom weighting functions for indicator aggregation.
 #'
 #' @export
-bridge <- function(
+bridge <- function( # TODO: fully document
     target,
     indic,
     indic_predict = NULL, # TODO: add support for forecast package methods (ets, tbats, etc.)
@@ -55,12 +55,13 @@ bridge <- function(
     indic_lags = 0,
     target_lags = 0,
     h = 1, # Nowcast horizon, always in terms of the target frequency
-    frequency_conversions = c("dpw" = 5, "wpm" = 4, "mpq" = 3, "qpy" = 4),
+    frequency_conversions = c("dpw" = 5, "wpm" = 4, "mpq" = 3, "qpy" = 4), # TODO: add validations
     ... # TODO: Additional arguments to be passed to the model (i.e. for forecasting package)
-    )
+    ) # TODO: write a bunch of tests for this function
   {
+
   # Create a new instance of the Bridge class and validate inputs
-  bridge_model <- bridge_model(
+  model <- bridge_model(
     target = target,
     indic = indic,
     indic_predict = indic_predict,
@@ -75,20 +76,20 @@ bridge <- function(
   # And add corresponding id columns if missing
   # Get the name of the target and indicator variables
   target_name <- deparse(substitute(target))
-  bridge_model@target <- suppressMessages(
+  model@target <-
     tsbox::ts_tbl(target) %>%
       standardize_ts_tbl() %>%
-      dplyr::mutate( id = target_name)
-   )
+      dplyr::mutate( id = target_name) %>%
+      suppressMessages()
   if (length(suppressMessages(tsbox::ts_tslist(indic))) > 1) {
-    indic_name <- unique(indic$id)
-    bridge_model@indic <- suppressMessages(
+    model@indic <-
       tsbox::ts_tbl(indic) %>%
-        standardize_ts_tbl()
-    )
+      standardize_ts_tbl() %>%
+      suppressMessages()
+    indic_name <- unique(model@indic$id)
   } else {
     indic_name <- deparse(substitute(indic))
-    bridge_model@indic <- suppressMessages(
+    model@indic <- suppressMessages(
       tsbox::ts_tbl(indic) %>%
         standardize_ts_tbl() %>%
         dplyr::mutate( id = indic_name)
@@ -96,28 +97,28 @@ bridge <- function(
   }
 
   # Get frequency of the target and indic variables
-  target_summary <-  suppressMessages(tsbox::ts_summary(bridge_model@target))
-  indic_summaries <- suppressMessages(tsbox::ts_summary(bridge_model@indic))
+  target_summary <-  suppressMessages(tsbox::ts_summary(model@target))
+  indic_summaries <- suppressMessages(tsbox::ts_summary(model@indic))
 
   # Check if indic_predict is a single value or a list
   num_indic_series <-  nrow(indic_summaries)
   if(!is.null(indic_predict)) {
     if (length(indic_predict) == 1 && num_indic_series > 1) {
       warning("Only one value provided for @indic_predict. Assuming the same value for all time series in @indic.")
-      bridge_model@indic_predict <- rep(indic_predict, num_indic_series)
+      model@indic_predict <- rep(indic_predict, num_indic_series)
     }
   } else {
-    bridge_model@indic_predict <- rep("auto.arima", num_indic_series)
+    model@indic_predict <- rep("auto.arima", num_indic_series)
   }
 
   # Check if indic_aggregators is a single value or a list
   if (!is.null(indic_aggregators)) {
     if (length(indic_aggregators) == 1 && num_indic_series > 1) {
       warning("Only one value provided for @indic_aggregators. Assuming the same value for all time series in @indic.")
-      bridge_model@indic_aggregators <- rep(indic_aggregators, num_indic_series)
+      model@indic_aggregators <- rep(indic_aggregators, num_indic_series)
     }
   } else {
-    bridge_model@indic_aggregators <- rep("mean", num_indic_series)
+    model@indic_aggregators <- rep("mean", num_indic_series)
   }
 
   # Some definitions of frequencies
@@ -168,7 +169,7 @@ bridge <- function(
       n_rows = c(dpy, wpy, mpy, qpy, 1)     # Define number of rows to slice
     )
 
-    indics <- suppressMessages(tsbox::ts_tbl(bridge_model@indic)) %>%
+    indics <- suppressMessages(tsbox::ts_tbl(model@indic)) %>%
       standardize_ts_tbl() %>%
       dplyr::mutate(id = if (!"id" %in% colnames(.)) indic_name else id) %>%
       na.omit() %>%
@@ -184,15 +185,11 @@ bridge <- function(
         )
       ) %>%
       dplyr::left_join(slicing_rules, by = "ind_freq") %>%  # Add the slicing rule for each group
-      dplyr::group_by(year, ind_freq) %>%
-      dplyr::group_map(~ {
-        n_rows <- unique(.x$n_rows)  # Get the slicing rule
-        n_rows <- min(n_rows, nrow(.x))  # Ensure it doesn't exceed available rows
-        dplyr::slice_tail(.x, n = n_rows)
-      }) %>%
-      dplyr::bind_rows() %>%
+      dplyr::group_by(id, year, ind_freq) %>%
+      dplyr::mutate(n = 1:dplyr::n()) %>%
+      dplyr::filter(n <= n_rows) %>%
       dplyr::ungroup() %>%
-      dplyr::select(-n_rows)
+      dplyr::select(id, time, values)
 
 
   } else if (target_freq$frquency == 4) {
@@ -216,7 +213,7 @@ bridge <- function(
       n_rows = c(dpq, wpq, mpq, 1)     # Define number of rows to slice
     )
 
-    indics <- suppressMessages(tsbox::ts_tbl(bridge_model@indic)) %>%
+    indics <- suppressMessages(tsbox::ts_tbl(model@indic)) %>%
       standardize_ts_tbl() %>%
       dplyr::mutate(id = if (!"id" %in% colnames(.)) indic_name else id) %>%
       na.omit() %>%
@@ -232,15 +229,11 @@ bridge <- function(
         )
       ) %>%
       dplyr::left_join(slicing_rules, by = "ind_freq") %>%  # Add the slicing rule for each group
-      dplyr::group_by(year, quarter, ind_freq) %>%
-      dplyr::group_map(~ {
-        n_rows <- unique(.x$n_rows)  # Get the slicing rule
-        n_rows <- min(n_rows, nrow(.x))  # Ensure it doesn't exceed available rows
-        dplyr::slice_tail(.x, n = n_rows)
-      }) %>%
-      dplyr::bind_rows() %>%
+      dplyr::group_by(id, year, quarter, ind_freq) %>%
+      dplyr::mutate(n = 1:dplyr::n()) %>%
+      dplyr::filter(n <= n_rows) %>%
       dplyr::ungroup() %>%
-      dplyr::select(-n_rows)
+      dplyr::select(id, time, values)
 
   } else if (target_freq$frquency == 12) {
     target_start <- paste0(
@@ -278,15 +271,11 @@ bridge <- function(
         )
       ) %>%
       dplyr::left_join(slicing_rules, by = "ind_freq") %>%  # Add the slicing rule for each group
-      dplyr::group_by(year, month, ind_freq) %>%
-      dplyr::group_map(~ {
-        n_rows <- unique(.x$n_rows)  # Get the slicing rule
-        n_rows <- min(n_rows, nrow(.x))  # Ensure it doesn't exceed available rows
-        dplyr::slice_tail(.x, n = n_rows)
-      }) %>%
-      dplyr::bind_rows() %>%
+      dplyr::group_by(id, year, month, ind_freq) %>%
+      dplyr::mutate(n = 1:dplyr::n()) %>%
+      dplyr::filter(n <= n_rows) %>%
       dplyr::ungroup() %>%
-      dplyr::select(-n_rows)
+      dplyr::select(id, time, values)
 
   } else if(round(target_freq$frquency) %in% c(35, 52)) {
     target_start <- paste0(
@@ -309,7 +298,7 @@ bridge <- function(
       n_rows = c(dpw, 1)     # Define number of rows to slice
     )
 
-    indics <- suppressMessages(tsbox::ts_tbl(bridge_model@indic)) %>%
+    indics <- suppressMessages(tsbox::ts_tbl(model@indic)) %>%
       standardize_ts_tbl() %>%
       dplyr::mutate(id = if (!"id" %in% colnames(.)) indic_name else id) %>%
       na.omit() %>%
@@ -323,15 +312,11 @@ bridge <- function(
         )
       ) %>%
       dplyr::left_join(slicing_rules, by = "ind_freq") %>%  # Add the slicing rule for each group
-      dplyr::group_by(year, week, ind_freq) %>%
-      dplyr::group_map(~ {
-        n_rows <- unique(.x$n_rows)  # Get the slicing rule
-        n_rows <- min(n_rows, nrow(.x))  # Ensure it doesn't exceed available rows
-        dplyr::slice_tail(.x, n = n_rows)
-      }) %>%
-      dplyr::bind_rows() %>%
+      dplyr::group_by(id, year, week, ind_freq) %>%
+      dplyr::mutate(n = 1:dplyr::n()) %>%
+      dplyr::filter(n <= n_rows) %>%
       dplyr::ungroup() %>%
-      dplyr::select(-n_rows)
+      dplyr::select(id, time, values)
   }
 
   if (length(unique(indic_starts)) > 1) {
@@ -377,8 +362,8 @@ bridge <- function(
   indic_models <- list()
   ind_nr <- 1
   for (ind_id in unique(indics$id)) {
-    indic_predict <- bridge_model@indic_predict[ind_nr]
-    indic_aggregators <- bridge_model@indic_aggregators[ind_nr]
+    indic_predict <- model@indic_predict[ind_nr]
+    indic_aggregators <- model@indic_aggregators[ind_nr]
 
     indic_single <- indics %>%
       dplyr::filter(id == ind_id)
@@ -412,13 +397,13 @@ bridge <- function(
       indic_single <- suppressMessages(tsbox::ts_bind(indic_single, rep(last_value, indic_horizon )))
     } else if (indic_predict == "mean") {
       # write mean value forward until final_forecasting_date
-      mean_value <- tsbox::ts_span(indic_single, start = target_summary$end)$values %>%
-        mean( na.rm=T) %>% suppressMessages()
+      mean_value <- tsbox::ts_span(indic_single, start = target_summary$end)$values %>% suppressMessages() %>%
+        mean( na.rm=T)
       indic_single <- suppressMessages(tsbox::ts_bind(indic_single, rep(mean_value, indic_horizon)))
     } else if (indic_predict == "auto.arima") {
       # fit an ARIMA model to the indicator variable and forecast
-      indic_models[[ind_nr]] <- indic_single %>% tsbox::ts_xts() %>%
-        forecast::auto.arima() %>% suppressMessages()
+      indic_models[[ind_nr]] <- indic_single %>% tsbox::ts_xts()  %>% suppressMessages() %>%
+        forecast::auto.arima()
       indic_fcst <- forecast::forecast(indic_models[[ind_nr]], h = indic_horizon)
       indic_single <- suppressMessages(tsbox::ts_bind(indic_single, as.numeric(indic_fcst$mean)))
     }
@@ -437,7 +422,7 @@ bridge <- function(
   }
 
   # Save the indicator models
-  bridge_model@indic_models <- indic_models
+  model@indic_models <- indic_models
 
   # Get the final sample date
   final_sample_date <- target_summary$end %>%
@@ -446,8 +431,8 @@ bridge <- function(
 
   # Add indicator lags if specified
   indic_forecasts_lagged <- indic_forecasts
-  if (bridge_model@indic_lags > 0) {
-    for (lag in 1:bridge_model@indic_lags) {
+  if (model@indic_lags > 0) {
+    for (lag in 1:model@indic_lags) {
       lagged_indic_tmp <- indic_forecasts %>%
         tsbox::ts_lag(by = lag) %>%
         dplyr::mutate(id = paste0(id, "_lag", lag)) %>%
@@ -457,10 +442,10 @@ bridge <- function(
   }
 
   # Add target lags if specified
-  target_lagged  <- target %>%
+  target_lagged  <- model@target %>%
     dplyr::mutate( id = target_name)
-  if (bridge_model@target_lags > 0) {
-    for (lag in 1:bridge_model@target_lags) {
+  if (model@target_lags > 0) {
+    for (lag in 1:model@target_lags) {
       lagged_target_tmp <- target %>%
         dplyr::mutate( id = target_name) %>%
         tsbox::ts_lag(by = lag) %>%
@@ -475,12 +460,11 @@ bridge <- function(
   full_data <- dplyr::bind_rows(
     indic_forecasts_lagged,
     #target_lagged
-    target %>%
-      dplyr::mutate( id = target_name)
+    model@target
     )
 
-  bridge_model@target_name <- target_name
-  bridge_model@indic_name <- indic_name
+  model@target_name <- target_name
+  model@indic_name <- indic_name
 
   # Split the target into estimation and forecast periods
   estimation_set <- full_data %>%
@@ -496,7 +480,7 @@ bridge <- function(
     paste(unique(estimation_set$id)[!unique(estimation_set$id) %in% c("time", target_name)],
           collapse = " + ")
     ))
-  bridge_model@formula <- formula
+  model@formula <- formula
 
   estimation_set <- tsbox::ts_wide(estimation_set) %>%
     na.omit() %>% suppressMessages()
@@ -504,18 +488,18 @@ bridge <- function(
   forecast_set <- tsbox::ts_wide(forecast_set) %>%
     na.omit() %>% suppressMessages()
 
-  bridge_model@estimation_set <- estimation_set <- tsbox::ts_xts(tsbox::ts_long(estimation_set))
-  bridge_model@forecast_set <- forecast_set <- tsbox::ts_xts(tsbox::ts_long(forecast_set))
+  model@estimation_set <- estimation_set <- tsbox::ts_xts(tsbox::ts_long(estimation_set))
+  model@forecast_set <- forecast_set <- tsbox::ts_xts(tsbox::ts_long(forecast_set))
 
   # Fit the model
-  bridge_model@model <- forecast::Arima(
+  model@model <- forecast::Arima(
     estimation_set[,target_name],
     order = c(target_lags,0,0),
     xreg =  estimation_set[,!colnames(estimation_set) == target_name]
     )
 
 
-  return(bridge_model)
+  return(model)
 }
 
 #' Define the Bridge class
@@ -525,6 +509,7 @@ bridge <- function(
 #' @noRd
 bridge_model <- S7::new_class(
   name = "bridge_model",
+  package = "bridgr",
   properties = list(
     # User inputs
     target = S7::new_property(class = S7::class_any),

@@ -4,7 +4,7 @@
 \name{reexports}
 \alias{reexports}
 \alias{forecast}
-\title{Generics to re-export}
+\title{Objects exported from other packages}
 \keyword{internal}
 \description{
 These objects are imported from other packages. Follow the links

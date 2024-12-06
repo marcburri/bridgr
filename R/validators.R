@@ -79,11 +79,51 @@ validate_bridge <- function(self) {
     stop("@h must be a non-negative integer.")
   }
 
+  # Default frequency conversions
+  default_frequency_conversions <- c("dpw" = 5, "wpm" = 4, "mpq" = 3, "qpy" = 4)
 
-  # If all conditions pass
-  else {
-    NULL
+  # Check if fewer than 4 values are supplied and ensure they are named
+  if (!identical(as.numeric(self@frequency_conversions), as.numeric(default_frequency_conversions))) {
+    if (length(self@frequency_conversions) < 4 && is.null(names(self@frequency_conversions))) {
+      stop("Custom frequency_conversions must be named and have at least one valid name in 'dpw', 'wpm', 'mpq', or 'qpy'.")
+    }
+
+    # Check if all names are valid
+    invalid_names <- setdiff(names(self@frequency_conversions), names(default_frequency_conversions))
+    if (length(invalid_names) > 0) {
+      stop(paste(
+        "Invalid names in frequency_conversions:",
+        paste(invalid_names, collapse = ", "),
+        "\nValid names are 'dpw', 'wpm', 'mpq', and 'qpy'."
+      ))
+    } else {
+      # Update the default values with the user-supplied ones
+      default_frequency_conversions[names(self@frequency_conversions)] <- self@frequency_conversions
+      self@frequency_conversions <- default_frequency_conversions
+    }
+    # Check dpw is less than or equal to 7
+    if (self@frequency_conversions["dpw"] > 7) {
+      stop("dpw must be less than or equal to 7.")
+    }
+    # check wpm is less than or equal to 5
+    if (self@frequency_conversions["wpm"] > 5) {
+      stop("wpm must be less than or equal to 5.")
+    }
+    # check mpq is less than or equal to 3
+    if (self@frequency_conversions["mpq"] > 3) {
+      stop("mpq must be less than or equal to 3.")
+    }
+    # check qpy is less than or equal to 4
+    if (self@frequency_conversions["qpy"] > 4) {
+      stop("qpy must be less than or equal to 4.")
+    }
+
   }
+
+
+
+    NULL
+
 }
 
 

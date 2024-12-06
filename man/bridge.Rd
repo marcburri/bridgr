@@ -50,7 +50,7 @@ Defaults to \code{c("dpw" = 5, "wpm" = 4, "mpq" = 3, "qpy" = 4)}.}
 methods from the \code{forecast} package (to be implemented in future versions).}
 }
 \value{
-An object of class \code{bridge_model}, containing the following elements:
+An object of class \code{model}, containing the following elements:
 \itemize{
 \item \code{target}: The standardized target variable.
 \item \code{indic}: The standardized indicator variables.

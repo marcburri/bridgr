@@ -4,6 +4,10 @@
 # bridgr <a><img src="man/figures/logo.png" align="right" height="138"></a>
 
 <!-- badges: start -->
+
+[![Lifecycle:
+experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+[![R-CMD-check](https://github.com/marcburri/bridgr/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/marcburri/bridgr/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 `bridgr` is an R package designed to simplify the implementation and
@@ -40,6 +44,9 @@ bridge_model <- bridge(
   h=2
 )
 #> Dependent variable: gdp | Frequency: quarter | Estimation sample: 2004-04-01 - 2022-10-01 | Forecast horizon: 2 quarter(s)
+#> Registered S3 method overwritten by 'quantmod':
+#>   method            from
+#>   as.zoo.data.frame zoo
 
 forecast(bridge_model)
 #>    Point Forecast      Lo 80    Hi 80      Lo 95    Hi 95
