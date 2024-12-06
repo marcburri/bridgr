@@ -9,7 +9,7 @@ utils::globalVariables(c(".", "id", "ind_freq", "month", "week", "n_rows", "quar
 #' @importFrom rlang %||%
 #' @importFrom lubridate %m+% %m-%
 #' @importFrom stats as.formula frequency lm na.omit
-#' @importFrom utils tail
+#' @importFrom utils tail capture.output
 #' @importFrom generics forecast
 NULL
 
@@ -18,7 +18,3 @@ NULL
 #' @export
 generics::forecast
 
-
-# enable usage of <S7_object>@name in package code
-#' @rawNamespace if (getRversion() < "4.3.0") importFrom("S7", "@")
-NULL

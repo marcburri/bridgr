@@ -69,27 +69,28 @@ bridge <- function( # TODO: fully document
     indic_lags = indic_lags,
     target_lags = target_lags,
     h = h,
-    frequency_conversions = frequency_conversions
+    frequency_conversions = frequency_conversions,
+    ...
   )
 
   # Bring target and indicator variables to the same format (ts_tbl)
   # And add corresponding id columns if missing
   # Get the name of the target and indicator variables
   target_name <- deparse(substitute(target))
-  model@target <-
+  model$target <-
     tsbox::ts_tbl(target) %>%
       standardize_ts_tbl() %>%
       dplyr::mutate( id = target_name) %>%
       suppressMessages()
   if (length(suppressMessages(tsbox::ts_tslist(indic))) > 1) {
-    model@indic <-
+    model$indic <-
       tsbox::ts_tbl(indic) %>%
       standardize_ts_tbl() %>%
       suppressMessages()
-    indic_name <- unique(model@indic$id)
+    indic_name <- unique(model$indic$id)
   } else {
     indic_name <- deparse(substitute(indic))
-    model@indic <- suppressMessages(
+    model$indic <- suppressMessages(
       tsbox::ts_tbl(indic) %>%
         standardize_ts_tbl() %>%
         dplyr::mutate( id = indic_name)
@@ -97,28 +98,28 @@ bridge <- function( # TODO: fully document
   }
 
   # Get frequency of the target and indic variables
-  target_summary <-  suppressMessages(tsbox::ts_summary(model@target))
-  indic_summaries <- suppressMessages(tsbox::ts_summary(model@indic))
+  target_summary <-  suppressMessages(tsbox::ts_summary(model$target))
+  indic_summaries <- suppressMessages(tsbox::ts_summary(model$indic))
 
   # Check if indic_predict is a single value or a list
   num_indic_series <-  nrow(indic_summaries)
-  if(!is.null(indic_predict)) {
-    if (length(indic_predict) == 1 && num_indic_series > 1) {
+  if(!is.null(model$indic_predict)) {
+    if (length(model$indic_predict) == 1 && num_indic_series > 1) {
       warning("Only one value provided for @indic_predict. Assuming the same value for all time series in @indic.")
-      model@indic_predict <- rep(indic_predict, num_indic_series)
+      model$indic_predict <- rep(indic_predict, num_indic_series)
     }
   } else {
-    model@indic_predict <- rep("auto.arima", num_indic_series)
+    model$indic_predict <- rep("auto.arima", num_indic_series)
   }
 
   # Check if indic_aggregators is a single value or a list
-  if (!is.null(indic_aggregators)) {
-    if (length(indic_aggregators) == 1 && num_indic_series > 1) {
+  if (!is.null(model$indic_aggregators)) {
+    if (length(model$indic_aggregators) == 1 && num_indic_series > 1) {
       warning("Only one value provided for @indic_aggregators. Assuming the same value for all time series in @indic.")
-      model@indic_aggregators <- rep(indic_aggregators, num_indic_series)
+      model$indic_aggregators <- rep(model$indic_aggregators, num_indic_series)
     }
   } else {
-    model@indic_aggregators <- rep("mean", num_indic_series)
+    model$indic_aggregators <- rep("mean", num_indic_series)
   }
 
   # Some definitions of frequencies
@@ -169,7 +170,7 @@ bridge <- function( # TODO: fully document
       n_rows = c(dpy, wpy, mpy, qpy, 1)     # Define number of rows to slice
     )
 
-    indics <- suppressMessages(tsbox::ts_tbl(model@indic)) %>%
+    indics <- suppressMessages(tsbox::ts_tbl(model$indic)) %>%
       standardize_ts_tbl() %>%
       dplyr::mutate(id = if (!"id" %in% colnames(.)) indic_name else id) %>%
       na.omit() %>%
@@ -213,7 +214,7 @@ bridge <- function( # TODO: fully document
       n_rows = c(dpq, wpq, mpq, 1)     # Define number of rows to slice
     )
 
-    indics <- suppressMessages(tsbox::ts_tbl(model@indic)) %>%
+    indics <- suppressMessages(tsbox::ts_tbl(model$indic)) %>%
       standardize_ts_tbl() %>%
       dplyr::mutate(id = if (!"id" %in% colnames(.)) indic_name else id) %>%
       na.omit() %>%
@@ -298,7 +299,7 @@ bridge <- function( # TODO: fully document
       n_rows = c(dpw, 1)     # Define number of rows to slice
     )
 
-    indics <- suppressMessages(tsbox::ts_tbl(model@indic)) %>%
+    indics <- suppressMessages(tsbox::ts_tbl(model$indic)) %>%
       standardize_ts_tbl() %>%
       dplyr::mutate(id = if (!"id" %in% colnames(.)) indic_name else id) %>%
       na.omit() %>%
@@ -362,8 +363,8 @@ bridge <- function( # TODO: fully document
   indic_models <- list()
   ind_nr <- 1
   for (ind_id in unique(indics$id)) {
-    indic_predict <- model@indic_predict[ind_nr]
-    indic_aggregators <- model@indic_aggregators[ind_nr]
+    indic_predict <- model$indic_predict[ind_nr]
+    indic_aggregators <- model$indic_aggregators[ind_nr]
 
     indic_single <- indics %>%
       dplyr::filter(id == ind_id)
@@ -422,7 +423,7 @@ bridge <- function( # TODO: fully document
   }
 
   # Save the indicator models
-  model@indic_models <- indic_models
+  model$indic_models <- indic_models
 
   # Get the final sample date
   final_sample_date <- target_summary$end %>%
@@ -431,8 +432,8 @@ bridge <- function( # TODO: fully document
 
   # Add indicator lags if specified
   indic_forecasts_lagged <- indic_forecasts
-  if (model@indic_lags > 0) {
-    for (lag in 1:model@indic_lags) {
+  if (model$indic_lags > 0) {
+    for (lag in 1:model$indic_lags) {
       lagged_indic_tmp <- indic_forecasts %>%
         tsbox::ts_lag(by = lag) %>%
         dplyr::mutate(id = paste0(id, "_lag", lag)) %>%
@@ -442,10 +443,10 @@ bridge <- function( # TODO: fully document
   }
 
   # Add target lags if specified
-  target_lagged  <- model@target %>%
+  target_lagged  <- model$target %>%
     dplyr::mutate( id = target_name)
-  if (model@target_lags > 0) {
-    for (lag in 1:model@target_lags) {
+  if (model$target_lags > 0) {
+    for (lag in 1:model$target_lags) {
       lagged_target_tmp <- target %>%
         dplyr::mutate( id = target_name) %>%
         tsbox::ts_lag(by = lag) %>%
@@ -455,16 +456,15 @@ bridge <- function( # TODO: fully document
     }
   }
 
-
   # Full dataset
   full_data <- dplyr::bind_rows(
     indic_forecasts_lagged,
     #target_lagged
-    model@target
+    model$target
     )
 
-  model@target_name <- target_name
-  model@indic_name <- indic_name
+  model$target_name <- target_name
+  model$indic_name <- indic_name
 
   # Split the target into estimation and forecast periods
   estimation_set <- full_data %>%
@@ -480,7 +480,7 @@ bridge <- function( # TODO: fully document
     paste(unique(estimation_set$id)[!unique(estimation_set$id) %in% c("time", target_name)],
           collapse = " + ")
     ))
-  model@formula <- formula
+  model$formula <- formula
 
   estimation_set <- tsbox::ts_wide(estimation_set) %>%
     na.omit() %>% suppressMessages()
@@ -488,11 +488,11 @@ bridge <- function( # TODO: fully document
   forecast_set <- tsbox::ts_wide(forecast_set) %>%
     na.omit() %>% suppressMessages()
 
-  model@estimation_set <- estimation_set <- tsbox::ts_xts(tsbox::ts_long(estimation_set))
-  model@forecast_set <- forecast_set <- tsbox::ts_xts(tsbox::ts_long(forecast_set))
+  model$estimation_set <- estimation_set <- tsbox::ts_xts(tsbox::ts_long(estimation_set))
+  model$forecast_set <- forecast_set <- tsbox::ts_xts(tsbox::ts_long(forecast_set))
 
   # Fit the model
-  model@model <- forecast::Arima(
+  model$model <- forecast::Arima(
     estimation_set[,target_name],
     order = c(target_lags,0,0),
     xreg =  estimation_set[,!colnames(estimation_set) == target_name]
@@ -502,38 +502,171 @@ bridge <- function( # TODO: fully document
   return(model)
 }
 
+
 #' Define the Bridge class
 #'
-#' @include validators.R
+#' Constructor for the S3 Bridge object
 #' @keywords internal
 #' @noRd
-bridge_model <- S7::new_class(
-  name = "bridge_model",
-  package = "bridgr",
-  properties = list(
-    # User inputs
-    target = S7::new_property(class = S7::class_any),
-    indic = S7::new_property(class = S7::class_any),
-    indic_predict = S7::new_property(class = S7::class_any, default = NULL),
-    indic_aggregators = S7::new_property(class = S7::class_any, default = NULL),
-    indic_lags = S7::new_property(class = S7::class_numeric, default = 0),
-    target_lags = S7::new_property(class = S7::class_numeric, default = 0),
-    h = S7::new_property(class = S7::class_numeric, default = 1),
-    frequency_conversions = S7::new_property( # TODO: Add validators
-      class = S7::class_numeric,
-      default = c("dpw" = 5,             # Days per week
-                  "wpm" = 4,             # Weeks per month
-                  "mpq" = 3,             # Months per quarter
-                  "qpy" = 4              # Quarters per year
-      )),
-    # Internal properties
-    target_name = S7::new_property(class = S7::class_character),
-    indic_name = S7::new_property(class = S7::class_character),
-    model = S7::new_property(class = S7::class_any),
-    estimation_set = S7::new_property(class = S7::class_any),
-    forecast_set = S7::new_property(class = S7::class_any),
-    formula = S7::new_property(class = S7::class_any),
-    indic_models = S7::new_property(class = S7::class_any)
-  ),
-  validator = validate_bridge
-)
+bridge_model <- function(
+    target,
+    indic,
+    indic_predict,
+    indic_aggregators,
+    indic_lags,
+    target_lags,
+    h,
+    frequency_conversions,
+    ...)
+  {
+  obj <- list(
+    target = target,
+    indic = indic,
+    indic_predict = indic_predict,
+    indic_aggregators = indic_aggregators,
+    indic_lags = indic_lags,
+    target_lags = target_lags,
+    h = h,
+    frequency_conversions = frequency_conversions,
+    target_name = NULL,
+    indic_name = NULL,
+    indic_models = list(),
+    other_args = list(...)
+  )
+
+  # Assign the S3 class
+  class(obj) <- "bridge"
+
+  # Validate the inputs
+  validate_bridge(obj)
+
+  return(obj)
+}
+
+
+#' Validator Function for Bridge Class
+#'
+#' @param self An S3 bridge_model class instance to validate.
+#' @return Error message if validation fails, otherwise NULL.
+#' @keywords internal
+#' @noRd
+validate_bridge <- function(self) {
+
+  # Validate @target as ts-boxable
+  if (!tsbox::ts_boxable(self$target)) {
+    stop("@target must be a ts-boxable object, not ", class(self$target))
+  }
+
+  # Validate @indic as ts-boxable
+  if (!tsbox::ts_boxable(self$indic)) {
+    stop("must be a ts-boxable object, not ", class(self$indic))
+  }
+
+  # Get frequency of the target and indic variables
+  target_summary <-  suppressMessages(tsbox::ts_summary(self$target))
+  indic_summaries <- suppressMessages(tsbox::ts_summary(self$indic))
+
+  # Validate @target to be a single time series
+  if (nrow(target_summary) > 1) {
+    stop("@target must be a single time series.")
+  }
+
+  # Validate target frequency: Yearly or higher
+  target_freq <- round(target_summary$freq)
+  if (!target_freq %in% c(1, 4, 12, 35, 48, 52, 53)) {
+    stop("@target frequency must be weekly, monthly, quarterly or yearly.")
+  }
+
+  # Validate frequency of each indicator in the list: Same or higher than target
+  for (i in 1:nrow(indic_summaries)) {
+    indic_freq <- round(indic_summaries[i,]$freq)
+    if (!indic_freq %in% c(1, 4, 12, 35, 48, 52, 53, 240, 365)) {
+      stop(indic_summaries[i,]$id, " frequency in @indic must be daily, weekly, monthly, quarterly or yearly.")
+    }
+    else if (round(indic_freq) < round(target_freq)) {
+      stop(indic_summaries[i,]$id, " frequency in @indic must be the same as or higher than the @target frequency.")
+    }
+  }
+
+
+  # Validate last observation of each indicator in the list: Same date or later than target
+  for (i in 1:nrow(indic_summaries)) {
+    if (indic_summaries[i,]$end < target_summary$end) {
+      stop("Last observation of ", indic_summaries[i,]$id, " in @indic must be the same date or later than the last observation of @target.")
+    }
+  }
+
+
+  # Validation for indic_predict
+  num_indic_series <- nrow(indic_summaries)
+  if (!is.null(self$indic_predict)) {
+    len_indic_predict <- length(self$indic_predict)
+    if (len_indic_predict != num_indic_series && len_indic_predict != 1) {
+      stop("@indic_predict must have length 1 or the same length as the number of time series in @indic.")
+    }
+  }
+
+  # Validation for indic_aggregate
+  if (!is.null(self$indic_aggregators)) {
+    len_indic_aggregators <- length(self$indic_aggregators)
+    if (len_indic_aggregators != num_indic_series && len_indic_aggregators != 1) {
+      stop("@indic_aggregators must have length 1 or the same length as the number of time series in @indic.")
+    }
+  }
+
+  # Validate @indic_lags and @target_lags
+  if (self$indic_lags < 0) {
+    stop("@indic_lags must be a non-negative integer.")
+  }
+  else if (self$target_lags < 0) {
+    stop("@target_lags must be a non-negative integer.")
+  }
+  else if (self$h < 1) {
+    stop("@h must be a non-negative integer.")
+  }
+
+  # Default frequency conversions
+  default_frequency_conversions <- c("dpw" = 5, "wpm" = 4, "mpq" = 3, "qpy" = 4)
+
+  # Check if fewer than 4 values are supplied and ensure they are named
+  if (!identical(as.numeric(self$frequency_conversions), as.numeric(default_frequency_conversions))) {
+    if (length(self$frequency_conversions) < 4 && is.null(names(self$frequency_conversions))) {
+      stop("Custom frequency_conversions must be named and have at least one valid name in 'dpw', 'wpm', 'mpq', or 'qpy'.")
+    }
+
+    # Check if all names are valid
+    invalid_names <- setdiff(names(self$frequency_conversions), names(default_frequency_conversions))
+    if (length(invalid_names) > 0) {
+      stop(paste(
+        "Invalid names in frequency_conversions:",
+        paste(invalid_names, collapse = ", "),
+        "\nValid names are 'dpw', 'wpm', 'mpq', and 'qpy'."
+      ))
+    } else {
+      # Update the default values with the user-supplied ones
+      default_frequency_conversions[names(self$frequency_conversions)] <- self$frequency_conversions
+      self$frequency_conversions <- default_frequency_conversions
+    }
+    # Check dpw is less than or equal to 7
+    if (self$frequency_conversions["dpw"] > 7) {
+      stop("dpw must be less than or equal to 7.")
+    }
+    # check wpm is less than or equal to 5
+    if (self$frequency_conversions["wpm"] > 5) {
+      stop("wpm must be less than or equal to 5.")
+    }
+    # check mpq is less than or equal to 3
+    if (self$frequency_conversions["mpq"] > 3) {
+      stop("mpq must be less than or equal to 3.")
+    }
+    # check qpy is less than or equal to 4
+    if (self$frequency_conversions["qpy"] > 4) {
+      stop("qpy must be less than or equal to 4.")
+    }
+
+  }
+  NULL
+}
+
+
+
