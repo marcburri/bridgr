@@ -27,7 +27,6 @@ knitr::opts_chunk$set(
 The package is still under development and is not yet available on CRAN. Therefore, the package is not yet stable and may contain bugs.
 
 
-
 ## Installation
 
 You can install the development version of `bridgr` like so:

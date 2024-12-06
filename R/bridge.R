@@ -403,7 +403,7 @@ bridge <- function( # TODO: fully document
     } else if (indic_predict == "auto.arima") {
       # fit an ARIMA model to the indicator variable and forecast
       indic_models[[ind_nr]] <- indic_single %>% tsbox::ts_xts()  %>% suppressMessages() %>%
-        forecast::auto.arima()
+        forecast::auto.arima() %>% suppressMessages()
       indic_fcst <- forecast::forecast(indic_models[[ind_nr]], h = indic_horizon)
       indic_single <- suppressMessages(tsbox::ts_bind(indic_single, as.numeric(indic_fcst$mean)))
     }

@@ -44,9 +44,6 @@ bridge_model <- bridge(
   h=2
 )
 #> Dependent variable: gdp | Frequency: quarter | Estimation sample: 2004-04-01 - 2022-10-01 | Forecast horizon: 2 quarter(s)
-#> Registered S3 method overwritten by 'quantmod':
-#>   method            from
-#>   as.zoo.data.frame zoo
 
 forecast(bridge_model)
 #>    Point Forecast      Lo 80    Hi 80      Lo 95    Hi 95
