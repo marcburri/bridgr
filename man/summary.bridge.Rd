@@ -14,4 +14,3 @@
 \description{
 This method is summarizes the bridge model.
 }
-\keyword{internal}

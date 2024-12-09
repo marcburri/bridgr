@@ -3,7 +3,6 @@
 #' This method is summarizes the bridge model.
 #' @param object An object of class `bridge_model` obtained from [bridgr::bridge()].
 #' @param ... Additional arguments to be passed to the summary function.
-#' @keywords internal
 #' @export
 summary.bridge <- function(object, ...) {
 

@@ -30,8 +30,7 @@ indicator variables. Defaults to \code{"mean"}. Future updates will add support 
 from the \code{forecast} package.}
 
 \item{indic_aggregators}{A character string or vector specifying the aggregation method(s)
-for aligning indicator variables with the target variable. Defaults to \code{"mean"}. Future updates
-will support custom weighting functions.}
+for aligning indicator variables with the target variable. Defaults to \code{"mean"}.}
 
 \item{indic_lags}{An integer or vector of integers specifying the number of lags to include
 for the indicator variables. Defaults to \code{0} (no lags).}

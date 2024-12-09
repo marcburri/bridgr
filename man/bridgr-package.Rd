@@ -13,6 +13,7 @@ To learn more about bridger, start with the vignettes:
 Useful links:
 \itemize{
   \item \url{https://github.com/marcburri/bridgr}
+  \item \url{https://marcburri.github.io/bridgr/}
   \item Report bugs at \url{https://github.com/marcburri/bridgr/issues}
 }
 
