@@ -8,6 +8,8 @@
 }
 \arguments{
 \item{object}{An object of class \code{bridge_model} obtained from \code{\link[=bridge]{bridge()}}.}
+
+\item{...}{Additional arguments to be passed to the summary function.}
 }
 \description{
 This method is summarizes the bridge model.

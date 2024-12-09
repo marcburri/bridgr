@@ -14,8 +14,8 @@
 #' indicator variables. Defaults to `"mean"`. Future updates will add support for methods
 #' from the `forecast` package.
 #' @param indic_aggregators A character string or vector specifying the aggregation method(s)
-#' for aligning indicator variables with the target variable. Defaults to `"mean"`. Future updates
-#' will support custom weighting functions.
+#' for aligning indicator variables with the target variable. Defaults to `"mean"`.
+#'
 #' @param indic_lags An integer or vector of integers specifying the number of lags to include
 #' for the indicator variables. Defaults to `0` (no lags).
 #' @param target_lags An integer specifying the number of lags to include for the target variable.
@@ -50,13 +50,13 @@
 bridge <- function( # TODO: fully document
     target,
     indic,
-    indic_predict = NULL, # TODO: add support for forecast package methods (ets, tbats, etc.)
-    indic_aggregators = NULL, # TODO: add support for custom weighting functions
+    indic_predict = NULL,
+    indic_aggregators = NULL,
     indic_lags = 0,
     target_lags = 0,
     h = 1, # Nowcast horizon, always in terms of the target frequency
-    frequency_conversions = c("dpw" = 5, "wpm" = 4, "mpq" = 3, "qpy" = 4), # TODO: add validations
-    ... # TODO: Additional arguments to be passed to the model (i.e. for forecasting package)
+    frequency_conversions = c("dpw" = 5, "wpm" = 4, "mpq" = 3, "qpy" = 4),
+    ... # TODO: Additional arguments to be passed to the model (i.e. for forecasting package, expalmon control)
     ) # TODO: write a bunch of tests for this function
   {
 
@@ -69,8 +69,7 @@ bridge <- function( # TODO: fully document
     indic_lags = indic_lags,
     target_lags = target_lags,
     h = h,
-    frequency_conversions = frequency_conversions,
-    ...
+    frequency_conversions = frequency_conversions
   )
 
   # Bring target and indicator variables to the same format (ts_tbl)
@@ -105,7 +104,7 @@ bridge <- function( # TODO: fully document
   num_indic_series <-  nrow(indic_summaries)
   if(!is.null(model$indic_predict)) {
     if (length(model$indic_predict) == 1 && num_indic_series > 1) {
-      warning("Only one value provided for @indic_predict. Assuming the same value for all time series in @indic.")
+      rlang::warn("Only one value provided for @indic_predict. Assuming the same value for all time series in @indic.")
       model$indic_predict <- rep(indic_predict, num_indic_series)
     }
   } else {
@@ -115,7 +114,7 @@ bridge <- function( # TODO: fully document
   # Check if indic_aggregators is a single value or a list
   if (!is.null(model$indic_aggregators)) {
     if (length(model$indic_aggregators) == 1 && num_indic_series > 1) {
-      warning("Only one value provided for @indic_aggregators. Assuming the same value for all time series in @indic.")
+      rlang::warn("Only one value provided for @indic_aggregators. Assuming the same value for all time series in @indic.")
       model$indic_aggregators <- rep(model$indic_aggregators, num_indic_series)
     }
   } else {
@@ -123,10 +122,10 @@ bridge <- function( # TODO: fully document
   }
 
   # Some definitions of frequencies
-  dpw <- frequency_conversions[1]             # Days per week
-  wpm <- frequency_conversions[2]             # Weeks per month
-  mpq <- frequency_conversions[3]             # Months per quarter
-  qpy <- frequency_conversions[4]             # Quarters per year
+  dpw <- as.numeric(frequency_conversions["dpw"])             # Days per week
+  wpm <- as.numeric(frequency_conversions["wpm"])             # Weeks per month
+  mpq <- as.numeric(frequency_conversions["mpq"])             # Months per quarter
+  qpy <- as.numeric(frequency_conversions["qpy"])             # Quarters per year
   dpm <- dpw*wpm       # Days per month
   wpq <- wpm*mpq       # Weeks per quarter
   dpq <- dpw*wpq       # Days per quarter
@@ -134,194 +133,75 @@ bridge <- function( # TODO: fully document
   wpy <- wpm*mpq*qpy   # Weeks per year
   mpy <- mpq*qpy       # Months per year
 
+  slicing_rules <- dplyr::tibble(
+    targ_freq = c(rep("month", 3),rep("quarter",4), rep("year", 5)),
+    ind_freq = c("day", "week", "month", "day", "week", "month", "quarter", "day", "week", "month", "quarter", "year"),
+    observations = c(
+      dpm, wpm, 1,
+      dpq, wpq, mpq, 1,
+      dpy, wpy, mpy, qpy, 1
+      )     # Define number of rows to slice
+  )
+
 
   target_freq <- target_summary$freq
   if(is.null(names(target_freq))) names(target_freq) <- target_name
   indic_freqs <- indic_summaries$freq
   if(is.null(names(indic_freqs))) names(indic_freqs) <- indic_name
 
+
   target_freq <- dplyr::tibble(
     id = names(target_freq),
     frquency = as.numeric(target_freq)
   ) %>% dplyr::mutate(
-    freq_label = dplyr::case_when(
-      round(frquency) == 365 ~ "day",
-      round(frquency) == 52 ~ "week",
-      round(frquency) == 35 ~ "week",
-      round(frquency) == 12 ~ "month",
-      round(frquency) == 4 ~ "quarter",
-      round(frquency) == 1 ~ "year"
-    ))
+    freq_label = label_frequency(frquency)
+    )
+
+  indic_freqs <- dplyr::tibble(
+    id = names(indic_freqs),
+    frquency = as.numeric(indic_freqs)
+  ) %>% dplyr::mutate(
+    freq_label = label_frequency(frquency)
+  ) %>%
+    dplyr::left_join(
+      slicing_rules %>%
+        dplyr::filter(targ_freq == target_freq$freq_label), by = c("freq_label" = "ind_freq")
+      )
+
+  # Make sure the number of defined frequencies hold
+  indics <- suppressMessages(tsbox::ts_tbl(model$indic)) %>%
+    standardize_ts_tbl() %>%
+    dplyr::mutate(id = if (!"id" %in% colnames(.)) indic_name else id) %>%
+    stats::na.omit() %>%
+    dplyr::mutate(
+      period = lubridate::floor_date(time, target_freq$freq_label)
+    ) %>%
+    dplyr::left_join(indic_freqs %>% dplyr::select(id, observations), by = "id") %>%  # Add the slicing rule for each group
+    dplyr::group_by(id, period) %>%
+    dplyr::mutate(n = dplyr::n():1) %>%
+    dplyr::filter(n <= observations) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(id, time, values)
 
   # Make sure the provided time series are aligned
   # And determine final forecasting date for indics
-  if (target_freq$frquency == 1) {
-    target_start <- lubridate::year(target_summary$start)
-    indic_starts <- lubridate::year(indic_summaries$start)
+  results <- get_final_date(
+    freq = target_freq$frquency,
+    target_start = target_summary$start,
+    target_end = target_summary$end,
+    h = h
+  )
+  target_start <- results$target_start
+  indic_starts <- ifelse(target_freq$frquency == 1,
+                         lubridate::year(indic_summaries$start),
+                         ifelse(target_freq$frquency == 4,
+                                paste0(lubridate::year(indic_summaries$start), "Q", lubridate::quarter(indic_summaries$start)),
+                                ifelse(target_freq$frquency == 12,
+                                       paste0(lubridate::year(indic_summaries$start),"-", lubridate::month(indic_summaries$start)),
+                                       paste0(lubridate::year(indic_summaries$start), "-", lubridate::week(indic_summaries$start)))))
+  final_forecasting_date <- results$final_date
 
-    final_forecasting_date <- target_summary$end %m+%
-      lubridate::years(h) %>%
-      lubridate::ceiling_date("year") %m-%
-      lubridate::days(1)
-
-    # Define rules for slicing
-    slicing_rules <- dplyr::tibble(
-      ind_freq = c("daily", "weekly", "monthly", "quarterly", "yearly"),
-      n_rows = c(dpy, wpy, mpy, qpy, 1)     # Define number of rows to slice
-    )
-
-    indics <- suppressMessages(tsbox::ts_tbl(model$indic)) %>%
-      standardize_ts_tbl() %>%
-      dplyr::mutate(id = if (!"id" %in% colnames(.)) indic_name else id) %>%
-      na.omit() %>%
-      dplyr::mutate(
-        year = lubridate::year(time),
-        ind_freq = dplyr::case_when(
-          round(indic_freqs[id]) == 365 ~ "daily",
-          round(indic_freqs[id]) == 52 ~ "weekly",
-          round(indic_freqs[id]) == 35 ~ "weekly",
-          round(indic_freqs[id]) == 12 ~ "monthly",
-          round(indic_freqs[id]) == 4 ~ "quarterly",
-          round(indic_freqs[id]) == 1 ~ "yearly"
-        )
-      ) %>%
-      dplyr::left_join(slicing_rules, by = "ind_freq") %>%  # Add the slicing rule for each group
-      dplyr::group_by(id, year, ind_freq) %>%
-      dplyr::mutate(n = 1:dplyr::n()) %>%
-      dplyr::filter(n <= n_rows) %>%
-      dplyr::ungroup() %>%
-      dplyr::select(id, time, values)
-
-
-  } else if (target_freq$frquency == 4) {
-    target_start <- paste0(
-      lubridate::year(target_summary$start), "Q",
-      lubridate::quarter(target_summary$start)
-      )
-    indic_starts <- paste0(
-      lubridate::year(indic_summaries$start), "Q",
-      lubridate::quarter(indic_summaries$start)
-      )
-
-    final_forecasting_date <- target_summary$end %m+%
-      months(3*h) %>%
-      lubridate::ceiling_date("quarter") %m-%
-      lubridate::days(1)
-
-    # Define rules for slicing
-    slicing_rules <- dplyr::tibble(
-      ind_freq = c("daily", "weekly", "monthly", "quarterly"),
-      n_rows = c(dpq, wpq, mpq, 1)     # Define number of rows to slice
-    )
-
-    indics <- suppressMessages(tsbox::ts_tbl(model$indic)) %>%
-      standardize_ts_tbl() %>%
-      dplyr::mutate(id = if (!"id" %in% colnames(.)) indic_name else id) %>%
-      na.omit() %>%
-      dplyr::mutate(
-        year = lubridate::year(time),
-        quarter = lubridate::quarter(time),
-        ind_freq = dplyr::case_when(
-          round(indic_freqs[id]) == 365 ~ "daily",
-          round(indic_freqs[id]) == 52 ~ "weekly",
-          round(indic_freqs[id]) == 35 ~ "weekly",
-          round(indic_freqs[id]) == 12 ~ "monthly",
-          round(indic_freqs[id]) == 4 ~ "quarterly"
-        )
-      ) %>%
-      dplyr::left_join(slicing_rules, by = "ind_freq") %>%  # Add the slicing rule for each group
-      dplyr::group_by(id, year, quarter, ind_freq) %>%
-      dplyr::mutate(n = 1:dplyr::n()) %>%
-      dplyr::filter(n <= n_rows) %>%
-      dplyr::ungroup() %>%
-      dplyr::select(id, time, values)
-
-  } else if (target_freq$frquency == 12) {
-    target_start <- paste0(
-      lubridate::year(target_summary$start),
-      lubridate::month(target_summary$start)
-    )
-    indic_starts <- paste0(
-      lubridate::year(indic_summaries$start),
-      lubridate::month(indic_summaries$start)
-    )
-
-    final_forecasting_date <- target_summary$end %m+%
-      months(h) %>%
-      lubridate::ceiling_date("month") %m-%
-      lubridate::days(1)
-
-    # Define rules for slicing
-    slicing_rules <- dplyr::tibble(
-      ind_freq = c("daily", "weekly", "monthly"),
-      n_rows = c(dpm, wpm, 1)     # Define number of rows to slice
-    )
-
-    indics <- suppressMessages(tsbox::ts_tbl(indic)) %>%
-      standardize_ts_tbl() %>%
-      dplyr::mutate(id = if (!"id" %in% colnames(.)) indic_name else id) %>%
-      na.omit() %>%
-      dplyr::mutate(
-        year = lubridate::year(time),
-        month = lubridate::month(time),
-        ind_freq = dplyr::case_when(
-          round(indic_freqs[id]) == 365 ~ "daily",
-          round(indic_freqs[id]) == 52 ~ "weekly",
-          round(indic_freqs[id]) == 35 ~ "weekly",
-          round(indic_freqs[id]) == 12 ~ "monthly"
-        )
-      ) %>%
-      dplyr::left_join(slicing_rules, by = "ind_freq") %>%  # Add the slicing rule for each group
-      dplyr::group_by(id, year, month, ind_freq) %>%
-      dplyr::mutate(n = 1:dplyr::n()) %>%
-      dplyr::filter(n <= n_rows) %>%
-      dplyr::ungroup() %>%
-      dplyr::select(id, time, values)
-
-  } else if(round(target_freq$frquency) %in% c(35, 52)) {
-    target_start <- paste0(
-      lubridate::year(target_summary$start), "-",
-      lubridate::week(target_summary$start)
-    )
-    indic_starts <- paste0(
-      lubridate::year(indic_summaries$start), "-",
-      lubridate::week(indic_summaries$start)
-    )
-
-    final_forecasting_date <- target_summary$end %m+%
-      lubridate::weeks(h) %>%
-      lubridate::ceiling_date("week") %m-%
-      lubridate::days(1)
-
-    # Define rules for slicing
-    slicing_rules <- dplyr::tibble(
-      ind_freq = c("daily", "weekly"),
-      n_rows = c(dpw, 1)     # Define number of rows to slice
-    )
-
-    indics <- suppressMessages(tsbox::ts_tbl(model$indic)) %>%
-      standardize_ts_tbl() %>%
-      dplyr::mutate(id = if (!"id" %in% colnames(.)) indic_name else id) %>%
-      na.omit() %>%
-      dplyr::mutate(
-        year = lubridate::year(time),
-        month = lubridate::week(time),
-        ind_freq = dplyr::case_when(
-          round(indic_freqs[id]) == 365 ~ "daily",
-          round(indic_freqs[id]) == 52 ~ "weekly",
-          round(indic_freqs[id]) == 35 ~ "weekly"
-        )
-      ) %>%
-      dplyr::left_join(slicing_rules, by = "ind_freq") %>%  # Add the slicing rule for each group
-      dplyr::group_by(id, year, week, ind_freq) %>%
-      dplyr::mutate(n = 1:dplyr::n()) %>%
-      dplyr::filter(n <= n_rows) %>%
-      dplyr::ungroup() %>%
-      dplyr::select(id, time, values)
-  }
-
-  if (length(unique(indic_starts)) > 1) {
-    warning("The start dates of the target and indicator variables do not match. Trying to align them.")
+  if (length(unique(c(indic_starts, target_start))) > 1) {
     # Get earliest common start date
     max_start <- max(c(target_summary$start, indic_summaries$start)) %>%
       lubridate::floor_date(target_freq$freq_label)
@@ -331,22 +211,9 @@ bridge <- function( # TODO: fully document
     indics <-  tsbox::ts_span(indics, start = max_start) %>%
       dplyr::mutate(id = if (!"id" %in% colnames(.)) indic_name else id) %>%
       suppressMessages()
-    message("The start dates of the target and indicator variables have been aligned to ", max_start)
+    message("The start dates of the target and indicator variables do not match. Aligning them to ", max_start)
   }
 
-
-  indic_freqs <- dplyr::tibble(
-    id = names(indic_freqs),
-    frquency = as.numeric(indic_freqs)
-  ) %>% dplyr::mutate(
-    freq_label = dplyr::case_when(
-      round(frquency) == 365 ~ "day",
-      round(frquency) == 52 ~ "week",
-      round(frquency) == 35 ~ "week",
-      round(frquency) == 12 ~ "month",
-      round(frquency) == 4 ~ "quarter",
-      round(frquency) == 1 ~ "year"
-    ))
 
   # Get frequency of the target and indic variables
   target_summary <-  suppressMessages(tsbox::ts_summary(target))
@@ -364,7 +231,7 @@ bridge <- function( # TODO: fully document
   ind_nr <- 1
   for (ind_id in unique(indics$id)) {
     indic_predict <- model$indic_predict[ind_nr]
-    indic_aggregators <- model$indic_aggregators[ind_nr]
+    indic_aggregators <- model$indic_aggregators[[ind_nr]]
 
     indic_single <- indics %>%
       dplyr::filter(id == ind_id)
@@ -387,7 +254,7 @@ bridge <- function( # TODO: fully document
     }
 
     if (last_date >= final_forecasting_date) {
-      warning("The indicator variable ", ind_id, " has data until ", last_date, ". No forecast needed.")
+      rlang::warn("The indicator variable ", ind_id, " has data until ", last_date, ". No forecast needed.")
       next
     }
 
@@ -407,15 +274,96 @@ bridge <- function( # TODO: fully document
         forecast::auto.arima() %>% suppressMessages()
       indic_fcst <- forecast::forecast(indic_models[[ind_nr]], h = indic_horizon)
       indic_single <- suppressMessages(tsbox::ts_bind(indic_single, as.numeric(indic_fcst$mean)))
+    } else if (indic_predict == "ets") {
+      # fit an ETS model to the indicator variable and forecast
+      indic_models[[ind_nr]] <- indic_single %>% tsbox::ts_xts()  %>% suppressMessages() %>%
+        forecast::ets() %>% suppressMessages()
+      indic_fcst <- forecast::forecast(indic_models[[ind_nr]], h = indic_horizon)
+      indic_single <- suppressMessages(tsbox::ts_bind(indic_single, as.numeric(indic_fcst$mean)))
+    } else {
+      rlang::abort("The indicator prediction method ", indic_predict, " is not supported.")
     }
 
     # Aggregate the indicator to the target frequency
+    if (is.character(indic_aggregators[1])){
     if (indic_aggregators == "last") {
-      indic_single <- indic_single %>% tsbox::ts_frequency(to = target_freq$freq_label, aggregate = "last", na.rm=TRUE) %>%
+      indic_single <- indic_single %>%
+        tsbox::ts_na_omit() %>%
+        dplyr::mutate(period = lubridate::floor_date(time, rlang::syms(target_freq$freq_label))) %>%
+        dplyr::group_by(period) %>% # Group by the start of each month
+        dplyr::slice_tail(n = 1) %>%                           # Select the last row of each group
+        dplyr::ungroup() %>%
+        dplyr::mutate(time = period) %>%
+        dplyr::select(-period) %>%
         suppressMessages()
     } else if (indic_aggregators == "mean") {
       indic_single <- indic_single %>% tsbox::ts_frequency(to = target_freq$freq_label, aggregate = "mean", na.rm=TRUE) %>%
         suppressMessages()
+    } else if (indic_aggregators == "sum") {
+      indic_single <- indic_single %>% tsbox::ts_frequency(to = target_freq$freq_label, aggregate = "sum", na.rm=TRUE) %>%
+        suppressMessages()
+    } else if (indic_aggregators == "expalmon") {
+
+      # Set initial parameter guesses
+      initial_params <- c(rep(0.01, 3))
+
+      # Number of lags per low-frequency observation
+      K <- indic_freqs[indic_freqs$id == ind_id,]$observations
+
+      # Estimate parameters
+      result <- stats::optim(
+        par = initial_params,
+        fn = expalmon_objective,
+        y = model$target,
+        x = indic_single,
+        K = K,
+        target_freq_label = target_freq$freq_label,
+        control = list(trace = F, maxit = 5000)
+      )
+
+      weights <- exp_almon(result$par, K)
+      model$expalmon_weights[[ind_id]] <- weights
+
+      indic_single <- indic_single %>%
+        dplyr::mutate(period = lubridate::floor_date(time, rlang::syms(target_freq$freq_label))) %>%
+        dplyr::group_by(period) %>% # Group by the start of each month
+        dplyr::slice_tail(n = K) %>% # Select the last K obs of each group
+        # calculated weighted sum
+        dplyr::summarise(dplyr::across(dplyr::where(is.numeric), ~ sum(weights * ., na.rm=T))) %>%
+        dplyr::ungroup() %>%
+        dplyr::mutate(
+          time = period,
+          id = ind_id) %>%
+        dplyr::select(-period)
+
+    }
+      } else if (is.numeric(indic_aggregators)) {
+
+      # Number of lags per low-frequency observation
+      K <- indic_freqs[indic_freqs$id == ind_id,]$observations
+
+      if (length(indic_aggregators) != K) {
+        rlang::abort("The number of aggregation weights must be equal to the number of observations per low-frequency observation.")
+      } else if(sum(indic_aggregators) != 1) {
+        rlang::abort("The sum of the aggregation weights must be equal to 1.")
+      }
+
+      weights <- indic_aggregators
+      indic_single <- indic_single %>%
+        dplyr::mutate(period = lubridate::floor_date(time, rlang::syms(target_freq$freq_label))) %>%
+        dplyr::group_by(period) %>% # Group by the start of each month
+        dplyr::slice_tail(n = K) %>% # Select the last K obs of each group
+        # calculated weighted sum
+        dplyr::summarise(dplyr::across(dplyr::where(is.numeric), ~ sum(weights * ., na.rm=T))) %>%
+        dplyr::ungroup() %>%
+        dplyr::mutate(
+          time = period,
+          id = ind_id) %>%
+        dplyr::select(-period)
+
+    }
+    else {
+      rlang::abort("The indicator aggregation method ", indic_aggregators, " is not supported.")
     }
 
     indic_forecasts <- dplyr::bind_rows(indic_forecasts, indic_single %>% dplyr::mutate(id = ind_id))
@@ -443,18 +391,18 @@ bridge <- function( # TODO: fully document
   }
 
   # Add target lags if specified
-  target_lagged  <- model$target %>%
-    dplyr::mutate( id = target_name)
-  if (model$target_lags > 0) {
-    for (lag in 1:model$target_lags) {
-      lagged_target_tmp <- target %>%
-        dplyr::mutate( id = target_name) %>%
-        tsbox::ts_lag(by = lag) %>%
-        dplyr::mutate(id = paste0(id, "_lag", lag)) %>%
-        suppressMessages()
-      target_lagged <- dplyr::bind_rows(target_lagged, lagged_target_tmp)
-    }
-  }
+  # target_lagged  <- model$target %>%
+  #   dplyr::mutate( id = target_name)
+  # if (model$target_lags > 0) {
+  #   for (lag in 1:model$target_lags) {
+  #     lagged_target_tmp <- target %>%
+  #       dplyr::mutate( id = target_name) %>%
+  #       tsbox::ts_lag(by = lag) %>%
+  #       dplyr::mutate(id = paste0(id, "_lag", lag)) %>%
+  #       suppressMessages()
+  #     target_lagged <- dplyr::bind_rows(target_lagged, lagged_target_tmp)
+  #   }
+  # }
 
   # Full dataset
   full_data <- dplyr::bind_rows(
@@ -474,7 +422,7 @@ bridge <- function( # TODO: fully document
     dplyr::filter(time > as.Date(final_sample_date))
 
   # Estimate the model
-  formula <- as.formula(paste(
+  formula <- stats::as.formula(paste(
     target_name,
     " ~ ",
     paste(unique(estimation_set$id)[!unique(estimation_set$id) %in% c("time", target_name)],
@@ -483,10 +431,10 @@ bridge <- function( # TODO: fully document
   model$formula <- formula
 
   estimation_set <- tsbox::ts_wide(estimation_set) %>%
-    na.omit() %>% suppressMessages()
+    stats::na.omit() %>% suppressMessages()
 
   forecast_set <- tsbox::ts_wide(forecast_set) %>%
-    na.omit() %>% suppressMessages()
+    stats::na.omit() %>% suppressMessages()
 
   model$estimation_set <- estimation_set <- tsbox::ts_xts(tsbox::ts_long(estimation_set))
   model$forecast_set <- forecast_set <- tsbox::ts_xts(tsbox::ts_long(forecast_set))
@@ -516,8 +464,7 @@ bridge_model <- function(
     indic_lags,
     target_lags,
     h,
-    frequency_conversions,
-    ...)
+    frequency_conversions)
   {
   obj <- list(
     target = target,
@@ -531,7 +478,7 @@ bridge_model <- function(
     target_name = NULL,
     indic_name = NULL,
     indic_models = list(),
-    other_args = list(...)
+    expalmon_weights = list()
   )
 
   # Assign the S3 class
@@ -554,12 +501,12 @@ validate_bridge <- function(self) {
 
   # Validate @target as ts-boxable
   if (!tsbox::ts_boxable(self$target)) {
-    stop("@target must be a ts-boxable object, not ", class(self$target))
+    rlang::abort("@target must be a ts-boxable object, not ", class(self$target))
   }
 
   # Validate @indic as ts-boxable
   if (!tsbox::ts_boxable(self$indic)) {
-    stop("must be a ts-boxable object, not ", class(self$indic))
+    rlang::abort("must be a ts-boxable object, not ", class(self$indic))
   }
 
   # Get frequency of the target and indic variables
@@ -568,23 +515,23 @@ validate_bridge <- function(self) {
 
   # Validate @target to be a single time series
   if (nrow(target_summary) > 1) {
-    stop("@target must be a single time series.")
+    rlang::abort("@target must be a single time series.")
   }
 
   # Validate target frequency: Yearly or higher
   target_freq <- round(target_summary$freq)
-  if (!target_freq %in% c(1, 4, 12, 35, 48, 52, 53)) {
-    stop("@target frequency must be weekly, monthly, quarterly or yearly.")
+  if (!target_freq %in% c(1, 4, 12)) {
+    rlang::abort("@target frequency must be  monthly, quarterly or yearly.")
   }
 
   # Validate frequency of each indicator in the list: Same or higher than target
   for (i in 1:nrow(indic_summaries)) {
     indic_freq <- round(indic_summaries[i,]$freq)
     if (!indic_freq %in% c(1, 4, 12, 35, 48, 52, 53, 240, 365)) {
-      stop(indic_summaries[i,]$id, " frequency in @indic must be daily, weekly, monthly, quarterly or yearly.")
+      rlang::abort(indic_summaries[i,]$id, " frequency in @indic must be daily, weekly, monthly, quarterly or yearly.")
     }
     else if (round(indic_freq) < round(target_freq)) {
-      stop(indic_summaries[i,]$id, " frequency in @indic must be the same as or higher than the @target frequency.")
+      rlang::abort(indic_summaries[i,]$id, " frequency in @indic must be the same as or higher than the @target frequency.")
     }
   }
 
@@ -592,7 +539,7 @@ validate_bridge <- function(self) {
   # Validate last observation of each indicator in the list: Same date or later than target
   for (i in 1:nrow(indic_summaries)) {
     if (indic_summaries[i,]$end < target_summary$end) {
-      stop("Last observation of ", indic_summaries[i,]$id, " in @indic must be the same date or later than the last observation of @target.")
+      rlang::abort("Last observation of ", indic_summaries[i,]$id, " in @indic must be the same date or later than the last observation of @target.")
     }
   }
 
@@ -602,7 +549,7 @@ validate_bridge <- function(self) {
   if (!is.null(self$indic_predict)) {
     len_indic_predict <- length(self$indic_predict)
     if (len_indic_predict != num_indic_series && len_indic_predict != 1) {
-      stop("@indic_predict must have length 1 or the same length as the number of time series in @indic.")
+      rlang::abort("@indic_predict must have length 1 or the same length as the number of time series in @indic.")
     }
   }
 
@@ -610,19 +557,19 @@ validate_bridge <- function(self) {
   if (!is.null(self$indic_aggregators)) {
     len_indic_aggregators <- length(self$indic_aggregators)
     if (len_indic_aggregators != num_indic_series && len_indic_aggregators != 1) {
-      stop("@indic_aggregators must have length 1 or the same length as the number of time series in @indic.")
+      rlang::abort("@indic_aggregators must have length 1 or the same length as the number of time series in @indic.")
     }
   }
 
   # Validate @indic_lags and @target_lags
   if (self$indic_lags < 0) {
-    stop("@indic_lags must be a non-negative integer.")
+    rlang::abort("@indic_lags must be a non-negative integer.")
   }
   else if (self$target_lags < 0) {
-    stop("@target_lags must be a non-negative integer.")
+    rlang::abort("@target_lags must be a non-negative integer.")
   }
   else if (self$h < 1) {
-    stop("@h must be a non-negative integer.")
+    rlang::abort("@h must be a non-negative integer.")
   }
 
   # Default frequency conversions
@@ -631,13 +578,13 @@ validate_bridge <- function(self) {
   # Check if fewer than 4 values are supplied and ensure they are named
   if (!identical(as.numeric(self$frequency_conversions), as.numeric(default_frequency_conversions))) {
     if (length(self$frequency_conversions) < 4 && is.null(names(self$frequency_conversions))) {
-      stop("Custom frequency_conversions must be named and have at least one valid name in 'dpw', 'wpm', 'mpq', or 'qpy'.")
+      rlang::abort("Custom frequency_conversions must be named and have at least one valid name in 'dpw', 'wpm', 'mpq', or 'qpy'.")
     }
 
     # Check if all names are valid
     invalid_names <- setdiff(names(self$frequency_conversions), names(default_frequency_conversions))
     if (length(invalid_names) > 0) {
-      stop(paste(
+      rlang::abort(paste(
         "Invalid names in frequency_conversions:",
         paste(invalid_names, collapse = ", "),
         "\nValid names are 'dpw', 'wpm', 'mpq', and 'qpy'."
@@ -649,19 +596,19 @@ validate_bridge <- function(self) {
     }
     # Check dpw is less than or equal to 7
     if (self$frequency_conversions["dpw"] > 7) {
-      stop("dpw must be less than or equal to 7.")
+      rlang::abort("dpw must be less than or equal to 7.")
     }
     # check wpm is less than or equal to 5
     if (self$frequency_conversions["wpm"] > 5) {
-      stop("wpm must be less than or equal to 5.")
+      rlang::abort("wpm must be less than or equal to 5.")
     }
     # check mpq is less than or equal to 3
     if (self$frequency_conversions["mpq"] > 3) {
-      stop("mpq must be less than or equal to 3.")
+      rlang::abort("mpq must be less than or equal to 3.")
     }
     # check qpy is less than or equal to 4
     if (self$frequency_conversions["qpy"] > 4) {
-      stop("qpy must be less than or equal to 4.")
+      rlang::abort("qpy must be less than or equal to 4.")
     }
 
   }

@@ -9,3 +9,5 @@ renv.lock
 *.psd
 bridge.png
 bridge2.png
+docs
+inst/doc

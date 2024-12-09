@@ -3,12 +3,13 @@
 #' `browseVignettes(package = "bridgr")`
 #' @keywords internal
 "_PACKAGE"
-utils::globalVariables(c(".", "id", "ind_freq", "month", "week", "n_rows", "quarter", "time", "year", "n", "values"))
+utils::globalVariables(c(
+  ".", "id", "ind_freq", "month", "week", "quarter", "time", "year",
+  "n", "values", "frquency", "period", "observations", "targ_freq"))
 
 #' @importFrom magrittr %>%
 #' @importFrom rlang %||%
 #' @importFrom lubridate %m+% %m-%
-#' @importFrom stats as.formula frequency lm na.omit
 #' @importFrom utils tail capture.output
 #' @importFrom generics forecast
 NULL

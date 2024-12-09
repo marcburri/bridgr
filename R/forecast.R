@@ -18,9 +18,10 @@ forecast.bridge <- function(object, xreg = NULL, ...) {
   return(fcst)
 }
 
+
+
+# Leave the code below to eventually go back to S7:
 # forecast.bridge <- S7::new_external_generic("generics", "forecast", "bridge_model")
-
-
 #' Forecasting from a `bridge_model` class
 #'
 #' This function is used to forecast the target variable using the fitted `bridge_model`.

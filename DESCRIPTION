@@ -1,7 +1,7 @@
 Package: bridgr
 Type: Package
 Title: Bridging Time Series Frequencies for Nowcasting
-Version: 0.1.0
+Version: 0.1.0.9000
 Authors@R: c(
     person("Marc", "Burri", ,"marc.burri91@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0001-8974-9090"))
@@ -29,6 +29,8 @@ Imports:
     S7,
     forecast
 Suggests:
+    knitr,
+    rmarkdown,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
 Depends: 
@@ -41,5 +43,6 @@ Collate:
     'summary.R'
     'utils.R'
     'zzz.R'
-URL: https://github.com/marcburri/bridgr
+URL: https://github.com/marcburri/bridgr, https://marcburri.github.io/bridgr/
 BugReports: https://github.com/marcburri/bridgr/issues
+VignetteBuilder: knitr

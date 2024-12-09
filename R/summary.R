@@ -2,6 +2,7 @@
 #'
 #' This method is summarizes the bridge model.
 #' @param object An object of class `bridge_model` obtained from [bridgr::bridge()].
+#' @param ... Additional arguments to be passed to the summary function.
 #' @keywords internal
 #' @export
 summary.bridge <- function(object, ...) {
@@ -20,6 +21,7 @@ summary.bridge <- function(object, ...) {
   cat("-----------------------------------\n")
   cat("Single indicator models:\n")
   cat("-----------------------------------\n")
+  expa <- 1
   for (i in 1:length(object$indic_name)) {
     cat("Series: ", object$indic_name[i], "\n")
     if (object$indic_predict[i] == "mean") {
@@ -39,6 +41,13 @@ summary.bridge <- function(object, ...) {
       cat("Using mean over values in corresponding periods.\n")
     } else if (object$indic_aggregators[i] == "last") {
       cat("Using last values of corresponding periods.\n")
+    } else if (object$indic_aggregators[i] == "sum") {
+      cat("Using sum over values in corresponding periods.\n")
+    } else if (object$indic_aggregators[i] == "expalmon") {
+      cat("Estimating exponential almon polynomial with the following weights: \n")
+      cat(paste0(round(object$expalmon_weights[[expa]],3)))
+      cat("\n")
+      expa <- expa + 1
     }
     cat("-----------------------------------\n")
   }
@@ -48,10 +57,8 @@ summary.bridge <- function(object, ...) {
 
 
 
-
+# Leave the code below to eventually go back to S7:
 #summary.bridge <- S7::new_external_generic("base", "summary", "bridge_model")
-
-
 #' Summarize a `bridge_model` class object
 #'
 #' This method is summarizes the bridge model.
