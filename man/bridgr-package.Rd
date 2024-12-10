@@ -4,7 +4,7 @@
 \name{bridgr-package}
 \alias{bridgr}
 \alias{bridgr-package}
-\title{bridgr: Bridging Time Series Frequencies for Nowcasting}
+\title{bridgr: Bridging Data Frequencies for Timely Economic Forecasts}
 \description{
 To learn more about bridger, start with the vignettes:
 \code{browseVignettes(package = "bridgr")}
@@ -19,7 +19,7 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Marc Burri \email{marc.burri91@gmail.com} (\href{https://orcid.org/0000-0001-8974-9090}{ORCID})
+\strong{Maintainer}: Marc Burri \email{marc.burri91@gmail.com} (\href{https://orcid.org/0000-0001-8974-9090}{ORCID}) [copyright holder]
 
 }
 \keyword{internal}

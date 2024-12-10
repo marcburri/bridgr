@@ -7,9 +7,6 @@
 \alias{wea}
 \alias{fcurve}
 \title{Swiss Economic Indicators}
-\format{
-An object of class \code{tbl_df} (inherits from \code{tbl}, \code{data.frame}) with 76 rows and 2 columns.
-}
 \usage{
 gdp
 
@@ -38,7 +35,7 @@ A collection of datasets containing economic indicators for Switzerland.
 \item Source: \href{https://datenservice.kof.ethz.ch/}{KOF Swiss Economic Institute}
 \item Timeframe: January 2004 - December 2022
 \item Frequency: Monthly
-\item Format: A tibble with 228 rows and 2 variables:
+\item Format: A tibble with monthly observations and 2 variables:
 \itemize{
 \item \code{time}: Date, the month and year of the observation.
 \item \code{values}: Numeric, the value of the KOF barometer.
@@ -84,6 +81,6 @@ A collection of datasets containing economic indicators for Switzerland.
 # Load and plot `baro`
 data(baro)
 library(tsbox)
-ts_plot(baro)
+suppressMessages(ts_plot(baro))
 }
 \keyword{datasets}

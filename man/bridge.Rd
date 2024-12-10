@@ -46,8 +46,7 @@ Defaults to 1 (next period).}
 time frequencies. Defaults to \code{c("dpw" = 5, "wpm" = 4, "mpq" = 3, "qpy" = 4)} for days per week,
 weeks per month, months per quarter, and quarters per year, respectively.}
 
-\item{...}{Additional arguments for future extension, including parameters for forecasting methods
-from the \code{forecast} package.}
+\item{...}{Additional arguments for future extension, not used at the moment.}
 }
 \value{
 An object of class \code{"bridge"} containing:
@@ -104,19 +103,20 @@ such as level, trend, and seasonality, making it suitable for time series with t
 }
 }
 \examples{
-\dontrun{
-# Example usage
-target_series <- tsbox::ts_tbl(data.frame(
-  time = seq(as.Date("2020-01-01"), as.Date("2023-01-01"), by = "quarter"),
-  value = rnorm(13)
-))
+library(bridgr)
 
-indic_series <- tsbox::ts_tbl(data.frame(
+# Example usage
+target_series <- suppressMessages(tsbox::ts_tbl(data.frame(
+  time = seq(as.Date("2020-01-01"), as.Date("2022-12-01"), by = "quarter"),
+  value = rnorm(12)
+)))
+
+indic_series <- suppressMessages(tsbox::ts_tbl(data.frame(
   time = seq(as.Date("2020-01-01"), as.Date("2023-01-01"), by = "month"),
   value = rnorm(37)
-))
+)))
 
-model <- bridge(
+bridge_model <- suppressMessages(bridge(
   target = target_series,
   indic = indic_series,
   indic_predict = "mean",
@@ -124,8 +124,7 @@ model <- bridge(
   indic_lags = 2,
   target_lags = 1,
   h = 1
-)
-}
+))
 
 }
 \references{

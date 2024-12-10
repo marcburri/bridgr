@@ -1,19 +1,22 @@
 Package: bridgr
 Type: Package
-Title: Bridging Time Series Frequencies for Nowcasting
+Title: Bridging Data Frequencies for Timely Economic Forecasts
 Version: 0.1.0.9000
 Authors@R: c(
-    person("Marc", "Burri", ,"marc.burri91@gmail.com", role = c("aut", "cre"),
+    person("Marc", "Burri", ,"marc.burri91@gmail.com", role = c("aut", "cre", "cph"),
            comment = c(ORCID = "0000-0001-8974-9090"))
   )
 Maintainer: Marc Burri <marc.burri91@gmail.com>
-Description: The bridgr package provides a comprehensive framework for working 
-    with mixed-frequency time series data, empowering analysts to bridge the gap
-    between high- and low-frequency indicators for nowcasting and 
-    short-term forecasting. Designed with flexibility and integration in mind, 
-    bridgr facilitates seamless application alongside popular R packages such 
-    as forecast, while introducing advanced modeling capabilities tailored to 
-    the unique challenges of mixed-frequency analysis.
+Description: 
+    Provides tools for implementing bridge models, which are used to nowcast 
+    and forecast macroeconomic variables by linking high-frequency indicator 
+    variables (e.g., monthly data) to low-frequency target variables (e.g., quarterly GDP).
+    Forecasting and aggregation of the indicator variables to match the target frequency are simplified,
+    enabling timely predictions before official data releases are available. 
+    For more information about bridge models, see 
+    Baffigi, A., Golinelli, R., \& Parigi, G. (2004) <doi:10.1016/S0169-2070(03)00067-0>, 
+    Burri (2023) <https://www5.unine.ch/RePEc/ftp/irn/pdfs/WP23-02.pdf> or 
+    Schumacher (2016) <doi:10.1016/j.ijforecast.2015.07.004>. 
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -26,7 +29,6 @@ Imports:
     generics,
     tsbox,
     lubridate,
-    S7,
     forecast
 Suggests:
     knitr,
@@ -42,7 +44,6 @@ Collate:
     'forecast.R'
     'summary.R'
     'utils.R'
-    'zzz.R'
 URL: https://github.com/marcburri/bridgr, https://marcburri.github.io/bridgr/
 BugReports: https://github.com/marcburri/bridgr/issues
 VignetteBuilder: knitr

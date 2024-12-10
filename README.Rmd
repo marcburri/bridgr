@@ -22,12 +22,17 @@ knitr::opts_chunk$set(
 <!-- badges: end -->
 
 
-`bridgr` is an R package designed to simplify the implementation and evaluation of bridge models, which are useful in nowcasting and forecasting frameworks. 
+`bridgr` is designed to simplify the implementation and evaluation of bridge models, which are useful for nowcasting (predicting the present or near-term) and forecasting macroeconomic variables like GDP. 
 
-The package is still under development and is not yet available on CRAN. Therefore, the package is not yet stable and may contain bugs.
-
+Bridge models are statistical tools that link high-frequency indicators (e.g., monthly industrial production) to low-frequency target variables (e.g., quarterly GDP) by forecasting and aggregating the indicators to match the target's frequency. They enable timely predictions before the official release of low-frequency data, making them essential for policymakers who need early insights for decision-making.
 
 ## Installation
+
+From CRAN:
+
+``` r
+install.packages("bridgr")
+```
 
 You can install the development version of `bridgr` like so:
 

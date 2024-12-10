@@ -1,5 +1,6 @@
-# Standardize the time series data frame
-# Value column is renamed to `values`
+#' Standardize the time series data frame
+#' Value column is renamed to `values`
+#' @noRd
 standardize_ts_tbl <- function(ts_data) {
   tsbox::ts_tbl(ts_data) %>%
     dplyr::rename(values = dplyr::any_of(c("value", "values"))) %>%
@@ -7,7 +8,8 @@ standardize_ts_tbl <- function(ts_data) {
 }
 
 
-# Define a custom function for frequency labeling
+#' Define a custom function for frequency labeling
+#' @noRd
 label_frequency <- function(frequency) {
   dplyr::case_when(
     round(frequency) == 365 ~ "day",
@@ -20,7 +22,8 @@ label_frequency <- function(frequency) {
   )
 }
 
-# Helper function for generating starts and forecasting date
+#' Helper function for generating starts and forecasting date
+#' @noRd
 get_final_date <- function(freq, target_start, target_end, h) {
   if (freq == 1) {
     target_start <- lubridate::year(target_start)
@@ -48,6 +51,8 @@ get_final_date <- function(freq, target_start, target_end, h) {
   list(target_start = target_start, final_date = final_date)
 }
 
+#' Exponential almon polynomial
+#' @noRd
 exp_almon <- function(p, K) {
   # p: vector of parameters (length corresponds to the order of the polynomial + 1)
   # K: number of lags
@@ -68,7 +73,8 @@ exp_almon <- function(p, K) {
   return(weights)
 }
 
-# Define the objective function for MIDAS regression
+#' Define the objective function for expalmon regression
+#' @noRd
 expalmon_objective <- function(p, y, x, K, target_freq_label) {
   target_name <- y$id[1]
   indic_name <- x$id[1]

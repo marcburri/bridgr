@@ -78,19 +78,20 @@
 #' - **Custom weights**: Allows the user to specify custom weights for aggregating the indicator variables.
 #'
 #' @examples
-#' \dontrun{
-#' # Example usage
-#' target_series <- tsbox::ts_tbl(data.frame(
-#'   time = seq(as.Date("2020-01-01"), as.Date("2023-01-01"), by = "quarter"),
-#'   value = rnorm(13)
-#' ))
+#' library(bridgr)
 #'
-#' indic_series <- tsbox::ts_tbl(data.frame(
+#' # Example usage
+#' target_series <- suppressMessages(tsbox::ts_tbl(data.frame(
+#'   time = seq(as.Date("2020-01-01"), as.Date("2022-12-01"), by = "quarter"),
+#'   value = rnorm(12)
+#' )))
+#'
+#' indic_series <- suppressMessages(tsbox::ts_tbl(data.frame(
 #'   time = seq(as.Date("2020-01-01"), as.Date("2023-01-01"), by = "month"),
 #'   value = rnorm(37)
-#' ))
+#' )))
 #'
-#' model <- bridge(
+#' bridge_model <- suppressMessages(bridge(
 #'   target = target_series,
 #'   indic = indic_series,
 #'   indic_predict = "mean",
@@ -98,8 +99,7 @@
 #'   indic_lags = 2,
 #'   target_lags = 1,
 #'   h = 1
-#' )
-#' }
+#' ))
 #'
 #' @references
 #' - Baffigi, A., Golinelli, R., & Parigi, G. (2004). Bridge models to forecast the euro area GDP. International Journal of Forecasting, 20(3), 447–460. \url{https://doi.org/10.1016/S0169-2070(03)00067-0}

@@ -12,7 +12,7 @@
 #'   - Source: [KOF Swiss Economic Institute](https://datenservice.kof.ethz.ch/)
 #'   - Timeframe: January 2004 - December 2022
 #'   - Frequency: Monthly
-#'   - Format: A tibble with 228 rows and 2 variables:
+#'   - Format: A tibble with monthly observations and 2 variables:
 #'     - `time`: Date, the month and year of the observation.
 #'     - `values`: Numeric, the value of the KOF barometer.
 #'
@@ -44,7 +44,8 @@
 #' # Load and plot `baro`
 #' data(baro)
 #' library(tsbox)
-#' ts_plot(baro)
+#' suppressMessages(ts_plot(baro))
+#' @format NULL
 "gdp"
 
 #' @rdname gdp
