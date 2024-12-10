@@ -55,10 +55,6 @@
     </div>
 
     <div class="section level2">
-    <h2 id="format">Format<a class="anchor" aria-label="anchor" href="#format"></a></h2>
-    <p>An object of class <code>tbl_df</code> (inherits from <code>tbl</code>, <code>data.frame</code>) with 76 rows and 2 columns.</p>
-    </div>
-    <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
 
 <ul><li><p><code>baro</code>: The KOF barometer, a monthly business cycle indicator.</p></li>
@@ -73,7 +69,7 @@
 <ul><li><p><code>baro</code>:</p><ul><li><p>Source: <a href="https://datenservice.kof.ethz.ch/" class="external-link">KOF Swiss Economic Institute</a></p></li>
 <li><p>Timeframe: January 2004 - December 2022</p></li>
 <li><p>Frequency: Monthly</p></li>
-<li><p>Format: A tibble with 228 rows and 2 variables:</p><ul><li><p><code>time</code>: Date, the month and year of the observation.</p></li>
+<li><p>Format: A tibble with monthly observations and 2 variables:</p><ul><li><p><code>time</code>: Date, the month and year of the observation.</p></li>
 <li><p><code>values</code>: Numeric, the value of the KOF barometer.</p></li>
 </ul></li>
 </ul></li>
@@ -105,8 +101,7 @@
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Load and plot `baro`</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">baro</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://docs.ropensci.org/tsbox/" class="external-link">tsbox</a></span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://docs.ropensci.org/tsbox/reference/ts_plot.html" class="external-link">ts_plot</a></span><span class="op">(</span><span class="va">baro</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> [value]: 'values' </span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">suppressMessages</a></span><span class="op">(</span><span class="fu"><a href="https://docs.ropensci.org/tsbox/reference/ts_plot.html" class="external-link">ts_plot</a></span><span class="op">(</span><span class="va">baro</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="gdp-1.png" alt="" width="700" height="433"></span>
 </code></pre></div>
     </div>
