@@ -2,7 +2,7 @@
 title: "Get started with bridgr"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{bridgr}
+  %\VignetteIndexEntry{Get started with bridgr}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -14,6 +14,144 @@ knitr::opts_chunk$set(
 )
 ```
 
-```{r setup}
+# What Are Bridge Models?
+
+Bridge models are statistical tools designed to address the mismatch in frequency between economic indicators and a target variable, such as GDP. For instance, GDP is typically reported quarterly, while many relevant indicators (e.g., industrial production, survey data) are available monthly or even daily. Bridge models "bridge" this gap by converting high-frequency indicators into a form that aligns with the target variable's frequency.
+
+These models are widely used in nowcasting and short-term forecasting. They are particularly useful when:
+
+ - Data for the target variable is reported with a lag (e.g., GDP is often released with a delay).
+ - High-frequency indicators provide early signals about the state of the economy.
+ 
+By leveraging real-time data, bridge models can improve forecast accuracy and provide timely insights.
+
+# The Bridge Model Framework
+
+Bridge models exploit the relationship between a target variable, such as quarterly GDP (\( y_t \)), and multiple high-frequency indicators (\( x_{t}^{(i)} \)), which are observed monthly or at even higher frequencies. The primary challenge is to harmonize these different frequencies while preserving the information embedded in the indicators.
+
+## Aggregation of Indicators
+
+To align high-frequency indicators (\( x_{t}^{(i)} \)) with the target variable's frequency (\( y_t \)), a transformation or aggregation process is applied. Let \( K \) represent the number of higher-frequency periods within a single lower-frequency period (e.g., \( K=3 \) for monthly data aggregated to a quarter). The aggregation step can be represented as:
+
+\[
+\bar{x}_{t}^{(i)} =  \sum_{k=0}^{K-1} \omega (k) L^{k/K} x_{t}^{(i)}
+\]
+
+where:
+
+ - The lag operator is defined as \( L^{1/3} x_{t}^{(i)} = x_{t-1/3}^{(i)} \)
+
+ - \( x_{t}^{(i)} \): The value of the indicator \( i \) of period \( t \).
+ 
+ - \( \bar{x}_{t}^{(i)} \): The aggregated indicator for period \( t \).
+ 
+ - \( \omega (k) \): The weight assigned to the k-th period of the higher frequency data.
+
+In many applications, \( \omega (k) \) is simply an **average** over the values in the higher frequency periods. Alternative aggregation techniques include taking the **last observation** (e.g., the last month of the quarter) or applying **weighted averages**.
+
+## The Model Specification
+
+Once the indicators are aligned with the target frequency, the bridge model is typically specified as a linear regression:
+
+\[
+y_t = \beta_0 + \sum_{ i } \sum_{p_i=0}^{P^{(i)}} \beta_{p_i} L^p \bar{x}_{t}^{(i)} + \varepsilon_t
+\]
+
+where:
+
+ - \( P^{(i)} \): The lags to include for indicator \( i \).
+ 
+ - \( \beta_{p_i} \): Coefficients capturing the relationship between the indicators and the target variable.
+ 
+ - \( \varepsilon_t \): The error term.
+
+
+Bridge models also handle cases where some high-frequency indicators are not fully observed at the time of forecasting. In such cases, missing observations for the current period are imputed or forecast using time series models (e.g., ARIMA, ETS). This allows predictions even when recent observations are missing. This combination of aggregation and forecasting ensures that bridge models are versatile tools for dealing with incomplete data scenarios.
+
+
+# A Quick Example
+
+The `bridgr` package simplifies the construction and estimation of bridge models. This vignette demonstrates how to use the package with a quarterly GDP series (gdp) and a monthly economic indicator (baro).
+
+## Loading the Data
+For this example, the two follwoing Swiss datasets are used:
+
+ - `gdp`: Quarterly GDP data.
+ - `baro`: Monthly economic indicator data.
+
+```{r setup, message=FALSE, warning=FALSE, fig.pos="center", fig.alt = "Visualizing the data"}
+# Load libraries
 library(bridgr)
+library(tsbox)
+
+# Example data
+data("gdp")  # Quarterly GDP data
+data("baro") # Monthly economic indicator
+
+gdp <- tsbox::ts_pc(gdp) # Calculate growth rate
+
+# Visualize the data
+ts_ggplot(
+  ts_scale(ts_c(baro, gdp)),
+  title = "Quarterly gdp and monthly economic indicator",
+  subtitle = "Scaled to mean 0 and variance 1"
+  ) +
+  theme_tsbox()
+
 ```
+
+By visualizing the data,it becomes obvious that the monthly economic indicator (baro) is available at a higher frequency than the quarterly GDP data. Moreover, there is a significant correlation. 
+
+## Estimating the Bridge Model
+
+```{r estimating, message=T, fig.pos="center"}
+# Estimate the bridge model
+bridge_model <- bridge(
+  target = gdp, 
+  indic = baro , 
+  indic_lags = 1, 
+  target_lags=1, 
+  h=2 
+)
+
+```
+
+
+Because by calculating the GDP growth rate, there is one observation less at the beginning of the GDP series. 
+The `bridge`function detects mismatched starting dates and aligns them to the earliest common date. The model is then estimated using the specified lags for the target and indicator variables. The `h` argument specifies the number of periods to forecast the lower frequency variable. The `bridge` model returns both the dataset the main model was estimated as well as the forecasted dataset for the indicator variables.
+
+```{r datasets, message=T, fig.pos="center"}
+# Inspect the datasets
+tail(bridge_model$estimation_set)
+head(bridge_model$forecast_set)
+
+```
+
+## Forecasting
+```{r forecasting, message=F, fig.pos="center", fig.alt = "Forecasted GDP"}
+# Forecasting using the bridge model
+fcst <- forecast(bridge_model)
+
+forecast <- data.frame(
+  "time" = fcst$forecast_set$time,
+  "forecast" = as.numeric(fcst$mean)
+)
+
+# Visualize the forecast
+ts_ggplot(
+  ts_span(ts_tbl(ts_c(gdp, forecast)), start = 2017),
+  title = "Forecasted GDP",
+  subtitle = "Bridge model forecast"
+) +
+  theme_tsbox()
+  
+```
+
+
+## Summary
+```{r summary, message=T, fig.pos="center"}
+# Summarize the information in the bridge model
+summary(bridge_model)
+  
+```
+

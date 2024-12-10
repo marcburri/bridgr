@@ -1,7 +1,7 @@
 url: https://marcburri.github.io/bridgr/
 template:
   bootstrap: 5
-  math-rendering: mathjax
+  math-rendering: katex
   light-switch: true
 
 authors:
