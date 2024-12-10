@@ -129,8 +129,11 @@ bridge_model <- suppressMessages(bridge(
 }
 \references{
 \itemize{
-\item Baffigi, A., Golinelli, R., & Parigi, G. (2004). Bridge models to forecast the euro area GDP. International Journal of Forecasting, 20(3), 447–460. \url{https://doi.org/10.1016/S0169-2070(03)00067-0}
+\item Baffigi, A., Golinelli, R., & Parigi, G. (2004). Bridge models to forecast the euro area GDP. International Journal of Forecasting, 20(3), 447–460. \doi{doi:10.1016/S0169-2070(03)00067-0}
 \item Burri, M. (2023). Do daily lead texts help nowcasting GDP growth? IRENE Working Papers 23-02. \url{https://www5.unine.ch/RePEc/ftp/irn/pdfs/WP23-02.pdf}
-\item Schumacher, C. (2016). A comparison of MIDAS and bridge equations. International Journal of Forecasting, 32(2), 257–270. \url{https://doi.org/10.1016/j.ijforecast.2015.07.004}
+\item Schumacher, C. (2016). A comparison of MIDAS and bridge equations. International Journal of Forecasting, 32(2), 257–270. \doi{doi:10.1016/j.ijforecast.2015.07.004}
 }
+}
+\author{
+Marc Burri
 }
