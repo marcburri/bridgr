@@ -1,4 +1,4 @@
-# bridgr (development version)
+# bridgr 0.1.0.9000
 
 * Initial CRAN submission:
   - Added `gdp`,`baro`, `wea` and `fcurve` datasets.
