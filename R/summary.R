@@ -1,8 +1,8 @@
-#' Summarize a `bridge_model` class object
+#' Summarize a `bridge`  object
 #'
 #' This method is summarizes the bridge model.
-#' @param object An object of class `bridge_model` obtained from [bridgr::bridge()].
-#' @param ... Additional arguments to be passed to the summary function.
+#' @param object A `bridge` object obtained from [bridgr::bridge()].
+#' @param ... Additional arguments to be passed to the summary function. Ignored at the moment.
 #' @export
 summary.bridge <- function(object, ...) {
 

@@ -2,12 +2,12 @@
 % Please edit documentation in R/forecast.R
 \name{forecast.bridge}
 \alias{forecast.bridge}
-\title{Forecasting from a \code{bridge_model} class}
+\title{Forecasting from a \code{bridge} object}
 \usage{
 \method{forecast}{bridge}(object, xreg = NULL, ...)
 }
 \arguments{
-\item{object}{An object of class \code{bridge_model} object obtained from \code{\link[=bridge]{bridge()}}.}
+\item{object}{A \code{bridge} object obtained from \code{\link[=bridge]{bridge()}}.}
 
 \item{xreg}{A \code{\link[tsbox:ts_boxable]{tsbox::ts_boxable()}} series of external regressors. If not
 supplied by the user, the forecast set calculated by \code{\link[=bridge]{bridge()}}
@@ -16,5 +16,5 @@ will be used. This is useful for made up scenarios.}
 \item{...}{Additional arguments to be passed to the forecast function.}
 }
 \description{
-This function is used to forecast the target variable using the fitted \code{bridge_model}.
+This function is used to forecast the target variable using the fitted \code{bridge} model.
 }

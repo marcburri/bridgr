@@ -2,7 +2,7 @@
 % Please edit documentation in R/bridge.R
 \name{bridge}
 \alias{bridge}
-\title{Estimate Bridge Model}
+\title{Estimate a Bridge Model}
 \usage{
 bridge(
   target,
@@ -18,61 +18,120 @@ bridge(
 }
 \arguments{
 \item{target}{A time series or data frame representing the target variable (dependent variable).
-It should be in a format compatible with the \href{https://docs.ropensci.org/tsbox/}{tsbox} package
-(See \code{\link[tsbox:ts_boxable]{tsbox::ts_boxable()}}).}
+Must be in a format compatible with the \href{https://docs.ropensci.org/tsbox/}{tsbox} package
+(see \code{\link[tsbox:ts_boxable]{tsbox::ts_boxable()}}).}
 
-\item{indic}{A time series, listof time series, or data frame containing the indicator variables
-(independent variables). It must be in a format compatible with the \href{https://docs.ropensci.org/tsbox/}{tsbox}
-package (See \code{\link[tsbox:ts_boxable]{tsbox::ts_boxable()}}).}
+\item{indic}{A time series, list of time series, or data frame containing the indicator variables
+(independent variables). Must be in a format compatible with the \href{https://docs.ropensci.org/tsbox/}{tsbox} package
+(see \code{\link[tsbox:ts_boxable]{tsbox::ts_boxable()}}).}
 
-\item{indic_predict}{A character string or vector specifying the prediction method(s) for the
-indicator variables. Defaults to \code{"mean"}. Future updates will add support for methods
-from the \code{forecast} package.}
+\item{indic_predict}{A character string or vector specifying the forecasting method(s) for the
+indicator variables. Supported methods include \code{"mean"}, \code{"last"}, \code{"auto.arima"}, and \code{"ets"}.
+Defaults to \code{"auto.arima"}.}
 
-\item{indic_aggregators}{A character string or vector specifying the aggregation method(s)
-for aligning indicator variables with the target variable. Defaults to \code{"mean"}.}
+\item{indic_aggregators}{A character string or vector specifying the aggregation method(s) for aligning
+indicator variables with the target variable. Supported methods include \code{"mean"}, \code{"last"}, \code{"expalmon"}, \code{"sum"}
+or o custom vector of weights with the same length as the frequency ratio. Defaults to \code{"mean"}.}
 
 \item{indic_lags}{An integer or vector of integers specifying the number of lags to include
-for the indicator variables. Defaults to \code{0} (no lags).}
+for the indicator variables. Defaults to 0 (no lags).}
 
 \item{target_lags}{An integer specifying the number of lags to include for the target variable.
-Defaults to \code{0} (no lags).}
+Defaults to 0 (no lags).}
 
-\item{h}{An integer specifying the forecast horizon (in terms of the target variable's frequency).
-Defaults to \code{1} (next period).}
+\item{h}{An integer specifying the forecast horizon in terms of the target variable's frequency.
+Defaults to 1 (next period).}
 
-\item{frequency_conversions}{A named vector specifying the conversion factors for different
-time frequencies (e.g., days per week, weeks per month).
-Defaults to \code{c("dpw" = 5, "wpm" = 4, "mpq" = 3, "qpy" = 4)}.}
+\item{frequency_conversions}{A named vector specifying the conversion factors between different
+time frequencies. Defaults to \code{c("dpw" = 5, "wpm" = 4, "mpq" = 3, "qpy" = 4)} for days per week,
+weeks per month, months per quarter, and quarters per year, respectively.}
 
-\item{...}{Additional arguments to be passed to the model, such as parameters for forecasting
-methods from the \code{forecast} package (to be implemented in future versions).}
+\item{...}{Additional arguments for future extension, including parameters for forecasting methods
+from the \code{forecast} package.}
 }
 \value{
-An object of class \code{model}, containing the following elements:
+An object of class \code{"bridge"} containing:
 \itemize{
-\item \code{target}: The standardized target variable.
-\item \code{indic}: The standardized indicator variables.
-\item \code{indic_predict}: The prediction methods applied to the indicators.
-\item \code{indic_aggregators}: The aggregation methods used for indicators.
-\item \code{final_forecasting_date}: The calculated end date for forecasting.
-\item Additional internal parameters and summary statistics.
+\item \strong{target}: The standardized target variable.
+\item \strong{indic}: The standardized indicator variables.
+\item \strong{indic_predict}: The prediction methods applied to the indicators.
+\item \strong{indic_aggregators}: The aggregation methods used for the indicators.
+\item \strong{estimation_set}: A data frame containing the aligned and processed time series
+used to estimate the bridge model. This set includes the target variable and all
+indicator variables transformed to match the target variable's frequency and alignment.
+\item \strong{forecast_set}: A data frame containing the aligned and processed time series
+used for forecasting. This includes the forecasts for the indicator variables as
+inputs for the h-step ahead prediction of the target variable.
+\item \strong{model}: The fitted bridge model object for the target variable.
+\item \strong{indic_models}: A list of models used to forecast the indicator variables. Each
+element in this list corresponds to the forecasting method (e.g., \code{auto.arima} or \code{ets})
+applied to an individual indicator variable.
+\item \strong{Additional components}: Internal parameters, summary statistics, and alignment metadata.
 }
 }
 \description{
-This function estimates a bridge model for nowcasting or forecasting purposes.
-The bridge model aligns high-frequency indicator variables (\code{indic}) with a
-lower-frequency target variable (\code{target}) and performs nowcasting or forecasting.
+This function estimates a bridge model, aligning high-frequency indicator variables with
+a lower-frequency target variable to perform nowcasting or forecasting. The bridge model
+leverages time series alignment, lag structures, and forecasting methods to provide a
+comprehensive tool for time series analysis.
 }
 \details{
 The bridge model aligns time series of different frequencies by slicing and aggregating
 indicator variables to match the target variable's frequency. It uses predefined rules
 for frequency conversion and alignment. The function checks for mismatches in start dates
 and aligns the variables when necessary.
-
-Future extensions will include:
+\subsection{Forecasting methods for the indicator variables}{
 \itemize{
-\item Support for more sophisticated forecasting methods from the \code{forecast} package.
-\item Custom weighting functions for indicator aggregation.
+\item \strong{\code{auto.arima}}: Automatically selects the best ARIMA (AutoRegressive Integrated Moving Average)
+model for a given time series based on information criteria (e.g., AIC, AICc, BIC). The method
+identifies the orders of the AR (p), differencing (d), and MA (q) components and estimates the model
+parameters. It is particularly suitable for time series with seasonality, trends, or other non-stationary patterns.
+\item \strong{\code{ets}}: Fits an exponential smoothing state-space model to the data. The ETS framework automatically
+includes Error (additive or multiplicative), Trend (none, additive, or damped), and Seasonal (none, additive,
+or multiplicative) components. This method is effective for capturing underlying patterns in the data
+such as level, trend, and seasonality, making it suitable for time series with these features.
+}
+}
+
+\subsection{Aggregation methods for the indicator variables}{
+\itemize{
+\item \strong{\code{mean}}: Calculates the mean of the indicator variable values within each target period.
+\item \strong{\code{last}}: Takes the last value of the indicator variable within each target period.
+\item \strong{\code{expalmon}}: Estimates a nonlinear exponential almon lag polynomial for weighting the indicator.
+\item \strong{\code{sum}}: Calculates the sum of the indicator variable values within each target period.
+\item \strong{Custom weights}: Allows the user to specify custom weights for aggregating the indicator variables.
+}
+}
+}
+\examples{
+\dontrun{
+# Example usage
+target_series <- tsbox::ts_tbl(data.frame(
+  time = seq(as.Date("2020-01-01"), as.Date("2023-01-01"), by = "quarter"),
+  value = rnorm(13)
+))
+
+indic_series <- tsbox::ts_tbl(data.frame(
+  time = seq(as.Date("2020-01-01"), as.Date("2023-01-01"), by = "month"),
+  value = rnorm(37)
+))
+
+model <- bridge(
+  target = target_series,
+  indic = indic_series,
+  indic_predict = "mean",
+  indic_aggregators = "mean",
+  indic_lags = 2,
+  target_lags = 1,
+  h = 1
+)
+}
+
+}
+\references{
+\itemize{
+\item Baffigi, A., Golinelli, R., & Parigi, G. (2004). Bridge models to forecast the euro area GDP. International Journal of Forecasting, 20(3), 447–460. \url{https://doi.org/10.1016/S0169-2070(03)00067-0}
+\item Burri, M. (2023). Do daily lead texts help nowcasting GDP growth? IRENE Working Papers 23-02. \url{https://www5.unine.ch/RePEc/ftp/irn/pdfs/WP23-02.pdf}
+\item Schumacher, C. (2016). A comparison of MIDAS and bridge equations. International Journal of Forecasting, 32(2), 257–270. \url{https://doi.org/10.1016/j.ijforecast.2015.07.004}
 }
 }

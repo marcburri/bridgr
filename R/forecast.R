@@ -1,19 +1,24 @@
-#' Forecasting from a `bridge_model` class
+#' Forecasting from a `bridge` object
 #'
-#' This function is used to forecast the target variable using the fitted `bridge_model`.
-#' @param object An object of class `bridge_model` object obtained from [bridgr::bridge()].
+#' This function is used to forecast the target variable using the fitted `bridge` model.
+#' @param object A `bridge` object obtained from [bridgr::bridge()].
 #' @param xreg A [tsbox::ts_boxable()] series of external regressors. If not
 #' supplied by the user, the forecast set calculated by [bridgr::bridge()]
 #' will be used. This is useful for made up scenarios.
-#' @param ... Additional arguments to be passed to the forecast function.
+#' @param ... Additional arguments to be passed to the forecast function. Ignored at the moment.
 #' @export
 forecast.bridge <- function(object, xreg = NULL, ...) {
 
   if (is.null(xreg)) {
-    xreg <- object$forecast_set
+    xreg <- tsbox::ts_xts(tsbox::ts_long(object$forecast_set)) %>% suppressMessages()
+  } else {
+    xreg <- tsbox::ts_xts(tsbox::ts_long(xreg)) %>% suppressMessages()
   }
+
   # Forecast the target using the fitted model
   fcst <- forecast::forecast(object$model, xreg = xreg)
+  object$forecast_set$values <- as.numeric(fcst$mean)
+  fcst$forecast_set <- object$forecast_set
 
   return(fcst)
 }

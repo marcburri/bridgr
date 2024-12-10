@@ -2,12 +2,12 @@
 % Please edit documentation in R/summary.R
 \name{summary.bridge}
 \alias{summary.bridge}
-\title{Summarize a \code{bridge_model} class object}
+\title{Summarize a \code{bridge}  object}
 \usage{
 \method{summary}{bridge}(object, ...)
 }
 \arguments{
-\item{object}{An object of class \code{bridge_model} obtained from \code{\link[=bridge]{bridge()}}.}
+\item{object}{A \code{bridge} object obtained from \code{\link[=bridge]{bridge()}}.}
 
 \item{...}{Additional arguments to be passed to the summary function.}
 }
