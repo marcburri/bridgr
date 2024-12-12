@@ -7,16 +7,7 @@ Authors@R: c(
            comment = c(ORCID = "0000-0001-8974-9090"))
   )
 Maintainer: Marc Burri <marc.burri91@gmail.com>
-Description: 
-    Provides tools for implementing bridge models, which are used to nowcast 
-    and forecast macroeconomic variables by linking high-frequency indicator 
-    variables (e.g., monthly data) to low-frequency target variables (e.g., quarterly GDP).
-    Forecasting and aggregation of the indicator variables to match the target frequency are simplified,
-    enabling timely predictions before official data releases are available. 
-    For more information about bridge models, see 
-    Baffigi, A., Golinelli, R., \& Parigi, G. (2004) <doi:10.1016/S0169-2070(03)00067-0>, 
-    Burri (2023) <https://www5.unine.ch/RePEc/ftp/irn/pdfs/WP23-02.pdf> or 
-    Schumacher (2016) <doi:10.1016/j.ijforecast.2015.07.004>. 
+Description: Implements bridge models for nowcasting and forecasting macroeconomic variables by linking high-frequency indicator variables (e.g., monthly data) to low-frequency target variables (e.g., quarterly GDP). Simplifies forecasting and aggregating indicator variables to match the target frequency, enabling timely predictions ahead of official data releases. For more on bridge models, see Baffigi, A., Golinelli, R., & Parigi, G. (2004) <doi:10.1016/S0169-2070(03)00067-0>, Burri (2023) <https://www5.unine.ch/RePEc/ftp/irn/pdfs/WP23-02.pdf> or Schumacher (2016) <doi:10.1016/j.ijforecast.2015.07.004>. 
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
