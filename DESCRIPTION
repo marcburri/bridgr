@@ -1,7 +1,7 @@
 Package: bridgr
 Type: Package
 Title: Bridging Data Frequencies for Timely Economic Forecasts
-Version: 0.1.1
+Version: 0.1.1.9000
 Authors@R: c(
     person("Marc", "Burri", ,"marc.burri91@gmail.com", role = c("aut", "cre", "cph"),
            comment = c(ORCID = "0000-0001-8974-9090"))
