@@ -378,7 +378,12 @@ bridge <- function( # TODO: fully document
         x = indic_single,
         K = K,
         target_freq_label = target_freq$freq_label,
-        control = list(trace = F, maxit = 5000)
+        control = list(
+          trace = F,
+          maxit = 5000,
+          ## Override default method of optim. Use BFGS instead of Nelder-Mead
+          method = "BFGS"
+          )
       )
 
       weights <- exp_almon(result$par, K)
