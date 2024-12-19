@@ -12,7 +12,7 @@ experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](h
 badge](https://marcburri.r-universe.dev/badges/bridgr)](https://marcburri.r-universe.dev/bridgr)
 [![CRAN
 status](https://www.r-pkg.org/badges/version/bridgr)](https://CRAN.R-project.org/package=bridgr)
-[![](https://cranlogs.r-pkg.org/badges/ggplot2)](https://cran.rstudio.com/web/packages/ggplot2/index.html)
+[![](https://cranlogs.r-pkg.org/badges/bridgr)](https://cran.rstudio.com/web/packages/bridgr/index.html)
 <!-- badges: end -->
 
 `bridgr` is designed to simplify the implementation and evaluation of
