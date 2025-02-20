@@ -80,7 +80,11 @@ expalmon_objective <- function(p, y, x, K, target_freq_label) {
   indic_name <- x$id[1]
 
   # Compute the weights
-  weights <- exp_almon(p, K)
+  weights <- exp_almon(p[1:3], K)
+
+  if (any(weights < 0)) {
+    return(Inf)
+  }
 
   # Aggregate high-frequency data into low-frequency predictors
   aggregated_x <- x %>%
@@ -107,6 +111,7 @@ expalmon_objective <- function(p, y, x, K, target_freq_label) {
 
   # Compute residuals
   residuals <- data[target_name] - fitted_values
+  #residuals <- data[target_name] - p[4] * data[indic_name]
 
   # Return the sum of squared residuals
   return(sum(residuals^2))

@@ -1,5 +1,5 @@
 #' @description
-#' To learn more about bridger, start with the vignettes:
+#' To learn more about bridgr, start with the vignettes:
 #' `browseVignettes(package = "bridgr")`
 #' @keywords internal
 "_PACKAGE"
