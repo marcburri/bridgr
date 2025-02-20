@@ -9,4 +9,4 @@
 library(testthat)
 library(bridgr)
 
-# test_check("bridgr")
+test_check("bridgr")
