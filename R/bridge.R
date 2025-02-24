@@ -16,7 +16,7 @@
 #' Defaults to `"auto.arima"`.
 #' @param indic_aggregators A character string or vector specifying the aggregation method(s) for aligning
 #' indicator variables with the target variable. Supported methods include `"mean"`, `"last"`, `"expalmon"`, `"sum"`
-#' or o custom vector of weights with the same length as the frequency ratio. Defaults to `"mean"`.
+#' or o custom vector of weights (provided in a [list()]) with the same length as the frequency ratio. Defaults to `"mean"`.
 #' @param indic_lags An integer or vector of integers specifying the number of lags to include
 #' for the indicator variables. Defaults to 0 (no lags).
 #' @param target_lags An integer specifying the number of lags to include for the target variable.
@@ -63,7 +63,7 @@
 #' - **`auto.arima`**: Automatically selects the best ARIMA (AutoRegressive Integrated Moving Average)
 #'   model for a given time series based on information criteria (e.g., AIC, AICc, BIC). The method
 #'   identifies the orders of the AR (p), differencing (d), and MA (q) components and estimates the model
-#'   parameters. It is particularly suitable for time series with seasonality, trends, or other non-stationary patterns.
+#'   parameters.
 #'
 #' - **`ets`**: Fits an exponential smoothing state-space model to the data. The ETS framework automatically
 #'    includes Error (additive or multiplicative), Trend (none, additive, or damped), and Seasonal (none, additive,
@@ -107,7 +107,7 @@
 #' - Burri, M. (2023). Do daily lead texts help nowcasting GDP growth? IRENE Working Papers 23-02. \url{https://www5.unine.ch/RePEc/ftp/irn/pdfs/WP23-02.pdf}
 #' - Schumacher, C. (2016). A comparison of MIDAS and bridge equations. International Journal of Forecasting, 32(2), 257–270. \doi{doi:10.1016/j.ijforecast.2015.07.004}
 #' @export
-bridge <- function( # TODO: fully document
+bridge <- function(
     target,
     indic,
     indic_predict = NULL,
@@ -117,7 +117,7 @@ bridge <- function( # TODO: fully document
     h = 1, # Nowcast horizon, always in terms of the target frequency
     frequency_conversions = c("dpw" = 5, "wpm" = 4, "mpq" = 3, "qpy" = 4),
     ... # TODO: Additional arguments to be passed to the model (i.e. for forecasting package, expalmon control)
-    ) # TODO: write a bunch of tests for this function
+    )
   {
 
   # Create a new instance of the Bridge class and validate inputs
@@ -136,13 +136,13 @@ bridge <- function( # TODO: fully document
   # And add corresponding id columns if missing
   # Get the name of the target and indicator variables
   target_name <- deparse(substitute(target))
-  model$target <-
+  model$target <- target <-
     tsbox::ts_tbl(target) %>%
       standardize_ts_tbl() %>%
       dplyr::mutate( id = target_name) %>%
       suppressMessages()
   if (length(suppressMessages(tsbox::ts_tslist(indic))) > 1) {
-    model$indic <-
+    model$indic <- indic <-
       tsbox::ts_tbl(indic) %>%
       standardize_ts_tbl() %>%
       suppressMessages()
@@ -314,36 +314,36 @@ bridge <- function( # TODO: fully document
     }
 
     if (last_date >= final_forecasting_date) {
-      rlang::warn("The indicator variable ", ind_id, " has data until ", last_date, ". No forecast needed.")
+      rlang::warn(paste0("The indicator variable ", ind_id, " has data until ", last_date, ". No forecast needed."))
       next
     }
-
-    # Forecast the indicator variable
-    if (indic_predict == "last") {
-      # write last value forward until final_forecasting_date
-      last_value <- tail(indic_single$values, 1)
-      indic_single <- suppressMessages(tsbox::ts_bind(indic_single, rep(last_value, indic_horizon )))
-    } else if (indic_predict == "mean") {
-      # write mean value forward until final_forecasting_date
-      mean_value <- tsbox::ts_span(indic_single, start = target_summary$end)$values %>% suppressMessages() %>%
-        mean( na.rm=T)
-      indic_single <- suppressMessages(tsbox::ts_bind(indic_single, rep(mean_value, indic_horizon)))
-    } else if (indic_predict == "auto.arima") {
-      # fit an ARIMA model to the indicator variable and forecast
-      indic_models[[ind_nr]] <- indic_single %>% tsbox::ts_xts()  %>% suppressMessages() %>%
-        forecast::auto.arima() %>% suppressMessages()
-      indic_fcst <- forecast::forecast(indic_models[[ind_nr]], h = indic_horizon)
-      indic_single <- suppressMessages(tsbox::ts_bind(indic_single, as.numeric(indic_fcst$mean)))
-    } else if (indic_predict == "ets") {
-      # fit an ETS model to the indicator variable and forecast
-      indic_models[[ind_nr]] <- indic_single %>% tsbox::ts_xts()  %>% suppressMessages() %>%
-        forecast::ets() %>% suppressMessages()
-      indic_fcst <- forecast::forecast(indic_models[[ind_nr]], h = indic_horizon)
-      indic_single <- suppressMessages(tsbox::ts_bind(indic_single, as.numeric(indic_fcst$mean)))
-    } else {
-      rlang::abort("The indicator prediction method ", indic_predict, " is not supported.")
+    # Forecast the indicator variable if indic_horizon > 0
+    if (indic_horizon > 0) {
+      if (indic_predict == "last") {
+        # write last value forward until final_forecasting_date
+        last_value <- tail(indic_single$values, 1)
+        indic_single <- suppressMessages(tsbox::ts_bind(indic_single, rep(last_value, indic_horizon )))
+      } else if (indic_predict == "mean") {
+        # write mean value forward until final_forecasting_date
+        mean_value <- tsbox::ts_span(indic_single, start = target_summary$end)$values %>% suppressMessages() %>%
+          mean( na.rm=T)
+        indic_single <- suppressMessages(tsbox::ts_bind(indic_single, rep(mean_value, indic_horizon)))
+      } else if (indic_predict == "auto.arima") {
+        # fit an ARIMA model to the indicator variable and forecast
+        indic_models[[ind_nr]] <- indic_single %>% tsbox::ts_xts()  %>% suppressMessages() %>%
+          forecast::auto.arima() %>% suppressMessages()
+        indic_fcst <- forecast::forecast(indic_models[[ind_nr]], h = indic_horizon)
+        indic_single <- suppressMessages(tsbox::ts_bind(indic_single, as.numeric(indic_fcst$mean)))
+      } else if (indic_predict == "ets") {
+        # fit an ETS model to the indicator variable and forecast
+        indic_models[[ind_nr]] <- indic_single %>% tsbox::ts_xts()  %>% suppressMessages() %>%
+          forecast::ets() %>% suppressMessages()
+        indic_fcst <- forecast::forecast(indic_models[[ind_nr]], h = indic_horizon)
+        indic_single <- suppressMessages(tsbox::ts_bind(indic_single, as.numeric(indic_fcst$mean)))
+      } else {
+        rlang::abort("The indicator prediction method ", indic_predict, " is not supported.")
+      }
     }
-
     # Aggregate the indicator to the target frequency
     if (is.character(indic_aggregators[1])){
     if (indic_aggregators == "last") {
@@ -365,7 +365,8 @@ bridge <- function( # TODO: fully document
     } else if (indic_aggregators == "expalmon") {
 
       # Set initial parameter guesses
-      initial_params <- c(rep(0.01, 3))
+      # First three: expalmon parameters, last: beta
+      initial_params <- c(rep(rnorm(1), 3))
 
       # Number of lags per low-frequency observation
       K <- indic_freqs[indic_freqs$id == ind_id,]$observations
@@ -378,15 +379,15 @@ bridge <- function( # TODO: fully document
         x = indic_single,
         K = K,
         target_freq_label = target_freq$freq_label,
+        # Override default method of optim. Use BFGS instead of Nelder-Mead
+        method = "BFGS",
         control = list(
-          trace = F,
           maxit = 5000,
-          ## Override default method of optim. Use BFGS instead of Nelder-Mead
-          method = "BFGS"
+          trace = F
           )
       )
 
-      weights <- exp_almon(result$par, K)
+      weights <- exp_almon(result$par[1:3], K)
       model$expalmon_weights[[ind_id]] <- weights
 
       indic_single <- indic_single %>%
