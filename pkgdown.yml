@@ -3,7 +3,7 @@ pkgdown: 2.1.1
 pkgdown_sha: ~
 articles:
   bridgr: bridgr.html
-last_built: 2025-02-24T14:47Z
+last_built: 2025-03-20T16:32Z
 urls:
   reference: https://marcburri.github.io/bridgr/reference
   article: https://marcburri.github.io/bridgr/articles
