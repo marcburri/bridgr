@@ -31,7 +31,7 @@ Defaults to \code{"auto.arima"}.}
 
 \item{indic_aggregators}{A character string or vector specifying the aggregation method(s) for aligning
 indicator variables with the target variable. Supported methods include \code{"mean"}, \code{"last"}, \code{"expalmon"}, \code{"sum"}
-or o custom vector of weights with the same length as the frequency ratio. Defaults to \code{"mean"}.}
+or o custom vector of weights (provided in a \code{\link[=list]{list()}}) with the same length as the frequency ratio. Defaults to \code{"mean"}.}
 
 \item{indic_lags}{An integer or vector of integers specifying the number of lags to include
 for the indicator variables. Defaults to 0 (no lags).}
@@ -84,7 +84,7 @@ and aligns the variables when necessary.
 \item \strong{\code{auto.arima}}: Automatically selects the best ARIMA (AutoRegressive Integrated Moving Average)
 model for a given time series based on information criteria (e.g., AIC, AICc, BIC). The method
 identifies the orders of the AR (p), differencing (d), and MA (q) components and estimates the model
-parameters. It is particularly suitable for time series with seasonality, trends, or other non-stationary patterns.
+parameters.
 \item \strong{\code{ets}}: Fits an exponential smoothing state-space model to the data. The ETS framework automatically
 includes Error (additive or multiplicative), Trend (none, additive, or damped), and Seasonal (none, additive,
 or multiplicative) components. This method is effective for capturing underlying patterns in the data
@@ -108,12 +108,12 @@ library(bridgr)
 # Example usage
 target_series <- suppressMessages(tsbox::ts_tbl(data.frame(
   time = seq(as.Date("2020-01-01"), as.Date("2022-12-01"), by = "quarter"),
-  value = rnorm(12)
+  value = stats::rnorm(12)
 )))
 
 indic_series <- suppressMessages(tsbox::ts_tbl(data.frame(
   time = seq(as.Date("2020-01-01"), as.Date("2023-01-01"), by = "month"),
-  value = rnorm(37)
+  value = stats::rnorm(37)
 )))
 
 bridge_model <- suppressMessages(bridge(

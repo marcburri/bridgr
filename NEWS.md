@@ -1,5 +1,10 @@
 # bridgr (development version)
 
+# bridgr 0.1.2
+
+* Solve dependency issues with xts
+
+
 # bridgr 0.1.1
 
 * Initial CRAN submission:

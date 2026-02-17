@@ -6,7 +6,7 @@
 \alias{bridgr-package}
 \title{bridgr: Bridging Data Frequencies for Timely Economic Forecasts}
 \description{
-To learn more about bridger, start with the vignettes:
+To learn more about bridgr, start with the vignettes:
 \code{browseVignettes(package = "bridgr")}
 }
 \seealso{

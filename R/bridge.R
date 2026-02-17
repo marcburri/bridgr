@@ -83,12 +83,12 @@
 #' # Example usage
 #' target_series <- suppressMessages(tsbox::ts_tbl(data.frame(
 #'   time = seq(as.Date("2020-01-01"), as.Date("2022-12-01"), by = "quarter"),
-#'   value = rnorm(12)
+#'   value = stats::rnorm(12)
 #' )))
 #'
 #' indic_series <- suppressMessages(tsbox::ts_tbl(data.frame(
 #'   time = seq(as.Date("2020-01-01"), as.Date("2023-01-01"), by = "month"),
-#'   value = rnorm(37)
+#'   value = stats::rnorm(37)
 #' )))
 #'
 #' bridge_model <- suppressMessages(bridge(
@@ -366,7 +366,7 @@ bridge <- function(
 
       # Set initial parameter guesses
       # First three: expalmon parameters, last: beta
-      initial_params <- c(rep(rnorm(1), 3))
+      initial_params <- c(rep(stats::rnorm(1), 3))
 
       # Number of lags per low-frequency observation
       K <- indic_freqs[indic_freqs$id == ind_id,]$observations
