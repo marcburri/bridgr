@@ -1,9 +1,8 @@
 ## R CMD check results
 
-0 errors | 0 warnings | 1 note
+0 errors | 0 warnings | 0 note
 
-## Resubmission
-This is a resubmission. In this version I have:
+## Submission Summary
+This is an update for 'bridgr'. In this version, I have:
 
-* Removed redundant phrases in the DESCRIPTION.
-* Removed unnecessary spaces in the DESCRIPTION.
+ * fixed a dependency issue with the xts package.
