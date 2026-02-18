@@ -12,7 +12,7 @@ stable](https://img.shields.io/badge/lifecycle-stable-green.svg)](https://lifecy
 badge](https://marcburri.r-universe.dev/badges/bridgr)](https://marcburri.r-universe.dev/bridgr)
 [![CRAN
 status](https://www.r-pkg.org/badges/version/bridgr)](https://CRAN.R-project.org/package=bridgr)
-[![](https://cranlogs.r-pkg.org/badges/grand-total/bridgr)](https://cran.rstudio.com/web/packages/bridgr/index.html)
+[![](https://cranlogs.r-pkg.org/badges/grand-total/bridgr)](https://CRAN.R-project.org/package=bridgr)
 [![Codecov test
 coverage](https://codecov.io/gh/marcburri/bridgr/graph/badge.svg)](https://app.codecov.io/gh/marcburri/bridgr)
 <!-- badges: end -->
