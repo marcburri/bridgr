@@ -8,7 +8,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/marcburri/bridgr/blob/main/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/marcburri/bridgr/blob/v0.1.2/DESCRIPTION)
 
 Burri M (2026). *bridgr: Bridging Data Frequencies for Timely Economic
 Forecasts*. R package version 0.1.2,
