@@ -7,17 +7,16 @@ Authors@R: c(
            comment = c(ORCID = "0000-0001-8974-9090"))
   )
 Maintainer: Marc Burri <marc.burri91@gmail.com>
-Description: Implements bridge models for nowcasting and forecasting macroeconomic variables by linking high-frequency indicator variables (e.g., monthly data) to low-frequency target variables (e.g., quarterly GDP). Simplifies forecasting and aggregating indicator variables to match the target frequency, enabling timely predictions ahead of official data releases. For more on bridge models, see Baffigi, A., Golinelli, R., & Parigi, G. (2004) <doi:10.1016/S0169-2070(03)00067-0>, Burri (2023) <https://www5.unine.ch/RePEc/ftp/irn/pdfs/WP23-02.pdf> or Schumacher (2016) <doi:10.1016/j.ijforecast.2015.07.004>. 
+Description: Implements bridge models for nowcasting and forecasting macroeconomic variables by linking higher-frequency indicator variables to a lower-frequency target series. The package standardizes input data, infers regular frequencies, forecasts missing indicator observations, and aggregates indicators to the target frequency before fitting a regression with autoregressive target dynamics. Frequency alignment can be customized through user-supplied conversion rules. For more on bridge models, see Baffigi, A., Golinelli, R., & Parigi, G. (2004) <doi:10.1016/S0169-2070(03)00067-0>, Burri (2023) <https://www5.unine.ch/RePEc/ftp/irn/pdfs/WP23-02.pdf> or Schumacher (2016) <doi:10.1016/j.ijforecast.2015.07.004>.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 LazyData: true
 Imports: 
     magrittr,
     dplyr,
     rlang,
-    generics,
     tsbox,
     lubridate,
     forecast,
@@ -28,14 +27,7 @@ Suggests:
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
 Depends: 
-    R (>= 3.5)
-Collate: 
-    'bridge.R'
-    'bridgr-package.R'
-    'data-indicators.R'
-    'forecast.R'
-    'summary.R'
-    'utils.R'
+    R (>= 4.1.0)
 URL: https://github.com/marcburri/bridgr, https://marcburri.github.io/bridgr/
 BugReports: https://github.com/marcburri/bridgr/issues
 VignetteBuilder: knitr

@@ -1,80 +1,87 @@
-#' Summarize a `bridge`  object
+#' Summarize a Bridge Model
 #'
-#' This method is summarizes the bridge model.
-#' @param object A `bridge` object obtained from [bridgr::bridge()].
-#' @param ... Additional arguments to be passed to the summary function. Ignored at the moment.
-#' @return The function \code{summary} is used to obtain and print a summary of the
-#' results.
-#' @examples
-#' library(bridgr)
+#' @param object A `"bridge"` object returned by [bridge()].
+#' @param ... Unused.
 #'
-#' # Example usage
-#' target_series <- suppressMessages(tsbox::ts_tbl(data.frame(
-#'   time = seq(as.Date("2020-01-01"), as.Date("2022-12-01"), by = "quarter"),
-#'   value = rnorm(12)
-#' )))
-#'
-#' indic_series <- suppressMessages(tsbox::ts_tbl(data.frame(
-#'   time = seq(as.Date("2020-01-01"), as.Date("2023-01-01"), by = "month"),
-#'   value = rnorm(37)
-#' )))
-#'
-#' bridge_model <- suppressMessages(bridge(
-#'   target = target_series,
-#'   indic = indic_series,
-#'   indic_predict = "mean",
-#'   indic_aggregators = "mean",
-#'   indic_lags = 2,
-#'   target_lags = 1,
-#'   h = 1
-#' ))
-#'
-#' # Summarize the information in the bridge model
-#' summary(bridge_model)
+#' @return `object`, invisibly.
+#' @method summary bridge
 #' @export
 summary.bridge <- function(object, ...) {
-
   cat("Bridge model summary\n")
+  cat("-----------------------------------\n")
+  cat("Target series: ", object$target_name, "\n", sep = "")
+  cat(
+    "Target frequency: ",
+    object$target_frequency$unit[[1]],
+    " (step ",
+    object$target_frequency$step[[1]],
+    ")\n",
+    sep = ""
+  )
+  cat("Forecast horizon: ", object$h, "\n", sep = "")
+  cat("Formula: ", deparse(object$formula), "\n", sep = "")
   cat("-----------------------------------\n")
   cat("Main model:\n")
   cat("-----------------------------------\n")
-  cat("Series: ", object$target_name, "\n")
-  output <- capture.output(print(object$model))
-  # Check if the first line starts with "Series" and modify the output accordingly
-  if (startsWith(output[1], "Series")) {
-    output <- output[-1]  # Remove the first line if it starts with "Series"
-  }
-  cat(output, sep = "\n")
+  print(object$model)
   cat("-----------------------------------\n")
-  cat("Single indicator models:\n")
+  cat("Indicator models:\n")
   cat("-----------------------------------\n")
-  expa <- 1
-  for (i in 1:length(object$indic_name)) {
-    cat("Series: ", object$indic_name[i], "\n")
-    if (object$indic_predict[i] == "mean") {
-      cat("Writing forward the mean over values in last low frequency period.\n")
-    } else if (object$indic_predict[i] == "last") {
-      cat("Writing forward the last value in last low frequency period.\n")
+
+  for (indicator_id in object$indic_name) {
+    indicator_index <- match(indicator_id, object$indicator_frequencies$id)
+    indicator_meta <- object$indicator_frequencies[indicator_index, , drop = FALSE]
+    indicator_model <- object$indic_models[[indicator_id]]
+    aggregator <- object$indic_aggregators[[indicator_index]]
+
+    cat("Series: ", indicator_id, "\n", sep = "")
+    cat(
+      "Frequency: ",
+      indicator_meta$unit[[1]],
+      " (step ",
+      indicator_meta$step[[1]],
+      ")\n",
+      sep = ""
+    )
+    cat("Forecast method: ", object$indic_predict[[indicator_index]], "\n", sep = "")
+
+    if (is.null(indicator_model)) {
+      cat("Indicator model: deterministic extension\n")
     } else {
-      output <- capture.output(print(object$indic_models[[i]]))
-      # Check if the first line starts with "Series" and modify the output accordingly
-      if (startsWith(output[1], "Series")) {
-        output <- output[-1]  # Remove the first line if it starts with "Series"
-      }
-      cat(output, sep = "\n")
+      print(indicator_model)
     }
-    cat("Aggregation to low frequency:\n")
-    if (object$indic_aggregators[i] == "mean") {
-      cat("Using mean over values in corresponding periods.\n")
-    } else if (object$indic_aggregators[i] == "last") {
-      cat("Using last values of corresponding periods.\n")
-    } else if (object$indic_aggregators[i] == "sum") {
-      cat("Using sum over values in corresponding periods.\n")
-    } else if (object$indic_aggregators[i] == "expalmon") {
-      cat("Estimating exponential almon polynomial with the following weights: \n")
-      cat(paste0(round(object$expalmon_weights[[expa]],3)))
+
+    if (is.character(aggregator)) {
+      cat("Aggregation: ", aggregator, "\n", sep = "")
+    } else {
+      cat("Aggregation: custom weights\n")
+      cat(paste(round(aggregator, 3), collapse = ", "), "\n", sep = "")
+    }
+
+    if (!is.null(object$expalmon_weights[[indicator_id]])) {
+      cat("Estimated expalmon weights: ")
+      cat(paste(round(object$expalmon_weights[[indicator_id]], 3), collapse = ", "))
       cat("\n")
-      expa <- expa + 1
+      if (!is.null(object$expalmon_parameters[[indicator_id]])) {
+        cat("Estimated expalmon parameters: ")
+        cat(paste(round(object$expalmon_parameters[[indicator_id]], 3), collapse = ", "))
+        cat("\n")
+      }
+    }
+
+    cat("-----------------------------------\n")
+  }
+
+  if (!is.null(object$expalmon_optimization)) {
+    cat("Joint expalmon optimization:\n")
+    cat("-----------------------------------\n")
+    cat("Method: ", object$expalmon_optimization$method, "\n", sep = "")
+    cat("Objective value: ", round(object$expalmon_optimization$value, 4), "\n", sep = "")
+    cat("Convergence code: ", object$expalmon_optimization$convergence, "\n", sep = "")
+    cat("Best start: ", object$expalmon_optimization$best_start, " / ", object$expalmon_optimization$n_starts, "\n", sep = "")
+    if (!is.null(object$expalmon_optimization$message) &&
+        nzchar(object$expalmon_optimization$message)) {
+      cat("Message: ", object$expalmon_optimization$message, "\n", sep = "")
     }
     cat("-----------------------------------\n")
   }

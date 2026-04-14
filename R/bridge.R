@@ -1,111 +1,99 @@
 #' Estimate a Bridge Model
 #'
-#' This function estimates a bridge model, aligning high-frequency indicator variables with
-#' a lower-frequency target variable to perform nowcasting or forecasting. The bridge model
-#' leverages time series alignment, lag structures, and forecasting methods to provide a
-#' comprehensive tool for time series analysis.
+#' Estimate a bridge model that links one lower-frequency target series to one
+#' or more higher-frequency indicator series. Indicators are aligned to the
+#' target frequency by forecasting any missing higher-frequency observations and
+#' aggregating them within each target period.
 #'
-#' @param target A time series or data frame representing the target variable (dependent variable).
-#' Must be in a format compatible with the [tsbox](https://docs.ropensci.org/tsbox/) package
-#' (see [tsbox::ts_boxable()]).
-#' @param indic A time series, list of time series, or data frame containing the indicator variables
-#' (independent variables). Must be in a format compatible with the [tsbox](https://docs.ropensci.org/tsbox/) package
-#' (see [tsbox::ts_boxable()]).
-#' @param indic_predict A character string or vector specifying the forecasting method(s) for the
-#' indicator variables. Supported methods include `"mean"`, `"last"`, `"auto.arima"`, and `"ets"`.
-#' Defaults to `"auto.arima"`.
-#' @param indic_aggregators A character string or vector specifying the aggregation method(s) for aligning
-#' indicator variables with the target variable. Supported methods include `"mean"`, `"last"`, `"expalmon"`, `"sum"`
-#' or o custom vector of weights (provided in a [list()]) with the same length as the frequency ratio. Defaults to `"mean"`.
-#' @param indic_lags An integer or vector of integers specifying the number of lags to include
-#' for the indicator variables. Defaults to 0 (no lags).
-#' @param target_lags An integer specifying the number of lags to include for the target variable.
-#' Defaults to 0 (no lags).
-#' @param h An integer specifying the forecast horizon in terms of the target variable's frequency.
-#' Defaults to 1 (next period).
-#' @param frequency_conversions A named vector specifying the conversion factors between different
-#' time frequencies. Defaults to `c("dpw" = 5, "wpm" = 4, "mpq" = 3, "qpy" = 4)` for days per week,
-#' weeks per month, months per quarter, and quarters per year, respectively.
-#' @param ... Additional arguments for future extension, not used at the moment.
+#' Supported indicator forecasting methods are `"mean"`, `"last"`,
+#' `"auto.arima"`, and `"ets"`. Supported aggregation methods are `"mean"`,
+#' `"last"`, `"sum"`, `"expalmon"`, or a numeric weight vector supplied inside
+#' a `list()`. When one or more indicators use `"expalmon"`, the corresponding
+#' aggregation weights are estimated jointly against the final bridge-model
+#' objective rather than one indicator at a time.
 #'
-#' @return An object of class `"bridge"` containing:
-#' - **target**: The standardized target variable.
+#' The package assumes a regular frequency ladder
+#' `second -> minute -> hour -> day -> week -> month -> quarter -> year`.
+#' The default number of lower-level observations per higher-level unit is:
 #'
-#' - **indic**: The standardized indicator variables.
+#' - `spm = 60`
+#' - `mph = 60`
+#' - `hpd = 24`
+#' - `dpw = 7`
+#' - `wpm = 4`
+#' - `mpq = 3`
+#' - `qpy = 4`
 #'
-#' - **indic_predict**: The prediction methods applied to the indicators.
+#' Users can override any subset of these values with
+#' `frequency_conversions`. If a target period contains more high-frequency
+#' observations than implied by the current mapping, `bridge()` keeps the most
+#' recent observations and emits a summarized warning. If a target period
+#' contains fewer observations than required, the call fails.
 #'
-#' - **indic_aggregators**: The aggregation methods used for the indicators.
+#' @param target A single target series in a [tsbox::ts_boxable()] format.
+#' @param indic One or more indicator series in a [tsbox::ts_boxable()] format.
+#' @param indic_predict A character vector of indicator forecasting methods.
+#' Length must be `1` or equal to the number of indicator series.
+#' @param indic_aggregators A character vector of aggregation methods or a list
+#' of numeric weights. Length must be `1` or equal to the number of indicator
+#' series. Numeric weights must sum to one and have the appropriate length for
+#' the inferred target-period block size.
+#' @param indic_lags A non-negative integer giving the number of target-period
+#' lags to add for each aggregated indicator.
+#' @param target_lags A non-negative integer giving the autoregressive order in
+#' the target equation.
+#' @param h A positive integer forecast horizon measured in target periods.
+#' @param frequency_conversions A named numeric vector used to customize the
+#' regular frequency ladder. Supported names are `spm`, `mph`, `hpd`, `dpw`,
+#' `wpm`, `mpq`, and `qpy`.
+#' @param solver_options A list of optional controls for joint `expalmon`
+#' optimization. Supported entries are `method`, `maxiter`, `n_starts`,
+#' `seed`, and `trace`. These controls are ignored unless at least one
+#' indicator uses `indic_aggregators = "expalmon"`.
+#' @param ... Reserved for future extensions.
 #'
-#' - **estimation_set**: A data frame containing the aligned and processed time series
-#'   used to estimate the bridge model. This set includes the target variable and all
-#'   indicator variables transformed to match the target variable's frequency and alignment.
-#'
-#' - **forecast_set**: A data frame containing the aligned and processed time series
-#'   used for forecasting. This includes the forecasts for the indicator variables as
-#'   inputs for the h-step ahead prediction of the target variable.
-#'
-#' - **model**: The fitted bridge model object for the target variable.
-#'
-#' - **indic_models**: A list of models used to forecast the indicator variables. Each
-#'   element in this list corresponds to the forecasting method (e.g., `auto.arima` or `ets`)
-#'   applied to an individual indicator variable.
-#'
-#' - **Additional components**: Internal parameters, summary statistics, and alignment metadata.
-#'
-#' @details
-#' The bridge model aligns time series of different frequencies by slicing and aggregating
-#' indicator variables to match the target variable's frequency. It uses predefined rules
-#' for frequency conversion and alignment. The function checks for mismatches in start dates
-#' and aligns the variables when necessary.
-#'
-#' ### Forecasting methods for the indicator variables
-#' - **`auto.arima`**: Automatically selects the best ARIMA (AutoRegressive Integrated Moving Average)
-#'   model for a given time series based on information criteria (e.g., AIC, AICc, BIC). The method
-#'   identifies the orders of the AR (p), differencing (d), and MA (q) components and estimates the model
-#'   parameters.
-#'
-#' - **`ets`**: Fits an exponential smoothing state-space model to the data. The ETS framework automatically
-#'    includes Error (additive or multiplicative), Trend (none, additive, or damped), and Seasonal (none, additive,
-#'   or multiplicative) components. This method is effective for capturing underlying patterns in the data
-#'   such as level, trend, and seasonality, making it suitable for time series with these features.
-#'
-#' ### Aggregation methods for the indicator variables
-#' - **`mean`**: Calculates the mean of the indicator variable values within each target period.
-#' - **`last`**: Takes the last value of the indicator variable within each target period.
-#' - **`expalmon`**: Estimates a nonlinear exponential almon lag polynomial for weighting the indicator.
-#' - **`sum`**: Calculates the sum of the indicator variable values within each target period.
-#' - **Custom weights**: Allows the user to specify custom weights for aggregating the indicator variables.
+#' @return An object of class `"bridge"` containing the standardized input
+#' series, inferred frequencies, aligned estimation and forecast datasets, the
+#' fitted target model, fitted indicator models, and metadata required by
+#' [forecast.bridge()] and [summary.bridge()].
 #'
 #' @examples
-#' library(bridgr)
+#' gdp_growth <- suppressMessages(tsbox::ts_na_omit(tsbox::ts_pc(gdp)))
 #'
-#' # Example usage
-#' target_series <- suppressMessages(tsbox::ts_tbl(data.frame(
-#'   time = seq(as.Date("2020-01-01"), as.Date("2022-12-01"), by = "quarter"),
-#'   value = stats::rnorm(12)
-#' )))
-#'
-#' indic_series <- suppressMessages(tsbox::ts_tbl(data.frame(
-#'   time = seq(as.Date("2020-01-01"), as.Date("2023-01-01"), by = "month"),
-#'   value = stats::rnorm(37)
-#' )))
-#'
-#' bridge_model <- suppressMessages(bridge(
-#'   target = target_series,
-#'   indic = indic_series,
-#'   indic_predict = "mean",
+#' model <- bridge(
+#'   target = gdp_growth,
+#'   indic = baro,
+#'   indic_predict = "auto.arima",
 #'   indic_aggregators = "mean",
-#'   indic_lags = 2,
+#'   indic_lags = 1,
 #'   target_lags = 1,
-#'   h = 1
-#' ))
+#'   h = 2
+#' )
 #'
-#' @author Marc Burri
+#' expalmon_model <- bridge(
+#'   target = gdp_growth,
+#'   indic = baro,
+#'   indic_predict = "auto.arima",
+#'   indic_aggregators = "expalmon",
+#'   solver_options = list(seed = 123, n_starts = 3),
+#'   h = 1
+#' )
+#'
+#' forecast(model)
+#' summary(expalmon_model)
+#'
 #' @references
-#' - Baffigi, A., Golinelli, R., & Parigi, G. (2004). Bridge models to forecast the euro area GDP. International Journal of Forecasting, 20(3), 447–460. \doi{doi:10.1016/S0169-2070(03)00067-0}
-#' - Burri, M. (2023). Do daily lead texts help nowcasting GDP growth? IRENE Working Papers 23-02. \url{https://www5.unine.ch/RePEc/ftp/irn/pdfs/WP23-02.pdf}
-#' - Schumacher, C. (2016). A comparison of MIDAS and bridge equations. International Journal of Forecasting, 32(2), 257–270. \doi{doi:10.1016/j.ijforecast.2015.07.004}
+#' Baffigi, A., Golinelli, R., & Parigi, G. (2004). Bridge models to forecast
+#' the euro area GDP. *International Journal of Forecasting*, 20(3), 447-460.
+#' \doi{10.1016/S0169-2070(03)00067-0}
+#'
+#' Burri, M. (2023). Do daily lead texts help nowcasting GDP growth? IRENE
+#' Working Papers 23-02.
+#' \url{https://www5.unine.ch/RePEc/ftp/irn/pdfs/WP23-02.pdf}
+#'
+#' Schumacher, C. (2016). A comparison of MIDAS and bridge equations.
+#' *International Journal of Forecasting*, 32(2), 257-270.
+#' \doi{10.1016/j.ijforecast.2015.07.004}
 #' @export
 bridge <- function(
     target,
@@ -114,574 +102,399 @@ bridge <- function(
     indic_aggregators = NULL,
     indic_lags = 0,
     target_lags = 0,
-    h = 1, # Nowcast horizon, always in terms of the target frequency
-    frequency_conversions = c("dpw" = 5, "wpm" = 4, "mpq" = 3, "qpy" = 4),
-    ... # TODO: Additional arguments to be passed to the model (i.e. for forecasting package, expalmon control)
-    )
-  {
+    h = 1,
+    frequency_conversions = NULL,
+    solver_options = NULL,
+    ...) {
 
-  # Create a new instance of the Bridge class and validate inputs
-  model <- bridge_model(
-    target = target,
-    indic = indic,
-    indic_predict = indic_predict,
-    indic_aggregators = indic_aggregators,
-    indic_lags = indic_lags,
-    target_lags = target_lags,
-    h = h,
-    frequency_conversions = frequency_conversions
-  )
-
-  # Bring target and indicator variables to the same format (ts_tbl)
-  # And add corresponding id columns if missing
-  # Get the name of the target and indicator variables
   target_name <- deparse(substitute(target))
-  model$target <- target <-
-    tsbox::ts_tbl(target) %>%
-      standardize_ts_tbl() %>%
-      dplyr::mutate( id = target_name) %>%
-      suppressMessages()
-  if (length(suppressMessages(tsbox::ts_tslist(indic))) > 1) {
-    model$indic <- indic <-
-      tsbox::ts_tbl(indic) %>%
-      standardize_ts_tbl() %>%
-      suppressMessages()
-    indic_name <- unique(model$indic$id)
-  } else {
-    indic_name <- deparse(substitute(indic))
-    model$indic <- suppressMessages(
-      tsbox::ts_tbl(indic) %>%
-        standardize_ts_tbl() %>%
-        dplyr::mutate( id = indic_name)
-    )
-  }
+  indic_name <- deparse(substitute(indic))
 
-  # Get frequency of the target and indic variables
-  target_summary <-  suppressMessages(tsbox::ts_summary(model$target))
-  indic_summaries <- suppressMessages(tsbox::ts_summary(model$indic))
-
-  # Check if indic_predict is a single value or a list
-  num_indic_series <-  nrow(indic_summaries)
-  if(!is.null(model$indic_predict)) {
-    if (length(model$indic_predict) == 1 && num_indic_series > 1) {
-      rlang::warn("Only one value provided for @indic_predict. Assuming the same value for all time series in @indic.")
-      model$indic_predict <- rep(indic_predict, num_indic_series)
-    }
-  } else {
-    model$indic_predict <- rep("auto.arima", num_indic_series)
-  }
-
-  # Check if indic_aggregators is a single value or a list
-  if (!is.null(model$indic_aggregators)) {
-    if (length(model$indic_aggregators) == 1 && num_indic_series > 1) {
-      rlang::warn("Only one value provided for @indic_aggregators. Assuming the same value for all time series in @indic.")
-      model$indic_aggregators <- rep(model$indic_aggregators, num_indic_series)
-    }
-  } else {
-    model$indic_aggregators <- rep("mean", num_indic_series)
-  }
-
-  # Some definitions of frequencies
-  dpw <- as.numeric(frequency_conversions["dpw"])             # Days per week
-  wpm <- as.numeric(frequency_conversions["wpm"])             # Weeks per month
-  mpq <- as.numeric(frequency_conversions["mpq"])             # Months per quarter
-  qpy <- as.numeric(frequency_conversions["qpy"])             # Quarters per year
-  dpm <- dpw*wpm       # Days per month
-  wpq <- wpm*mpq       # Weeks per quarter
-  dpq <- dpw*wpq       # Days per quarter
-  dpy <- dpw*wpq*qpy   # Days per year
-  wpy <- wpm*mpq*qpy   # Weeks per year
-  mpy <- mpq*qpy       # Months per year
-
-  slicing_rules <- dplyr::tibble(
-    targ_freq = c(rep("month", 3),rep("quarter",4), rep("year", 5)),
-    ind_freq = c("day", "week", "month", "day", "week", "month", "quarter", "day", "week", "month", "quarter", "year"),
-    observations = c(
-      dpm, wpm, 1,
-      dpq, wpq, mpq, 1,
-      dpy, wpy, mpy, qpy, 1
-      )     # Define number of rows to slice
+  target_tbl <- as_bridge_tbl(
+    x = target,
+    arg = "target",
+    default_id = target_name
+  )
+  indic_tbl <- as_bridge_tbl(
+    x = indic,
+    arg = "indic",
+    default_id = indic_name
   )
 
-
-  target_freq <- target_summary$freq
-  if(is.null(names(target_freq))) names(target_freq) <- target_name
-  indic_freqs <- indic_summaries$freq
-  if(is.null(names(indic_freqs))) names(indic_freqs) <- indic_name
-
-
-  target_freq <- dplyr::tibble(
-    id = names(target_freq),
-    frquency = as.numeric(target_freq)
-  ) %>% dplyr::mutate(
-    freq_label = label_frequency(frquency)
-    )
-
-  indic_freqs <- dplyr::tibble(
-    id = names(indic_freqs),
-    frquency = as.numeric(indic_freqs)
-  ) %>% dplyr::mutate(
-    freq_label = label_frequency(frquency)
-  ) %>%
-    dplyr::left_join(
-      slicing_rules %>%
-        dplyr::filter(targ_freq == target_freq$freq_label), by = c("freq_label" = "ind_freq")
-      )
-
-  # Make sure the number of defined frequencies hold
-  indics <- suppressMessages(tsbox::ts_tbl(model$indic)) %>%
-    standardize_ts_tbl() %>%
-    dplyr::mutate(id = if (!"id" %in% colnames(.)) indic_name else id) %>%
-    stats::na.omit() %>%
-    dplyr::mutate(
-      period = lubridate::floor_date(time, target_freq$freq_label)
-    ) %>%
-    dplyr::left_join(indic_freqs %>% dplyr::select(id, observations), by = "id") %>%  # Add the slicing rule for each group
-    dplyr::group_by(id, period) %>%
-    dplyr::mutate(n = dplyr::n():1) %>%
-    dplyr::filter(n <= observations) %>%
-    dplyr::ungroup() %>%
-    dplyr::select(id, time, values)
-
-  # Make sure the provided time series are aligned
-  # And determine final forecasting date for indics
-  results <- get_final_date(
-    freq = target_freq$frquency,
-    target_start = target_summary$start,
-    target_end = target_summary$end,
-    h = h
-  )
-  target_start <- results$target_start
-  indic_starts <- ifelse(target_freq$frquency == 1,
-                         lubridate::year(indic_summaries$start),
-                         ifelse(target_freq$frquency == 4,
-                                paste0(lubridate::year(indic_summaries$start), "Q", lubridate::quarter(indic_summaries$start)),
-                                ifelse(target_freq$frquency == 12,
-                                       paste0(lubridate::year(indic_summaries$start),"-", lubridate::month(indic_summaries$start)),
-                                       paste0(lubridate::year(indic_summaries$start), "-", lubridate::week(indic_summaries$start)))))
-  final_forecasting_date <- results$final_date
-
-  if (length(unique(c(indic_starts, target_start))) > 1) {
-    # Get earliest common start date
-    max_start <- max(c(target_summary$start, indic_summaries$start)) %>%
-      lubridate::floor_date(target_freq$freq_label)
-    target <- tsbox::ts_span(target, start = max_start) %>%
-      dplyr::mutate(id = if (!"id" %in% colnames(.)) target_name else id) %>%
-      suppressMessages()
-    indics <-  tsbox::ts_span(indics, start = max_start) %>%
-      dplyr::mutate(id = if (!"id" %in% colnames(.)) indic_name else id) %>%
-      suppressMessages()
-    message("The start dates of the target and indicator variables do not match. Aligning them to ", max_start)
-  }
-
-
-  # Get frequency of the target and indic variables
-  target_summary <-  suppressMessages(tsbox::ts_summary(target))
-  indic_summaries <- suppressMessages(tsbox::ts_summary(indic))
-
-
-  message("Dependent variable: ", target_freq$id, " | Frequency: " ,
-          target_freq$freq_label, " | Estimation sample: ", target_summary$start, " - ", target_summary$end,
-          " | Forecast horizon: ", h, " ", target_freq$freq_label, "(s)")
-
-
-  # Forecast the indics
-  indic_forecasts <- dplyr::tibble()
-  indic_models <- list()
-  ind_nr <- 1
-  for (ind_id in unique(indics$id)) {
-    indic_predict <- model$indic_predict[ind_nr]
-    indic_aggregators <- model$indic_aggregators[[ind_nr]]
-
-    indic_single <- indics %>%
-      dplyr::filter(id == ind_id)
-
-    indic_unit <- indic_freqs[indic_freqs$id == ind_id,]$freq_label
-
-    last_date <- max(indic_single$time)
-    last_indic_date <- lubridate::floor_date(final_forecasting_date, indic_unit)
-
-    # Calculate the number of periods to forecast
-    if (indic_unit == target_freq$freq_label) {
-      indic_horizon <- h
-    } else{
-    indic_horizon <- lubridate::interval(
-      last_date,
-      last_indic_date
-      ) %>%
-      lubridate::time_length(unit = indic_unit) %>%
-      as.numeric() %>% round()
-    }
-
-    if (last_date >= final_forecasting_date) {
-      rlang::warn(paste0("The indicator variable ", ind_id, " has data until ", last_date, ". No forecast needed."))
-      next
-    }
-    # Forecast the indicator variable if indic_horizon > 0
-    if (indic_horizon > 0) {
-      if (indic_predict == "last") {
-        # write last value forward until final_forecasting_date
-        last_value <- tail(indic_single$values, 1)
-        indic_single <- suppressMessages(tsbox::ts_bind(indic_single, rep(last_value, indic_horizon )))
-      } else if (indic_predict == "mean") {
-        # write mean value forward until final_forecasting_date
-        mean_value <- tsbox::ts_span(indic_single, start = target_summary$end)$values %>% suppressMessages() %>%
-          mean( na.rm=T)
-        indic_single <- suppressMessages(tsbox::ts_bind(indic_single, rep(mean_value, indic_horizon)))
-      } else if (indic_predict == "auto.arima") {
-        # fit an ARIMA model to the indicator variable and forecast
-        indic_models[[ind_nr]] <- indic_single %>% tsbox::ts_xts()  %>% suppressMessages() %>%
-          forecast::auto.arima() %>% suppressMessages()
-        indic_fcst <- forecast::forecast(indic_models[[ind_nr]], h = indic_horizon)
-        indic_single <- suppressMessages(tsbox::ts_bind(indic_single, as.numeric(indic_fcst$mean)))
-      } else if (indic_predict == "ets") {
-        # fit an ETS model to the indicator variable and forecast
-        indic_models[[ind_nr]] <- indic_single %>% tsbox::ts_xts()  %>% suppressMessages() %>%
-          forecast::ets() %>% suppressMessages()
-        indic_fcst <- forecast::forecast(indic_models[[ind_nr]], h = indic_horizon)
-        indic_single <- suppressMessages(tsbox::ts_bind(indic_single, as.numeric(indic_fcst$mean)))
-      } else {
-        rlang::abort("The indicator prediction method ", indic_predict, " is not supported.")
-      }
-    }
-    # Aggregate the indicator to the target frequency
-    if (is.character(indic_aggregators[1])){
-    if (indic_aggregators == "last") {
-      indic_single <- indic_single %>%
-        tsbox::ts_na_omit() %>%
-        dplyr::mutate(period = lubridate::floor_date(time, rlang::syms(target_freq$freq_label))) %>%
-        dplyr::group_by(period) %>% # Group by the start of each month
-        dplyr::slice_tail(n = 1) %>%                           # Select the last row of each group
-        dplyr::ungroup() %>%
-        dplyr::mutate(time = period) %>%
-        dplyr::select(-period) %>%
-        suppressMessages()
-    } else if (indic_aggregators == "mean") {
-      indic_single <- indic_single %>% tsbox::ts_frequency(to = target_freq$freq_label, aggregate = "mean", na.rm=TRUE) %>%
-        suppressMessages()
-    } else if (indic_aggregators == "sum") {
-      indic_single <- indic_single %>% tsbox::ts_frequency(to = target_freq$freq_label, aggregate = "sum", na.rm=TRUE) %>%
-        suppressMessages()
-    } else if (indic_aggregators == "expalmon") {
-
-      # Set initial parameter guesses
-      # First three: expalmon parameters, last: beta
-      initial_params <- c(rep(stats::rnorm(1), 3))
-
-      # Number of lags per low-frequency observation
-      K <- indic_freqs[indic_freqs$id == ind_id,]$observations
-
-      # Estimate parameters
-      result <- stats::optim(
-        par = initial_params,
-        fn = expalmon_objective,
-        y = model$target,
-        x = indic_single,
-        K = K,
-        target_freq_label = target_freq$freq_label,
-        # Override default method of optim. Use BFGS instead of Nelder-Mead
-        method = "BFGS",
-        control = list(
-          maxit = 5000,
-          trace = F
-          )
-      )
-
-      weights <- exp_almon(result$par[1:3], K)
-      model$expalmon_weights[[ind_id]] <- weights
-
-      indic_single <- indic_single %>%
-        dplyr::mutate(period = lubridate::floor_date(time, rlang::syms(target_freq$freq_label))) %>%
-        dplyr::group_by(period) %>% # Group by the start of each month
-        dplyr::slice_tail(n = K) %>% # Select the last K obs of each group
-        # calculated weighted sum
-        dplyr::summarise(dplyr::across(dplyr::where(is.numeric), ~ sum(weights * ., na.rm=T))) %>%
-        dplyr::ungroup() %>%
-        dplyr::mutate(
-          time = period,
-          id = ind_id) %>%
-        dplyr::select(-period)
-
-    }
-      } else if (is.numeric(indic_aggregators)) {
-
-      # Number of lags per low-frequency observation
-      K <- indic_freqs[indic_freqs$id == ind_id,]$observations
-
-      if (length(indic_aggregators) != K) {
-        rlang::abort("The number of aggregation weights must be equal to the number of observations per low-frequency observation.")
-      } else if(sum(indic_aggregators) != 1) {
-        rlang::abort("The sum of the aggregation weights must be equal to 1.")
-      }
-
-      weights <- indic_aggregators
-      indic_single <- indic_single %>%
-        dplyr::mutate(period = lubridate::floor_date(time, rlang::syms(target_freq$freq_label))) %>%
-        dplyr::group_by(period) %>% # Group by the start of each month
-        dplyr::slice_tail(n = K) %>% # Select the last K obs of each group
-        # calculated weighted sum
-        dplyr::summarise(dplyr::across(dplyr::where(is.numeric), ~ sum(weights * ., na.rm=T))) %>%
-        dplyr::ungroup() %>%
-        dplyr::mutate(
-          time = period,
-          id = ind_id) %>%
-        dplyr::select(-period)
-
-    }
-    else {
-      rlang::abort("The indicator aggregation method ", indic_aggregators, " is not supported.")
-    }
-
-    indic_forecasts <- dplyr::bind_rows(indic_forecasts, indic_single %>% dplyr::mutate(id = ind_id))
-    ind_nr <- ind_nr + 1
-  }
-
-  # Save the indicator models
-  model$indic_models <- indic_models
-
-  # Get the final sample date
-  final_sample_date <- target_summary$end %>%
-    lubridate::ceiling_date(target_freq$freq_label) %m-%
-    lubridate::days(1)
-
-  # Add indicator lags if specified
-  indic_forecasts_lagged <- indic_forecasts
-  if (model$indic_lags > 0) {
-    for (lag in 1:model$indic_lags) {
-      lagged_indic_tmp <- indic_forecasts %>%
-        tsbox::ts_lag(by = lag) %>%
-        dplyr::mutate(id = paste0(id, "_lag", lag)) %>%
-        suppressMessages()
-      indic_forecasts_lagged <- dplyr::bind_rows(indic_forecasts_lagged, lagged_indic_tmp)
-    }
-  }
-
-  # Add target lags if specified
-  # target_lagged  <- model$target %>%
-  #   dplyr::mutate( id = target_name)
-  # if (model$target_lags > 0) {
-  #   for (lag in 1:model$target_lags) {
-  #     lagged_target_tmp <- target %>%
-  #       dplyr::mutate( id = target_name) %>%
-  #       tsbox::ts_lag(by = lag) %>%
-  #       dplyr::mutate(id = paste0(id, "_lag", lag)) %>%
-  #       suppressMessages()
-  #     target_lagged <- dplyr::bind_rows(target_lagged, lagged_target_tmp)
-  #   }
-  # }
-
-  # Full dataset
-  full_data <- dplyr::bind_rows(
-    indic_forecasts_lagged,
-    #target_lagged
-    model$target
-    )
-
-  model$target_name <- target_name
-  model$indic_name <- indic_name
-
-  # Split the target into estimation and forecast periods
-  estimation_set <- full_data %>%
-    dplyr::filter(time <= as.Date(final_sample_date))
-
-  forecast_set <- full_data %>%
-    dplyr::filter(time > as.Date(final_sample_date))
-
-  # Estimate the model
-  formula <- stats::as.formula(paste(
-    target_name,
-    " ~ ",
-    paste(unique(estimation_set$id)[!unique(estimation_set$id) %in% c("time", target_name)],
-          collapse = " + ")
-    ))
-  model$formula <- formula
-
-  model$estimation_set <-  tsbox::ts_wide(estimation_set) %>%
-    stats::na.omit() %>% suppressMessages()
-
-  model$forecast_set <- tsbox::ts_wide(forecast_set) %>%
-    stats::na.omit() %>% suppressMessages()
-
-  estimation_set <- tsbox::ts_xts(tsbox::ts_long(model$estimation_set))
-  forecast_set <- tsbox::ts_xts(tsbox::ts_long(model$forecast_set))
-
-  # Fit the model
-  model$model <- forecast::Arima(
-    estimation_set[,target_name],
-    order = c(target_lags,0,0),
-    xreg =  estimation_set[,!colnames(estimation_set) == target_name]
-    )
-
-
-  return(model)
-}
-
-
-#' Define the Bridge class
-#'
-#' Constructor for the S3 Bridge object
-#' @keywords internal
-#' @noRd
-bridge_model <- function(
-    target,
-    indic,
-    indic_predict,
-    indic_aggregators,
-    indic_lags,
-    target_lags,
-    h,
-    frequency_conversions)
-  {
-  obj <- list(
-    target = target,
-    indic = indic,
+  config <- validate_bridge_inputs(
+    target_tbl = target_tbl,
+    indic_tbl = indic_tbl,
     indic_predict = indic_predict,
     indic_aggregators = indic_aggregators,
     indic_lags = indic_lags,
     target_lags = target_lags,
     h = h,
     frequency_conversions = frequency_conversions,
-    target_name = NULL,
-    estimation_set = NULL,
-    forecast_set = NULL,
-    indic_name = NULL,
-    indic_models = list(),
-    expalmon_weights = list()
+    solver_options = solver_options
   )
 
-  # Assign the S3 class
-  class(obj) <- "bridge"
+  target_tbl <- target_tbl |>
+    dplyr::mutate(id = target_name)
 
-  # Validate the inputs
-  validate_bridge(obj)
+  target_meta <- infer_frequency_table(target_tbl)$target
+  indic_meta <- infer_frequency_table(indic_tbl)$indicators |>
+    dplyr::arrange(match(.data$id, unique(indic_tbl$id)))
 
-  return(obj)
+  aligned <- align_bridge_inputs(
+    target_tbl = target_tbl,
+    indic_tbl = indic_tbl,
+    target_meta = target_meta,
+    indic_meta = indic_meta
+  )
+  target_tbl <- aligned$target
+  indic_tbl <- aligned$indic
+  target_anchor <- aligned$target_anchor
+
+  last_target_time <- max(target_tbl$time)
+  future_target_times <- target_future_times(
+    last_time = last_target_time,
+    target_meta = target_meta,
+    h = h
+  )
+  all_target_times <- c(unique(target_tbl$time), future_target_times)
+
+  indicator_results <- build_indicator_features(
+    indic_tbl = indic_tbl,
+    indic_meta = indic_meta,
+    target_tbl = target_tbl,
+    target_meta = target_meta,
+    target_anchor = target_anchor,
+    future_target_times = future_target_times,
+    indic_predict = config$indic_predict,
+    indic_aggregators = config$indic_aggregators,
+    frequency_conversions = config$frequency_conversions,
+    indic_lags = indic_lags,
+    target_lags = target_lags,
+    solver_options = config$solver_options
+  )
+
+  target_long <- target_tbl |>
+    dplyr::select("id", "time", "values")
+
+  feature_long <- add_indicator_lags(
+    indicator_results$aggregated,
+    indic_lags = indic_lags
+  )
+
+  full_long <- dplyr::bind_rows(target_long, feature_long) |>
+    dplyr::filter(.data$time %in% all_target_times)
+
+  estimation_long <- full_long |>
+    dplyr::filter(.data$time %in% target_tbl$time)
+  forecast_long <- full_long |>
+    dplyr::filter(.data$time %in% future_target_times)
+
+  estimation_set <- suppressMessages(tsbox::ts_wide(estimation_long)) |>
+    stats::na.omit()
+  forecast_set <- suppressMessages(tsbox::ts_wide(forecast_long)) |>
+    stats::na.omit()
+
+  if (nrow(estimation_set) == 0) {
+    rlang::abort(
+      "No complete estimation rows remain after aligning and aggregating the data.",
+      call = rlang::caller_env()
+    )
+  }
+
+  regressor_names <- setdiff(colnames(estimation_set), c("time", target_name))
+  if (length(regressor_names) == 0) {
+    rlang::abort(
+      "At least one aggregated indicator is required to estimate a bridge model.",
+      call = rlang::caller_env()
+    )
+  }
+
+  formula <- stats::as.formula(
+    paste(target_name, "~", paste(regressor_names, collapse = " + "))
+  )
+
+  estimation_xts <- suppressMessages(tsbox::ts_xts(tsbox::ts_long(estimation_set)))
+  xreg_estimation <- estimation_xts[, regressor_names, drop = FALSE]
+
+  model_fit <- forecast::Arima(
+    y = estimation_xts[, target_name],
+    order = c(target_lags, 0, 0),
+    xreg = xreg_estimation
+  )
+
+  structure(
+    list(
+      target = target_tbl,
+      indic = indic_tbl,
+      target_name = target_name,
+      indic_name = unique(indic_tbl$id),
+      target_frequency = target_meta,
+      indicator_frequencies = indic_meta,
+      indic_predict = config$indic_predict,
+      indic_aggregators = config$indic_aggregators,
+      indic_lags = indic_lags,
+      target_lags = target_lags,
+      h = h,
+      frequency_conversions = config$frequency_conversions,
+      solver_options = config$solver_options,
+      formula = formula,
+      estimation_set = estimation_set,
+      forecast_set = forecast_set,
+      model = model_fit,
+      indic_models = indicator_results$models,
+      expalmon_weights = indicator_results$expalmon_weights,
+      expalmon_parameters = indicator_results$expalmon_parameters,
+      expalmon_optimization = indicator_results$expalmon_optimization,
+      truncation_info = indicator_results$truncation_info,
+      regressor_names = regressor_names,
+      target_anchor = target_anchor,
+      future_target_times = future_target_times
+    ),
+    class = "bridge"
+  )
 }
 
-
-#' Validator Function for Bridge Class
-#'
-#' @param self An S3 bridge_model class instance to validate.
-#' @return Error message if validation fails, otherwise NULL.
 #' @keywords internal
 #' @noRd
-validate_bridge <- function(self) {
+validate_bridge_inputs <- function(
+    target_tbl,
+    indic_tbl,
+    indic_predict,
+    indic_aggregators,
+    indic_lags,
+    target_lags,
+    h,
+    frequency_conversions,
+    solver_options = NULL,
+    call = rlang::caller_env()) {
 
-  # Validate @target as ts-boxable
-  if (!tsbox::ts_boxable(self$target)) {
-    rlang::abort("@target must be a ts-boxable object, not ", class(self$target))
+  if (length(unique(target_tbl$id)) != 1) {
+    rlang::abort(
+      "`target` must contain exactly one time series.",
+      call = call
+    )
   }
 
-  # Validate @indic as ts-boxable
-  if (!tsbox::ts_boxable(self$indic)) {
-    rlang::abort("must be a ts-boxable object, not ", class(self$indic))
+  if (nrow(indic_tbl) == 0 || length(unique(indic_tbl$id)) == 0) {
+    rlang::abort(
+      "`indic` must contain at least one time series.",
+      call = call
+    )
   }
 
-  # Get frequency of the target and indic variables
-  target_summary <-  suppressMessages(tsbox::ts_summary(self$target))
-  indic_summaries <- suppressMessages(tsbox::ts_summary(self$indic))
+  check_bridge_series(target_tbl, "target", call = call)
+  check_bridge_series(indic_tbl, "indic", call = call)
 
-  # Validate @target to be a single time series
-  if (nrow(target_summary) > 1) {
-    rlang::abort("@target must be a single time series.")
+  if (!is.numeric(indic_lags) || length(indic_lags) != 1 || indic_lags < 0 ||
+      indic_lags != as.integer(indic_lags)) {
+    rlang::abort("`indic_lags` must be a single non-negative integer.", call = call)
+  }
+  if (!is.numeric(target_lags) || length(target_lags) != 1 || target_lags < 0 ||
+      target_lags != as.integer(target_lags)) {
+    rlang::abort("`target_lags` must be a single non-negative integer.", call = call)
+  }
+  if (!is.numeric(h) || length(h) != 1 || h < 1 || h != as.integer(h)) {
+    rlang::abort("`h` must be a single positive integer.", call = call)
   }
 
-  # Validate target frequency: Yearly or higher
-  target_freq <- round(target_summary$freq)
-  if (!target_freq %in% c(1, 4, 12)) {
-    rlang::abort("@target frequency must be  monthly, quarterly or yearly.")
-  }
+  frequency_conversions <- normalize_frequency_conversions(
+    frequency_conversions,
+    call = call
+  )
+  solver_options <- normalize_expalmon_solver_options(
+    solver_options,
+    call = call
+  )
 
-  # Validate frequency of each indicator in the list: Same or higher than target
-  for (i in 1:nrow(indic_summaries)) {
-    indic_freq <- round(indic_summaries[i,]$freq)
-    if (!indic_freq %in% c(1, 4, 12, 35, 48, 52, 53, 240, 365)) {
-      rlang::abort(indic_summaries[i,]$id, " frequency in @indic must be daily, weekly, monthly, quarterly or yearly.")
+  target_meta <- infer_frequency_table(target_tbl)$target
+  indic_meta <- infer_frequency_table(indic_tbl)$indicators
+
+  for (i in seq_len(nrow(indic_meta))) {
+    obs_per_target <- observations_per_target_period(
+      indicator_meta = indic_meta[i, , drop = FALSE],
+      target_meta = target_meta,
+      frequency_conversions = frequency_conversions,
+      call = call
+    )
+
+    if (obs_per_target < 1) {
+      rlang::abort(
+        paste0(
+          "Indicator `", indic_meta$id[[i]],
+          "` is lower-frequency than the target and cannot be used in a bridge model."
+        ),
+        call = call
+      )
     }
-    else if (round(indic_freq) < round(target_freq)) {
-      rlang::abort(indic_summaries[i,]$id, " frequency in @indic must be the same as or higher than the @target frequency.")
-    }
   }
 
+  n_indicators <- nrow(indic_meta)
+  indic_predict <- normalize_indicator_methods(
+    methods = indic_predict,
+    n_series = n_indicators,
+    default = "auto.arima",
+    arg = "indic_predict",
+    valid = c("mean", "last", "auto.arima", "ets"),
+    call = call
+  )
+  indic_aggregators <- normalize_indicator_aggregators(
+    aggregators = indic_aggregators,
+    n_series = n_indicators,
+    call = call
+  )
 
-  # Validate last observation of each indicator in the list: Same date or later than target
-  for (i in 1:nrow(indic_summaries)) {
-    if (indic_summaries[i,]$end < target_summary$end) {
-      rlang::abort("Last observation of ", indic_summaries[i,]$id, " in @indic must be the same date or later than the last observation of @target.")
-    }
-  }
-
-
-  # Validation for indic_predict
-  num_indic_series <- nrow(indic_summaries)
-  if (!is.null(self$indic_predict)) {
-    len_indic_predict <- length(self$indic_predict)
-    if (len_indic_predict != num_indic_series && len_indic_predict != 1) {
-      rlang::abort("@indic_predict must have length 1 or the same length as the number of time series in @indic.")
-    }
-  }
-
-  # Validation for indic_aggregate
-  if (!is.null(self$indic_aggregators)) {
-    len_indic_aggregators <- length(self$indic_aggregators)
-    if (len_indic_aggregators != num_indic_series && len_indic_aggregators != 1) {
-      rlang::abort("@indic_aggregators must have length 1 or the same length as the number of time series in @indic.")
-    }
-  }
-
-  # Validate @indic_lags and @target_lags
-  if (self$indic_lags < 0) {
-    rlang::abort("@indic_lags must be a non-negative integer.")
-  }
-  else if (self$target_lags < 0) {
-    rlang::abort("@target_lags must be a non-negative integer.")
-  }
-  else if (self$h < 1) {
-    rlang::abort("@h must be a non-negative integer.")
-  }
-
-  # Default frequency conversions
-  default_frequency_conversions <- c("dpw" = 5, "wpm" = 4, "mpq" = 3, "qpy" = 4)
-
-  # Check if fewer than 4 values are supplied and ensure they are named
-  if (!identical(as.numeric(self$frequency_conversions), as.numeric(default_frequency_conversions))) {
-    if (length(self$frequency_conversions) < 4 && is.null(names(self$frequency_conversions))) {
-      rlang::abort("Custom frequency_conversions must be named and have at least one valid name in 'dpw', 'wpm', 'mpq', or 'qpy'.")
-    }
-
-    # Check if all names are valid
-    invalid_names <- setdiff(names(self$frequency_conversions), names(default_frequency_conversions))
-    if (length(invalid_names) > 0) {
-      rlang::abort(paste(
-        "Invalid names in frequency_conversions:",
-        paste(invalid_names, collapse = ", "),
-        "\nValid names are 'dpw', 'wpm', 'mpq', and 'qpy'."
-      ))
-    } else {
-      # Update the default values with the user-supplied ones
-      default_frequency_conversions[names(self$frequency_conversions)] <- self$frequency_conversions
-      self$frequency_conversions <- default_frequency_conversions
-    }
-    # Check dpw is less than or equal to 7
-    if (self$frequency_conversions["dpw"] > 7) {
-      rlang::abort("dpw must be less than or equal to 7.")
-    }
-    # check wpm is less than or equal to 5
-    if (self$frequency_conversions["wpm"] > 5) {
-      rlang::abort("wpm must be less than or equal to 5.")
-    }
-    # check mpq is less than or equal to 3
-    if (self$frequency_conversions["mpq"] > 3) {
-      rlang::abort("mpq must be less than or equal to 3.")
-    }
-    # check qpy is less than or equal to 4
-    if (self$frequency_conversions["qpy"] > 4) {
-      rlang::abort("qpy must be less than or equal to 4.")
-    }
-
-  }
-  NULL
+  list(
+    indic_predict = indic_predict,
+    indic_aggregators = indic_aggregators,
+    frequency_conversions = frequency_conversions,
+    solver_options = solver_options
+  )
 }
 
+#' @keywords internal
+#' @noRd
+build_indicator_features <- function(
+    indic_tbl,
+    indic_meta,
+    target_tbl,
+    target_meta,
+    target_anchor,
+    future_target_times,
+    indic_predict,
+    indic_aggregators,
+    frequency_conversions,
+    indic_lags = 0,
+    target_lags = 0,
+    solver_options = normalize_expalmon_solver_options(NULL),
+    call = rlang::caller_env()) {
 
+  aggregated_fixed <- vector("list", length = nrow(indic_meta))
+  models <- vector("list", length = nrow(indic_meta))
+  expalmon_weights <- list()
+  expalmon_parameters <- list()
+  truncation_info <- vector("list", length = nrow(indic_meta))
+  expalmon_specs <- list()
 
+  target_name <- unique(target_tbl$id)
+  last_target_time <- max(target_tbl$time)
+
+  for (i in seq_len(nrow(indic_meta))) {
+    indicator_id <- indic_meta$id[[i]]
+    indicator_tbl <- indic_tbl |>
+      dplyr::filter(.data$id == indicator_id)
+
+    obs_per_target <- observations_per_target_period(
+      indicator_meta = indic_meta[i, , drop = FALSE],
+      target_meta = target_meta,
+      frequency_conversions = frequency_conversions,
+      call = call
+    )
+
+    indicator_extension <- extend_indicator_series(
+      indicator_tbl = indicator_tbl,
+      indicator_id = indicator_id,
+      indicator_meta = indic_meta[i, , drop = FALSE],
+      target_meta = target_meta,
+      target_anchor = target_anchor,
+      future_target_times = future_target_times,
+      obs_per_target = obs_per_target,
+      predict_method = indic_predict[[i]],
+      reference_target_time = last_target_time
+    )
+    indicator_tbl <- indicator_extension$data
+
+    aggregation <- prepare_indicator_period_blocks(
+      indicator_tbl = indicator_tbl,
+      indicator_id = indicator_id,
+      target_meta = target_meta,
+      target_anchor = target_anchor,
+      obs_per_target = obs_per_target,
+      call = call
+    )
+
+    models[i] <- list(indicator_extension$model)
+    truncation_info[[i]] <- aggregation$truncation
+
+    aggregator <- indic_aggregators[[i]]
+    if (is.character(aggregator) && identical(aggregator, "expalmon")) {
+      expalmon_specs[[indicator_id]] <- list(
+        indicator_id = indicator_id,
+        periods = aggregation$periods,
+        blocks = aggregation$blocks,
+        obs_per_target = obs_per_target
+      )
+    } else {
+      aggregated_fixed[[i]] <- as_indicator_long(
+        indicator_id = indicator_id,
+        periods = aggregation$periods,
+        values = aggregate_indicator_blocks(
+          blocks = aggregation$blocks,
+          aggregator = aggregator,
+          indicator_id = indicator_id,
+          call = call
+        )
+      )
+    }
+  }
+
+  fixed_aggregated <- dplyr::bind_rows(aggregated_fixed)
+  if (is.null(fixed_aggregated) || nrow(fixed_aggregated) == 0) {
+    fixed_aggregated <- dplyr::tibble(
+      id = character(),
+      time = target_tbl$time[0],
+      values = numeric()
+    )
+  }
+  expalmon_optimization <- NULL
+  if (length(expalmon_specs) > 0) {
+    expalmon_fit <- optimize_expalmon_weights(
+      expalmon_specs = expalmon_specs,
+      fixed_aggregated = fixed_aggregated,
+      target_tbl = target_tbl,
+      target_name = target_name,
+      indic_lags = indic_lags,
+      target_lags = target_lags,
+      solver_options = solver_options,
+      call = call
+    )
+    fixed_aggregated <- dplyr::bind_rows(
+      fixed_aggregated,
+      expalmon_fit$aggregated
+    )
+    expalmon_weights <- expalmon_fit$weights
+    expalmon_parameters <- expalmon_fit$parameters
+    expalmon_optimization <- expalmon_fit$optimization
+  }
+
+  truncation_info <- stats::setNames(truncation_info, indic_meta$id)
+  affected <- vapply(
+    truncation_info,
+    function(info) !is.null(info) && info$n_periods > 0,
+    FUN.VALUE = logical(1)
+  )
+  if (any(affected)) {
+    details <- vapply(
+      truncation_info[affected],
+      function(info) paste0(info$indicator_id, " (", info$n_periods, " period", if (info$n_periods == 1) "" else "s", ")"),
+      FUN.VALUE = character(1)
+    )
+    rlang::warn(
+      paste0(
+        "Some indicators had more observations within a target period than implied by the current frequency mapping. ",
+        "Using the most recent observations for: ",
+        paste(details, collapse = ", "),
+        "."
+      ),
+      call = call
+    )
+  }
+
+  list(
+    aggregated = fixed_aggregated,
+    models = stats::setNames(models, indic_meta$id),
+    expalmon_weights = expalmon_weights,
+    expalmon_parameters = expalmon_parameters,
+    expalmon_optimization = expalmon_optimization,
+    truncation_info = truncation_info
+  )
+}

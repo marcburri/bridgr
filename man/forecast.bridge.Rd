@@ -2,62 +2,23 @@
 % Please edit documentation in R/forecast.R
 \name{forecast.bridge}
 \alias{forecast.bridge}
-\title{Forecasting from a \code{bridge} object}
+\title{Forecast a Bridge Model}
 \usage{
 \method{forecast}{bridge}(object, xreg = NULL, ...)
 }
 \arguments{
-\item{object}{A \code{bridge} object obtained from \code{\link[=bridge]{bridge()}}.}
+\item{object}{A \code{"bridge"} object returned by \code{\link[=bridge]{bridge()}}.}
 
-\item{xreg}{A \code{\link[tsbox:ts_boxable]{tsbox::ts_boxable()}} series of external regressors. If not
-supplied by the user, the forecast set calculated by \code{\link[=bridge]{bridge()}}
-will be used. This is useful for made up scenarios.}
+\item{xreg}{Optional future regressors in a \code{\link[tsbox:ts_boxable]{tsbox::ts_boxable()}} format.
+When omitted, the forecast set stored inside \code{object} is used.}
 
-\item{...}{Additional arguments to be passed to the forecast function. Ignored at the moment.}
+\item{...}{Passed to \code{\link[forecast:reexports]{forecast::forecast()}}.}
 }
 \value{
-An object of class "\code{forecast}".
-An object of class \code{"forecast"} is a list usually containing at least
-the following elements: \item{model}{A list containing information about the
-fitted model} \item{method}{The name of the forecasting method as a
-character string} \item{mean}{Point forecasts as a time series}
-\item{lower}{Lower limits for prediction intervals} \item{upper}{Upper
-limits for prediction intervals} \item{level}{The confidence values
-associated with the prediction intervals} \item{x}{The original time series
-(either \code{object} itself or the time series used to create the model
-stored as \code{object}).} \item{residuals}{Residuals from the fitted model.
-For models with additive errors, the residuals will be x minus the fitted
-values.} \item{fitted}{Fitted values (one-step forecasts)} \item{forecast_set}{The
-forecast set with the forecasted indicator variables used to calculate the forecast of
-the target variable.}
+An object of class \code{"forecast"} with an additional
+\code{forecast_set} component containing the target-period regressors used for the
+forecast.
 }
 \description{
-This function is used to forecast the target variable using the fitted \code{bridge} model.
-}
-\examples{
-library(bridgr)
-
-# Example usage
-target_series <- suppressMessages(tsbox::ts_tbl(data.frame(
-  time = seq(as.Date("2020-01-01"), as.Date("2022-12-01"), by = "quarter"),
-  value = rnorm(12)
-)))
-
-indic_series <- suppressMessages(tsbox::ts_tbl(data.frame(
-  time = seq(as.Date("2020-01-01"), as.Date("2023-01-01"), by = "month"),
-  value = rnorm(37)
-)))
-
-bridge_model <- suppressMessages(bridge(
-  target = target_series,
-  indic = indic_series,
-  indic_predict = "mean",
-  indic_aggregators = "mean",
-  indic_lags = 2,
-  target_lags = 1,
-  h = 1
-))
-
-# Forecasting using the bridge model
-fcst <- forecast(bridge_model)
+Forecast the target variable from a fitted \code{\link[=bridge]{bridge()}} model.
 }
