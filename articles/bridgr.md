@@ -55,7 +55,20 @@ where:
 In many applications, \\\omega (k)\\ is simply an **average** over the
 values in the higher frequency periods. Alternative aggregation
 techniques include taking the **last observation** (e.g., the last month
-of the quarter) or applying **weighted averages**.
+of the quarter), applying fixed **weighted averages**, or estimating
+exponential-Almon weights from the data.
+
+In `bridgr`, the supported aggregation choices are:
+
+- `"mean"`
+- `"last"`
+- `"sum"`
+- numeric weights supplied in `list(...)`
+- `"expalmon"`
+
+When `"expalmon"` is used for more than one indicator, the package
+estimates those weight profiles jointly against the final bridge-model
+objective. This avoids choosing each weighting profile in isolation.
 
 ### The Model Specification
 
@@ -82,6 +95,14 @@ recent observations are missing. This combination of aggregation and
 forecasting ensures that bridge models are versatile tools for dealing
 with incomplete data scenarios.
 
+The package assumes a regular frequency ladder from `second` to `year`,
+with default mappings such as `60` seconds per minute, `7` days per
+week, and `4` weeks per month. These defaults can be adjusted through
+`frequency_conversions`. If a target period contains more high-frequency
+observations than implied by the current mapping, `bridgr` uses the most
+recent observations and issues a summarized warning. If it contains
+fewer observations than required, estimation stops with an error.
+
 ## A Quick Example
 
 The `bridgr` package simplifies the construction and estimation of
@@ -104,7 +125,7 @@ library(tsbox)
 data("gdp")  # Quarterly GDP data
 data("baro") # Monthly economic indicator
 
-gdp <- tsbox::ts_pc(gdp) # Calculate growth rate
+gdp <- tsbox::ts_na_omit(tsbox::ts_pc(gdp)) # Calculate growth rate
 
 # Visualize the data
 ts_ggplot(
@@ -128,35 +149,38 @@ GDP data. Moreover, there is a significant correlation.
 bridge_model <- bridge(
   target = gdp, 
   indic = baro , 
+  indic_predict = "auto.arima",
+  indic_aggregators = "mean",
   indic_lags = 1, 
   target_lags=1, 
   h=2 
 )
-#> The start dates of the target and indicator variables do not match. Aligning them to 2004-04-01
-#> Dependent variable: gdp | Frequency: quarter | Estimation sample: 2004-04-01 - 2022-10-01 | Forecast horizon: 2 quarter(s)
+#> [value]: 'values' 
+#> [value]: 'values'
 ```
 
 Because by calculating the GDP growth rate, there is one observation
-less at the beginning of the GDP series. The `bridge`function detects
-mismatched starting dates and aligns them to the earliest common date.
-The model is then estimated using the specified lags for the target and
-indicator variables. The `h` argument specifies the number of periods to
-forecast the lower frequency variable. The `bridge` model returns both
-the dataset the main model was estimated as well as the forecasted
-dataset for the indicator variables.
+less at the beginning of the GDP series. The
+[`bridge()`](https://marcburri.github.io/bridgr/reference/bridge.md)
+function detects mismatched starting dates and aligns them to the
+earliest common date. The model is then estimated using the specified
+lags for the target and indicator variables. The `h` argument specifies
+the number of periods to forecast the lower frequency variable. The
+fitted object returns both the target-frequency estimation sample and
+the forecast-period regressor set used for prediction.
 
 ``` r
 # Inspect the datasets
 tail(bridge_model$estimation_set)
 #> # A tibble: 6 × 4
-#>   time        baro baro_lag1   gdp
-#>   <date>     <dbl>     <dbl> <dbl>
-#> 1 2021-07-01 112.      125.  2.34 
-#> 2 2021-10-01 104.      112.  0.411
-#> 3 2022-01-01  97.4     104.  0.105
-#> 4 2022-04-01  94.3      97.4 1.03 
-#> 5 2022-07-01  90.0      94.3 0.255
-#> 6 2022-10-01  90.7      90.0 0.102
+#>   time         gdp  baro baro_lag1
+#>   <date>     <dbl> <dbl>     <dbl>
+#> 1 2021-07-01 2.34  112.      125. 
+#> 2 2021-10-01 0.411 104.      112. 
+#> 3 2022-01-01 0.105  97.4     104. 
+#> 4 2022-04-01 1.03   94.3      97.4
+#> 5 2022-07-01 0.255  90.0      94.3
+#> 6 2022-10-01 0.102  90.7      90.0
 head(bridge_model$forecast_set)
 #> # A tibble: 2 × 3
 #>   time        baro baro_lag1
@@ -194,9 +218,14 @@ ts_ggplot(
 summary(bridge_model)
 #> Bridge model summary
 #> -----------------------------------
+#> Target series: gdp
+#> Target frequency: quarter (step 1)
+#> Forecast horizon: 2
+#> Formula: gdp ~ baro + baro_lag1
+#> -----------------------------------
 #> Main model:
 #> -----------------------------------
-#> Series:  gdp 
+#> Series: estimation_xts[, target_name] 
 #> Regression with ARIMA(1,0,0) errors 
 #> 
 #> Coefficients:
@@ -207,9 +236,12 @@ summary(bridge_model)
 #> sigma^2 = 0.5625:  log likelihood = -81.69
 #> AIC=173.38   AICc=174.26   BIC=184.9
 #> -----------------------------------
-#> Single indicator models:
+#> Indicator models:
 #> -----------------------------------
-#> Series:  baro 
+#> Series: baro
+#> Frequency: month (step 1)
+#> Forecast method: auto.arima
+#> Series: xts_series 
 #> ARIMA(1,0,2) with non-zero mean 
 #> 
 #> Coefficients:
@@ -219,7 +251,79 @@ summary(bridge_model)
 #> 
 #> sigma^2 = 18.46:  log likelihood = -646.14
 #> AIC=1302.28   AICc=1302.55   BIC=1319.36
-#> Aggregation to low frequency:
-#> Using mean over values in corresponding periods.
+#> Aggregation: mean
 #> -----------------------------------
 ```
+
+### Using `expalmon` Aggregation
+
+If you want the within-period weights to be estimated from the data
+rather than fixed at a simple mean, you can use
+`indic_aggregators = "expalmon"`. The optimizer can be controlled with
+`solver_options`.
+
+``` r
+expalmon_model <- bridge(
+  target = gdp,
+  indic = baro,
+  indic_predict = "auto.arima",
+  indic_aggregators = "expalmon",
+  solver_options = list(seed = 123, n_starts = 3),
+  h = 1
+)
+
+summary(expalmon_model)
+#> Bridge model summary
+#> -----------------------------------
+#> Target series: gdp
+#> Target frequency: quarter (step 1)
+#> Forecast horizon: 1
+#> Formula: gdp ~ baro
+#> -----------------------------------
+#> Main model:
+#> -----------------------------------
+#> Series: estimation_xts[, target_name] 
+#> Regression with ARIMA(0,0,0) errors 
+#> 
+#> Coefficients:
+#>       intercept    baro
+#>         -9.3713  0.0982
+#> s.e.     1.0730  0.0106
+#> 
+#> sigma^2 = 0.8333:  log likelihood = -98.57
+#> AIC=203.14   AICc=203.48   BIC=210.09
+#> -----------------------------------
+#> Indicator models:
+#> -----------------------------------
+#> Series: baro
+#> Frequency: month (step 1)
+#> Forecast method: auto.arima
+#> Series: xts_series 
+#> ARIMA(1,0,2) with non-zero mean 
+#> 
+#> Coefficients:
+#>          ar1     ma1     ma2      mean
+#>       0.6688  0.5305  0.3316  100.8580
+#> s.e.  0.0653  0.0799  0.0753    1.5774
+#> 
+#> sigma^2 = 18.46:  log likelihood = -646.14
+#> AIC=1302.28   AICc=1302.55   BIC=1319.36
+#> Aggregation: expalmon
+#> Estimated expalmon weights: 0.006, 0.994, 0
+#> Estimated expalmon parameters: -4.914, -10
+#> -----------------------------------
+#> Joint expalmon optimization:
+#> -----------------------------------
+#> Method: L-BFGS-B
+#> Objective value: 60.8316
+#> Convergence code: 0
+#> Best start: 1 / 3
+#> Message: CONVERGENCE: REL_REDUCTION_OF_F <= FACTR*EPSMCH
+#> -----------------------------------
+```
+
+For single-indicator models this gives a data-driven weighting profile
+for the high-frequency observations within each target period. For
+multi-indicator models, all `expalmon` indicators are optimized jointly
+so that the weighting scheme is chosen for the bridge equation as a
+whole.

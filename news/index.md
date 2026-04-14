@@ -4,6 +4,8 @@
 
 ## bridgr 0.1.2
 
+CRAN release: 2026-02-18
+
 - Solve dependency issues with xts
 
 ## bridgr 0.1.1

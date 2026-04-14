@@ -3,6 +3,6 @@
 These objects are imported from other packages. Follow the links below
 to see their documentation.
 
-- generics:
+- forecast:
 
-  [`forecast`](https://generics.r-lib.org/reference/forecast.html)
+  [`forecast`](https://pkg.robjhyndman.com/forecast/reference/reexports.html)
