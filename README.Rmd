@@ -30,6 +30,8 @@ knitr::opts_chunk$set(
 
 Bridge models are statistical tools that link high-frequency indicators (e.g., monthly industrial production) to low-frequency target variables (e.g., quarterly GDP) by forecasting and aggregating the indicators to match the target's frequency. They enable timely predictions before the official release of low-frequency data, making them essential for policymakers who need early insights for decision-making.
 
+`bridgr` supports regular frequency ladders from `second` up to `year`, several deterministic and model-based indicator forecasting rules, and multiple aggregation choices including joint `expalmon` weighting. If a target period contains more high-frequency observations than implied by the current frequency mapping, the package keeps the most recent observations and reports a summarized warning.
+
 ## Installation
 
 From CRAN:
@@ -47,17 +49,22 @@ devtools::install_github("marcburri/bridgr")
 
 ## Example
 
-This is a basic example:
+This is a basic example with the default mean aggregation:
 
 ```{r example}
-library(bridgr)
+if (requireNamespace("bridgr", quietly = TRUE)) {
+  library(bridgr)
+} else {
+  pkgload::load_all(".", export_all = FALSE, helpers = FALSE, quiet = TRUE)
+}
 
-gdp <- suppressMessages(tsbox::ts_pc(bridgr::gdp))
+gdp <- suppressMessages(tsbox::ts_na_omit(tsbox::ts_pc(bridgr::gdp)))
 
 bridge_model <- bridge(
   target = gdp, 
   indic = baro, 
   indic_predict = "auto.arima", 
+  indic_aggregators = "mean",
   indic_lags = 2, 
   target_lags=1, 
   h=2
@@ -68,3 +75,17 @@ forecast(bridge_model)
 summary(bridge_model)
 ```
 
+If you want data-driven within-period weights instead of a simple mean, you can switch the indicator aggregator to `expalmon`. The corresponding weights are estimated jointly within the bridge model, and `solver_options` let you control the optimization.
+
+```{r expalmon-example}
+expalmon_model <- bridge(
+  target = gdp,
+  indic = baro,
+  indic_predict = "auto.arima",
+  indic_aggregators = "expalmon",
+  solver_options = list(seed = 123, n_starts = 3),
+  h = 1
+)
+
+summary(expalmon_model)
+```

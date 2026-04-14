@@ -47,7 +47,17 @@ where:
  
  - \( \omega (k) \): The weight assigned to the k-th period of the higher frequency data.
 
-In many applications, \( \omega (k) \) is simply an **average** over the values in the higher frequency periods. Alternative aggregation techniques include taking the **last observation** (e.g., the last month of the quarter) or applying **weighted averages**.
+In many applications, \( \omega (k) \) is simply an **average** over the values in the higher frequency periods. Alternative aggregation techniques include taking the **last observation** (e.g., the last month of the quarter), applying fixed **weighted averages**, or estimating exponential-Almon weights from the data.
+
+In `bridgr`, the supported aggregation choices are:
+
+ - `"mean"`
+ - `"last"`
+ - `"sum"`
+ - numeric weights supplied in `list(...)`
+ - `"expalmon"`
+
+When `"expalmon"` is used for more than one indicator, the package estimates those weight profiles jointly against the final bridge-model objective. This avoids choosing each weighting profile in isolation.
 
 ## The Model Specification
 
@@ -67,6 +77,8 @@ where:
 
 
 Bridge models also handle cases where some high-frequency indicators are not fully observed at the time of forecasting. In such cases, missing observations for the current period are imputed or forecast using time series models (e.g., ARIMA, ETS). This allows predictions even when recent observations are missing. This combination of aggregation and forecasting ensures that bridge models are versatile tools for dealing with incomplete data scenarios.
+
+The package assumes a regular frequency ladder from `second` to `year`, with default mappings such as `60` seconds per minute, `7` days per week, and `4` weeks per month. These defaults can be adjusted through `frequency_conversions`. If a target period contains more high-frequency observations than implied by the current mapping, `bridgr` uses the most recent observations and issues a summarized warning. If it contains fewer observations than required, estimation stops with an error.
 
 
 # A Quick Example
@@ -88,7 +100,7 @@ library(tsbox)
 data("gdp")  # Quarterly GDP data
 data("baro") # Monthly economic indicator
 
-gdp <- tsbox::ts_pc(gdp) # Calculate growth rate
+gdp <- tsbox::ts_na_omit(tsbox::ts_pc(gdp)) # Calculate growth rate
 
 # Visualize the data
 ts_ggplot(
@@ -109,6 +121,8 @@ By visualizing the data,it becomes obvious that the monthly economic indicator (
 bridge_model <- bridge(
   target = gdp, 
   indic = baro , 
+  indic_predict = "auto.arima",
+  indic_aggregators = "mean",
   indic_lags = 1, 
   target_lags=1, 
   h=2 
@@ -118,7 +132,7 @@ bridge_model <- bridge(
 
 
 Because by calculating the GDP growth rate, there is one observation less at the beginning of the GDP series. 
-The `bridge`function detects mismatched starting dates and aligns them to the earliest common date. The model is then estimated using the specified lags for the target and indicator variables. The `h` argument specifies the number of periods to forecast the lower frequency variable. The `bridge` model returns both the dataset the main model was estimated as well as the forecasted dataset for the indicator variables.
+The `bridge()` function detects mismatched starting dates and aligns them to the earliest common date. The model is then estimated using the specified lags for the target and indicator variables. The `h` argument specifies the number of periods to forecast the lower frequency variable. The fitted object returns both the target-frequency estimation sample and the forecast-period regressor set used for prediction.
 
 ```{r datasets, message=T, fig.pos="center"}
 # Inspect the datasets
@@ -155,3 +169,21 @@ summary(bridge_model)
   
 ```
 
+## Using `expalmon` Aggregation
+
+If you want the within-period weights to be estimated from the data rather than fixed at a simple mean, you can use `indic_aggregators = "expalmon"`. The optimizer can be controlled with `solver_options`.
+
+```{r expalmon, message=FALSE}
+expalmon_model <- bridge(
+  target = gdp,
+  indic = baro,
+  indic_predict = "auto.arima",
+  indic_aggregators = "expalmon",
+  solver_options = list(seed = 123, n_starts = 3),
+  h = 1
+)
+
+summary(expalmon_model)
+```
+
+For single-indicator models this gives a data-driven weighting profile for the high-frequency observations within each target period. For multi-indicator models, all `expalmon` indicators are optimized jointly so that the weighting scheme is chosen for the bridge equation as a whole.

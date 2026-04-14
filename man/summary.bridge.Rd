@@ -2,46 +2,18 @@
 % Please edit documentation in R/summary.R
 \name{summary.bridge}
 \alias{summary.bridge}
-\title{Summarize a \code{bridge}  object}
+\title{Summarize a Bridge Model}
 \usage{
 \method{summary}{bridge}(object, ...)
 }
 \arguments{
-\item{object}{A \code{bridge} object obtained from \code{\link[=bridge]{bridge()}}.}
+\item{object}{A \code{"bridge"} object returned by \code{\link[=bridge]{bridge()}}.}
 
-\item{...}{Additional arguments to be passed to the summary function. Ignored at the moment.}
+\item{...}{Unused.}
 }
 \value{
-The function \code{summary} is used to obtain and print a summary of the
-results.
+\code{object}, invisibly.
 }
 \description{
-This method is summarizes the bridge model.
-}
-\examples{
-library(bridgr)
-
-# Example usage
-target_series <- suppressMessages(tsbox::ts_tbl(data.frame(
-  time = seq(as.Date("2020-01-01"), as.Date("2022-12-01"), by = "quarter"),
-  value = rnorm(12)
-)))
-
-indic_series <- suppressMessages(tsbox::ts_tbl(data.frame(
-  time = seq(as.Date("2020-01-01"), as.Date("2023-01-01"), by = "month"),
-  value = rnorm(37)
-)))
-
-bridge_model <- suppressMessages(bridge(
-  target = target_series,
-  indic = indic_series,
-  indic_predict = "mean",
-  indic_aggregators = "mean",
-  indic_lags = 2,
-  target_lags = 1,
-  h = 1
-))
-
-# Summarize the information in the bridge model
-summary(bridge_model)
+Summarize a Bridge Model
 }
