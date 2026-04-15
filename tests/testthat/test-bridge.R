@@ -1,4 +1,4 @@
-test_that("bridge keeps indicators that already extend beyond the forecast horizon", {
+test_that("bridge keeps indicators beyond the forecast horizon", {
   indic <- make_monthly_indicator()
   target <- make_quarter_target(indic, n_quarters = 6)
 
@@ -14,7 +14,7 @@ test_that("bridge keeps indicators that already extend beyond the forecast horiz
   expect_equal(nrow(model$forecast_set), 1)
 })
 
-test_that("bridge supports multiple indicators with per-series aggregation choices", {
+test_that("bridge supports multiple indicators with mixed aggregation", {
   indic <- make_multi_indicator()
   target <- make_quarter_target(
     monthly_indicator = dplyr::tibble(
@@ -158,7 +158,7 @@ test_that("deprecated solver option `start` is rejected", {
   )
 })
 
-test_that("forecast.bridge uses stored future regressors and accepts custom xreg", {
+test_that("forecast.bridge uses stored regressors and accepts xreg", {
   indic <- make_monthly_indicator()
   target <- make_quarter_target(indic, n_quarters = 6)
 
@@ -231,7 +231,11 @@ test_that(
   {
     simulated <- make_exact_multifrequency_simulation()
 
-    target_tbl <- bridgr:::as_bridge_tbl(simulated$target, "target", "target") |>
+    target_tbl <- bridgr:::as_bridge_tbl(
+      simulated$target,
+      "target",
+      "target"
+    ) |>
       dplyr::mutate(id = "target")
     indic_tbl <- bridgr:::as_bridge_tbl(simulated$indic, "indic", "indic")
 
@@ -290,7 +294,9 @@ test_that(
     estimated <- stats::coef(fit)[c("(Intercept)", "second", "minute", "hour")]
     expect_equal(
       unname(estimated),
-      unname(simulated$coefficients[c("intercept", "second", "minute", "hour")]),
+      unname(
+        simulated$coefficients[c("intercept", "second", "minute", "hour")]
+      ),
       tolerance = 5e-2
     )
   }
@@ -301,7 +307,11 @@ test_that(
   {
     simulated <- make_day_week_month_simulation()
 
-    target_tbl <- bridgr:::as_bridge_tbl(simulated$target, "target", "target") |>
+    target_tbl <- bridgr:::as_bridge_tbl(
+      simulated$target,
+      "target",
+      "target"
+    ) |>
       dplyr::mutate(id = "target")
     indic_tbl <- bridgr:::as_bridge_tbl(simulated$indic, "indic", "indic")
 
@@ -370,11 +380,15 @@ test_that(
 )
 
 test_that(
-  "bridge preprocessing recovers known coefficients for month-quarter-year data",
+  "bridge preprocessing recovers month-quarter-year coefficients",
   {
     simulated <- make_month_quarter_year_simulation()
 
-    target_tbl <- bridgr:::as_bridge_tbl(simulated$target, "target", "target") |>
+    target_tbl <- bridgr:::as_bridge_tbl(
+      simulated$target,
+      "target",
+      "target"
+    ) |>
       dplyr::mutate(id = "target")
     indic_tbl <- bridgr:::as_bridge_tbl(simulated$indic, "indic", "indic")
 
@@ -433,7 +447,9 @@ test_that(
     estimated <- stats::coef(fit)[c("(Intercept)", "month", "quarter", "year")]
     expect_equal(
       unname(estimated),
-      unname(simulated$coefficients[c("intercept", "month", "quarter", "year")]),
+      unname(
+        simulated$coefficients[c("intercept", "month", "quarter", "year")]
+      ),
       tolerance = 7e-2
     )
   }
@@ -452,12 +468,16 @@ test_that("single-indicator expalmon recovers deterministic weights", {
   )
 
   indicator_id <- model$indic_name[[1]]
-  expect_equal(model$expalmon_weights[[indicator_id]], fixture$true_weights, tolerance = 0.08)
+  expect_equal(
+    model$expalmon_weights[[indicator_id]],
+    fixture$true_weights,
+    tolerance = 0.08
+  )
   expect_equal(model$expalmon_optimization$convergence, 0)
   expect_equal(sort(names(model$expalmon_parameters)), indicator_id)
 })
 
-test_that("joint expalmon optimization improves the final bridge fit over separate optimization", {
+test_that("joint expalmon optimization improves the fit", {
   fixture <- make_expalmon_joint_fixture(n_periods = 12)
 
   model <- bridge(
@@ -490,7 +510,12 @@ test_that("joint expalmon optimization improves the final bridge fit over separa
         )
         sum(stats::residuals(stats::lm(fixture$target$value ~ aggregated))^2)
       }
-      stats::optim(c(0, 0), objective, method = "BFGS", control = list(maxit = 100))$par
+      stats::optim(
+        c(0, 0),
+        objective,
+        method = "BFGS",
+        control = list(maxit = 100)
+      )$par
     }
   )
   names(separate_weights) <- c("x1", "x2")
@@ -551,7 +576,10 @@ test_that("joint expalmon optimization improves the final bridge fit over separa
 })
 
 test_that("joint expalmon optimization works alongside fixed aggregators", {
-  fixture <- make_expalmon_joint_fixture(n_periods = 12, include_mean_indicator = TRUE)
+  fixture <- make_expalmon_joint_fixture(
+    n_periods = 12,
+    include_mean_indicator = TRUE
+  )
 
   model <- bridge(
     target = fixture$target,
@@ -570,10 +598,15 @@ test_that("joint expalmon optimization works alongside fixed aggregators", {
   )
 })
 
-test_that("auto.arima recovers the first-step indicator dynamics and propagates forecasts", {
+test_that("auto.arima recovers indicator dynamics", {
   phi <- 0.7
   indic <- make_seeded_ar1_indicator(n = 240, phi = phi, seed = 123)
-  target <- make_quarter_target(indic, n_quarters = 80, intercept = 0.5, slope = 1.1)
+  target <- make_quarter_target(
+    indic,
+    n_quarters = 80,
+    intercept = 0.5,
+    slope = 1.1
+  )
 
   model <- bridge(
     target = target,
@@ -586,9 +619,19 @@ test_that("auto.arima recovers the first-step indicator dynamics and propagates 
 
   expect_s3_class(model$indic_models$indic, "Arima")
   expect_true("ar1" %in% names(stats::coef(model$indic_models$indic)))
-  expect_equal(unname(stats::coef(model$indic_models$indic)[["ar1"]]), phi, tolerance = 0.12)
+  expect_equal(
+    unname(stats::coef(model$indic_models$indic)[["ar1"]]),
+    phi,
+    tolerance = 0.12
+  )
 
-  manual_monthly_forecast <- as.numeric(forecast::forecast(model$indic_models$indic, h = 3)$mean)
+  manual_monthly_forecast <- as.numeric(
+    forecast::forecast(model$indic_models$indic, h = 3)$mean
+  )
   expected_quarter_mean <- mean(manual_monthly_forecast)
-  expect_equal(model$forecast_set$indic[[1]], expected_quarter_mean, tolerance = 1e-8)
+  expect_equal(
+    model$forecast_set$indic[[1]],
+    expected_quarter_mean,
+    tolerance = 1e-8
+  )
 })

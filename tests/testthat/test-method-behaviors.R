@@ -1,4 +1,6 @@
-test_that("forecast method `last` repeats the latest observed high-frequency value", {
+test_that(
+  "forecast method `last` repeats the latest observed value",
+  {
   fixture <- make_daily_week_fixture(
     n_weeks = 6,
     h = 1,
@@ -17,9 +19,10 @@ test_that("forecast method `last` repeats the latest observed high-frequency val
 
   expected <- utils::tail(fixture$observed_indicator_values, 1)
   expect_equal(model$forecast_set[[model$indic_name[[1]]]][[1]], expected)
-})
+  }
+)
 
-test_that("forecast method `mean` repeats the last target-period mean", {
+test_that("forecast method `mean` repeats the last block mean", {
   fixture <- make_daily_week_fixture(
     n_weeks = 6,
     h = 1,
@@ -37,7 +40,10 @@ test_that("forecast method `mean` repeats the last target-period mean", {
   )
 
   expected <- mean(fixture$observed_indicator_values[36:42])
-  expect_equal(model$forecast_set[[model$indic_name[[1]]]][[1]], expected)
+  expect_equal(
+    model$forecast_set[[model$indic_name[[1]]]][[1]],
+    expected
+  )
 })
 
 test_that("forecast method `auto.arima` matches direct indicator forecasting", {
@@ -67,7 +73,11 @@ test_that("forecast method `auto.arima` matches direct indicator forecasting", {
     unname(stats::coef(direct_fit)),
     tolerance = 1e-8
   )
-  expect_equal(model$forecast_set[[model$indic_name[[1]]]][[1]], expected, tolerance = 1e-8)
+  expect_equal(
+    model$forecast_set[[model$indic_name[[1]]]][[1]],
+    expected,
+    tolerance = 1e-8
+  )
 })
 
 test_that("forecast method `ets` matches direct indicator forecasting", {
@@ -92,7 +102,11 @@ test_that("forecast method `ets` matches direct indicator forecasting", {
   expected <- mean(as.numeric(forecast::forecast(direct_fit, h = 7)$mean))
 
   expect_s3_class(model$indic_models[[model$indic_name[[1]]]], "ets")
-  expect_equal(model$forecast_set[[model$indic_name[[1]]]][[1]], expected, tolerance = 1e-8)
+  expect_equal(
+    model$forecast_set[[model$indic_name[[1]]]][[1]],
+    expected,
+    tolerance = 1e-8
+  )
 })
 
 test_that("aggregation method `mean` uses the within-period mean", {
@@ -173,10 +187,15 @@ test_that("aggregation with numeric weights uses the supplied weights", {
     h = 1
   )
 
-  expect_equal(model$estimation_set[[model$indic_name[[1]]]][[6]], sum(weights * (36:42)))
+  expect_equal(
+    model$estimation_set[[model$indic_name[[1]]]][[6]],
+    sum(weights * (36:42))
+  )
 })
 
-test_that("aggregation method `unrestricted` keeps one regressor per high-frequency slot", {
+test_that(
+  "aggregation method `unrestricted` keeps one regressor per slot",
+  {
   fixture <- make_daily_week_fixture(
     n_weeks = 6,
     h = 1,
@@ -195,13 +214,15 @@ test_that("aggregation method `unrestricted` keeps one regressor per high-freque
   expect_true(all(paste0(prefix, "_hf", 1:7) %in% model$regressor_names))
   expect_equal(model$estimation_set[[paste0(prefix, "_hf1")]][[6]], 36)
   expect_equal(model$estimation_set[[paste0(prefix, "_hf7")]][[6]], 42)
-})
+  }
+)
 
 test_that("aggregation method `expalmon` uses its estimated weights", {
   fixture <- make_daily_week_fixture(
     n_weeks = 12,
     h = 1,
-    indicator_values = 50 + seq_len(91) + rep(c(0, 2, -1, 3, -2, 1, 0), length.out = 91)
+    indicator_values = 50 + seq_len(91) +
+      rep(c(0, 2, -1, 3, -2, 1, 0), length.out = 91)
   )
   target <- fixture$target
   indic <- fixture$indic
@@ -229,7 +250,8 @@ test_that("aggregation method `beta` uses its estimated weights", {
   fixture <- make_daily_week_fixture(
     n_weeks = 12,
     h = 1,
-    indicator_values = 60 + seq_len(91) + rep(c(1, -1, 2, -2, 3, -3, 0), length.out = 91)
+    indicator_values = 60 + seq_len(91) +
+      rep(c(1, -1, 2, -2, 3, -3, 0), length.out = 91)
   )
 
   model <- bridge(
@@ -255,7 +277,8 @@ test_that("aggregation method `legendre` uses its estimated weights", {
   fixture <- make_daily_week_fixture(
     n_weeks = 12,
     h = 1,
-    indicator_values = 75 + seq_len(91) + rep(c(2, 1, 0, -1, -2, 1, 3), length.out = 91)
+    indicator_values = 75 + seq_len(91) +
+      rep(c(2, 1, 0, -1, -2, 1, 3), length.out = 91)
   )
 
   model <- bridge(
@@ -277,7 +300,7 @@ test_that("aggregation method `legendre` uses its estimated weights", {
   )
 })
 
-test_that("forecast method `direct` aligns the latest complete blocks backward", {
+test_that("forecast method `direct` aligns blocks backward", {
   fixture <- make_daily_week_fixture(
     n_weeks = 6,
     h = 1,
@@ -364,7 +387,9 @@ test_that("beta weights match the normalized beta definition used by midasr", {
   expect_equal(weights, expected, tolerance = 1e-12)
 })
 
-test_that("legendre basis matches the shifted orthonormal definition used by midasml", {
+test_that(
+  "legendre basis matches the shifted orthonormal midasml definition",
+  {
   basis <- bridgr:::parametric_polynomial_basis("legendre", c(0, 0), 5)
   x <- seq(0, 1, length.out = 5)
   expected <- cbind(
@@ -373,10 +398,11 @@ test_that("legendre basis matches the shifted orthonormal definition used by mid
   )
 
   expect_equal(basis, expected, tolerance = 1e-12)
-})
+  }
+)
 
 test_that(
-  "aggregation method `unrestricted` warns when predictors are dense relative to observations",
+  "aggregation method `unrestricted` warns for dense predictors",
   {
   fixture <- make_daily_week_fixture(
     n_weeks = 12,

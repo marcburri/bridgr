@@ -12,7 +12,6 @@ utils::globalVariables(c(
 #' @importFrom lubridate %m+% %m-%
 #' @importFrom utils tail
 #' @importFrom forecast forecast
-#' @import xts
 NULL
 
 # Objects for re export

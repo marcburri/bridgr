@@ -152,7 +152,10 @@ fallback_period_start_times <- function(times) {
     }
     candidate_frequency <- detect_month_frequency(sort(unique(candidate_times)))
 
-    if (!is.null(candidate_frequency) && identical(candidate_frequency$unit, unit)) {
+    if (
+      !is.null(candidate_frequency) &&
+        identical(candidate_frequency$unit, unit)
+    ) {
       return(candidate_times)
     }
   }
@@ -647,7 +650,10 @@ validate_parametric_solver_start <- function(
     if (length(parametric_specs) > 1) {
       rlang::abort(
         paste0(
-          "`solver_options$start_values` must be named for the parametric indicators: ",
+          paste0(
+            "`solver_options$start_values` must be named for the ",
+            "parametric indicators: "
+          ),
           paste(spec_names, collapse = ", "),
           "."
         ),
@@ -731,7 +737,9 @@ bridgr_with_seed <- function(seed, expr) {
     return(eval(expr, envir = parent.frame()))
   }
 
-  old_seed <- if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+  old_seed <- if (
+    exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+  ) {
     get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
   } else {
     NULL
@@ -743,7 +751,9 @@ bridgr_with_seed <- function(seed, expr) {
           rm(".Random.seed", envir = .GlobalEnv)
         }
       } else {
-        assign(".Random.seed", old_seed, envir = .GlobalEnv) # nolint: object_name_linter.
+        # nolint start: object_name_linter.
+        assign(x = ".Random.seed", value = old_seed, envir = .GlobalEnv)
+        # nolint end
       }
     },
     add = TRUE
@@ -809,7 +819,8 @@ target_future_times <- function(last_time, target_meta, h) {
 compute_target_periods <- function(times, target_anchor, target_meta) {
   # Map each timestamp into the target period it belongs to.
   period_index <- floor(
-    unit_distance(times, target_anchor, target_meta$unit[[1]]) / target_meta$step[[1]]
+    unit_distance(times, target_anchor, target_meta$unit[[1]]) /
+      target_meta$step[[1]]
   )
 
   shift_time_vec(
@@ -847,7 +858,10 @@ unit_distance <- function(times, origin, unit) {
     return(month_diff / 12)
   }
 
-  rlang::abort(paste0("Unsupported unit `", unit, "`."), call = rlang::caller_env())
+  rlang::abort(
+    paste0("Unsupported unit `", unit, "`."),
+    call = rlang::caller_env()
+  )
 }
 
 #' @keywords internal
@@ -878,7 +892,10 @@ shift_time <- function(time, n, unit) {
     return(time %m+% lubridate::period(num = n, units = "year"))
   }
 
-  rlang::abort(paste0("Unsupported unit `", unit, "`."), call = rlang::caller_env())
+  rlang::abort(
+    paste0("Unsupported unit `", unit, "`."),
+    call = rlang::caller_env()
+  )
 }
 
 #' @keywords internal
@@ -914,7 +931,10 @@ extend_indicator_series <- function(
   )
 
   observed_future <- sum(target_periods %in% future_target_times)
-  missing_obs <- max(0L, obs_per_target * length(future_target_times) - observed_future)
+  missing_obs <- max(
+    0L,
+    obs_per_target * length(future_target_times) - observed_future
+  )
 
   model <- NULL
   if (missing_obs > 0) {
@@ -926,7 +946,8 @@ extend_indicator_series <- function(
       )
     }
 
-    # Forecast only the high-frequency points needed to populate future target periods.
+    # Forecast only the high-frequency points needed to populate future
+    # target periods.
     extension <- forecast_indicator_values(
       indicator_tbl = indicator_tbl,
       indicator_meta = indicator_meta,
@@ -1043,7 +1064,8 @@ prepare_indicator_period_blocks <- function(
   if (nrow(insufficient_periods) > 0) {
     rlang::abort(
       paste0(
-        "Indicator `", indicator_id, "` has fewer observations within at least one target period ",
+        "Indicator `", indicator_id,
+        "` has fewer observations within at least one target period ",
         "than required by the current frequency mapping (required: ",
         obs_per_target,
         ")."
@@ -1099,7 +1121,8 @@ prepare_indicator_direct_blocks <- function(
       paste0(
         "Indicator `", indicator_id,
         "` does not contain enough observations for direct alignment ",
-        "(required at least ", obs_per_target, ", available: ", nrow(indicator_tbl), ")."
+        "(required at least ", obs_per_target,
+        ", available: ", nrow(indicator_tbl), ")."
       ),
       call = call
     )
@@ -1532,7 +1555,8 @@ aggregate_parametric_specs <- function(parametric_specs, parameter_blocks) {
   for (i in seq_along(parametric_specs)) {
     spec <- parametric_specs[[i]]
     indicator_id <- spec$indicator_id
-    # Rebuild each indicator's target-frequency series from the current weight guess.
+    # Rebuild each indicator's target-frequency series from the current
+    # weight guess.
     current_weights <- parametric_weights(
       aggregator = spec$aggregator,
       parameters = parameter_blocks[[indicator_id]],
@@ -1647,7 +1671,8 @@ optimize_parametric_weights <- function(
   upper <- bounds$upper
   estimation_times <- unique(target_tbl$time)
 
-  # Score candidate weights by the final bridge-model fit, not indicator fit alone.
+  # Score candidate weights by the final bridge-model fit, not indicator
+  # fit alone.
   objective <- function(parameters) {
     parameter_blocks <- parameter_blocks_from_optimizer(
       parameters = parameters,
@@ -1683,7 +1708,8 @@ optimize_parametric_weights <- function(
       function(start_index) {
         current_start <- base_start
         if (start_index > 1) {
-          # Jitter later starts so the optimizer can escape poor local solutions.
+          # Jitter later starts so the optimizer can escape poor local
+          # solutions.
           current_start <- current_start + stats::rnorm(
             length(base_start),
             mean = 0,
@@ -1734,7 +1760,8 @@ optimize_parametric_weights <- function(
   if (!isTRUE(best_result$convergence == 0)) {
     rlang::warn(
       paste0(
-        "Joint parametric aggregation optimization did not fully converge (code ",
+        "Joint parametric aggregation optimization did not fully ",
+        "converge (code ",
         best_result$convergence,
         "). Using the best available parameter vector."
       ),
@@ -1793,7 +1820,11 @@ add_indicator_lags <- function(data, indic_lags) {
 
 #' @keywords internal
 #' @noRd
-as_forecast_xreg <- function(xreg, regressor_names, call = rlang::caller_env()) {
+as_forecast_xreg <- function(
+  xreg,
+  regressor_names,
+  call = rlang::caller_env()
+) {
   if (length(regressor_names) == 0) {
     return(NULL)
   }

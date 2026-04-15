@@ -43,11 +43,17 @@ make_multi_indicator <- function(n = 24, start = "2020-01-01") {
 make_daily_indicator <- function(n = 84, start = "2020-01-01") {
   dplyr::tibble(
     time = seq(as.Date(start), by = "day", length.out = n),
-    value = 50 + seq_len(n) * 0.5 + rep(c(0, 1, -1, 2, -2, 1, 0), length.out = n)
+    value = 50 + seq_len(n) * 0.5 +
+      rep(c(0, 1, -1, 2, -2, 1, 0), length.out = n)
   )
 }
 
-make_weekly_target <- function(daily_indicator, n_weeks = 8, intercept = 0, slope = 1) {
+make_weekly_target <- function(
+  daily_indicator,
+  n_weeks = 8,
+  intercept = 0,
+  slope = 1
+) {
   values <- daily_indicator$value[seq_len(n_weeks * 7)]
   week_means <- vapply(
     seq_len(n_weeks),
@@ -60,7 +66,8 @@ make_weekly_target <- function(daily_indicator, n_weeks = 8, intercept = 0, slop
 
   dplyr::tibble(
     time = daily_indicator$time[seq(1, n_weeks * 7, by = 7)],
-    value = intercept + slope * week_means + rep(c(0.25, -0.5, 0.75, -0.25), length.out = n_weeks)
+    value = intercept + slope * week_means +
+      rep(c(0.25, -0.5, 0.75, -0.25), length.out = n_weeks)
   )
 }
 
@@ -78,12 +85,22 @@ make_exact_multifrequency_simulation <- function(
   start_time <- as.POSIXct(start, tz = "UTC")
   n_hours_total <- n_target + h
 
-  second_times <- seq(start_time, by = "30 sec", length.out = n_hours_total * 120)
-  minute_times <- seq(start_time, by = "10 min", length.out = n_hours_total * 6)
+  second_times <- seq(
+    start_time,
+    by = "30 sec",
+    length.out = n_hours_total * 120
+  )
+  minute_times <- seq(
+    start_time,
+    by = "10 min",
+    length.out = n_hours_total * 6
+  )
   hour_times <- seq(start_time, by = "hour", length.out = n_hours_total)
 
-  second_values <- sin(seq_along(second_times) / 240) + seq_along(second_times) / 20000
-  minute_values <- cos(seq_along(minute_times) / 4) + seq_along(minute_times) / 500
+  second_values <- sin(seq_along(second_times) / 240) +
+    seq_along(second_times) / 20000
+  minute_values <- cos(seq_along(minute_times) / 4) +
+    seq_along(minute_times) / 500
   hour_values <- c(
     0.5, -1.2, 0.8, 1.4, -0.6, 0.1, 1.1, -0.9, 0.4, 1.6, -0.3
   )[seq_len(n_hours_total)]
@@ -154,18 +171,28 @@ make_day_week_month_simulation <- function(
 ) {
   start_date <- as.Date(start)
   month_starts <- seq(start_date, by = "month", length.out = n_months + h)
-  end_date <- seq(start_date, by = "month", length.out = n_months + h + 1)[n_months + h + 1] - 1
+  end_date <- seq(start_date, by = "month", length.out = n_months + h + 1)[
+    n_months + h + 1
+  ] - 1
 
   day_times <- seq(start_date, end_date, by = "day")
   week_times <- seq(start_date, end_date, by = "week")
   month_times <- month_starts
 
-  day_values <- 5 + seq_along(day_times) / 40 + sin(seq_along(day_times) / 3)
-  week_values <- -2 + seq_along(week_times) / 10 + cos(seq_along(week_times) / 2)
-  month_values <- c(0.5, -1.0, 1.2, 0.3, -0.4, 0.9, -0.7, 1.4, 0.2)[seq_len(n_months + h)]
+  day_values <- 5 + seq_along(day_times) / 40 +
+    sin(seq_along(day_times) / 3)
+  week_values <- -2 + seq_along(week_times) / 10 +
+    cos(seq_along(week_times) / 2)
+  month_values <- c(0.5, -1.0, 1.2, 0.3, -0.4, 0.9, -0.7, 1.4, 0.2)[
+    seq_len(n_months + h)
+  ]
 
-  month_periods_day <- as.Date(lubridate::floor_date(day_times, unit = "month"))
-  month_periods_week <- as.Date(lubridate::floor_date(week_times, unit = "month"))
+  month_periods_day <- as.Date(
+    lubridate::floor_date(day_times, unit = "month")
+  )
+  month_periods_week <- as.Date(
+    lubridate::floor_date(week_times, unit = "month")
+  )
 
   day_monthly <- aggregate_latest_mean_by_period(
     values = day_values,
@@ -217,15 +244,25 @@ make_month_quarter_year_simulation <- function(
 ) {
   start_date <- as.Date(start)
   month_times <- seq(start_date, by = "month", length.out = (n_years + h) * 12)
-  quarter_times <- seq(start_date, by = "quarter", length.out = (n_years + h) * 4)
+  quarter_times <- seq(
+    start_date,
+    by = "quarter",
+    length.out = (n_years + h) * 4
+  )
   year_times <- seq(start_date, by = "year", length.out = n_years + h)
 
-  month_values <- 3 + seq_along(month_times) / 30 + sin(seq_along(month_times) / 2)
-  quarter_values <- 1 + seq_along(quarter_times) / 8 + cos(seq_along(quarter_times) / 3)
-  year_values <- c(1.4, -0.8, 0.6, 1.1, -0.5, 0.9, 1.7, -0.2, 0.3)[seq_len(n_years + h)]
+  month_values <- 3 + seq_along(month_times) / 30 +
+    sin(seq_along(month_times) / 2)
+  quarter_values <- 1 + seq_along(quarter_times) / 8 +
+    cos(seq_along(quarter_times) / 3)
+  year_values <- c(1.4, -0.8, 0.6, 1.1, -0.5, 0.9, 1.7, -0.2, 0.3)[
+    seq_len(n_years + h)
+  ]
 
   month_periods <- as.Date(lubridate::floor_date(month_times, unit = "year"))
-  quarter_periods <- as.Date(lubridate::floor_date(quarter_times, unit = "year"))
+  quarter_periods <- as.Date(
+    lubridate::floor_date(quarter_times, unit = "year")
+  )
 
   month_yearly <- aggregate_latest_mean_by_period(
     values = month_values,
@@ -270,7 +307,9 @@ make_seeded_ar1_indicator <- function(
   start = "2000-01-01",
   seed = 123
 ) {
-  old_seed <- if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+  old_seed <- if (
+    exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+  ) {
     get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
   } else {
     NULL
@@ -281,7 +320,9 @@ make_seeded_ar1_indicator <- function(
         if (is.null(old_seed)) {
           rm(".Random.seed", envir = .GlobalEnv)
         } else {
-          assign(".Random.seed", old_seed, envir = .GlobalEnv) # nolint: object_name_linter.
+          # nolint start: object_name_linter.
+          assign(x = ".Random.seed", value = old_seed, envir = .GlobalEnv)
+          # nolint end
         }
       }
     },
@@ -318,7 +359,8 @@ make_daily_week_fixture <- function(
     seq_len(n_weeks),
     function(i) {
       idx <- ((i - 1) * 7 + 1):(i * 7)
-      mean(indicator_values[idx]) + c(0.2, -0.1, 0.05, -0.15)[((i - 1) %% 4) + 1]
+      mean(indicator_values[idx]) +
+        c(0.2, -0.1, 0.05, -0.15)[((i - 1) %% 4) + 1]
     },
     FUN.VALUE = numeric(1)
   )
@@ -421,7 +463,8 @@ make_expalmon_joint_fixture <- function(
       FUN.VALUE = numeric(1)
     )
     coefficients <- c(coefficients, x3 = 0.6)
-    target_value <- target_value + coefficients[["x3"]] * agg_x3[seq_len(n_periods)]
+    target_value <- target_value +
+      coefficients[["x3"]] * agg_x3[seq_len(n_periods)]
     indic <- rbind(
       indic,
       dplyr::tibble(

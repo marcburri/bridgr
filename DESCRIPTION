@@ -3,11 +3,27 @@ Type: Package
 Title: Bridging Data Frequencies for Timely Economic Forecasts
 Version: 0.1.2
 Authors@R: c(
-    person("Marc", "Burri", ,"marc.burri91@gmail.com", role = c("aut", "cre", "cph"),
-           comment = c(ORCID = "0000-0001-8974-9090"))
+    person(
+      "Marc", "Burri", , "marc.burri91@gmail.com",
+      role = c("aut", "cre", "cph"),
+      comment = c(ORCID = "0000-0001-8974-9090")
+    )
   )
 Maintainer: Marc Burri <marc.burri91@gmail.com>
-Description: Implements bridge and MIDAS-style mixed-frequency models for nowcasting and forecasting macroeconomic variables by linking higher-frequency indicator variables to a lower-frequency target series. The package standardizes input data, infers regular frequencies, forecasts missing indicator observations, and aggregates indicators to the target frequency before fitting a regression with autoregressive target dynamics. Frequency alignment can be customized through user-supplied conversion rules. For more on bridge and MIDAS models, see Baffigi, A., Golinelli, R., & Parigi, G. (2004) <doi:10.1016/S0169-2070(03)00067-0>, Ghysels, Sinko, & Valkanov (2007) <doi:10.1080/07474930600972467>, Andreou, Ghysels, & Kourtellos (2010) <doi:10.1016/j.jeconom.2010.01.004>, Schumacher (2016) <doi:10.1016/j.ijforecast.2015.07.004>, and Burri <https://onlinelibrary.wiley.com/doi/10.1111/obes.70073>.
+Description: Implements bridge and MIDAS-style mixed-frequency models for
+    nowcasting and forecasting macroeconomic variables by linking
+    higher-frequency indicator variables to a lower-frequency target series.
+    The package standardizes input data, infers regular frequencies,
+    forecasts missing indicator observations, and aggregates indicators to
+    the target frequency before fitting a regression with autoregressive
+    target dynamics. Frequency alignment can be customized through
+    user-supplied conversion rules. For more on bridge and MIDAS models, see
+    Baffigi, A., Golinelli, R., & Parigi, G. (2004)
+    <doi:10.1016/S0169-2070(03)00067-0>, Ghysels, Sinko, & Valkanov (2007)
+    <doi:10.1080/07474930600972467>, Andreou, Ghysels, & Kourtellos (2010)
+    <doi:10.1016/j.jeconom.2010.01.004>, Schumacher (2016)
+    <doi:10.1016/j.ijforecast.2015.07.004>, and Burri (2026)
+    <doi:10.1111/obes.70073>.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -18,12 +34,12 @@ Imports:
     rlang,
     tsbox,
     lubridate,
-    forecast,
-    xts
+    forecast
 Suggests:
     knitr,
     rmarkdown,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    xts
 Config/testthat/edition: 3
 Depends: 
     R (>= 4.1.0)

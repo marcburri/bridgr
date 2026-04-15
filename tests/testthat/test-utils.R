@@ -1,6 +1,12 @@
-test_that("solver option normalization validates and rounds control values", {
+test_that("solver option normalization validates controls", {
   options <- bridgr:::normalize_parametric_solver_options(
-    list(method = "BFGS", maxiter = 10.4, n_starts = 2.6, trace = 1.2, seed = 9.7)
+    list(
+      method = "BFGS",
+      maxiter = 10.4,
+      n_starts = 2.6,
+      trace = 1.2,
+      seed = 9.7
+    )
   )
 
   expect_equal(options$method, "BFGS")
@@ -31,7 +37,7 @@ test_that("solver option normalization validates and rounds control values", {
   )
 })
 
-test_that("parametric start values are validated by type, names, and constraints", {
+test_that("parametric start values are validated", {
   parametric_specs <- list(
     a = list(aggregator = "beta"),
     b = list(aggregator = "legendre")
@@ -74,7 +80,7 @@ test_that("parametric start values are validated by type, names, and constraints
   )
 })
 
-test_that("month frequency detection distinguishes month, quarter, and year steps", {
+test_that("month frequency detection distinguishes calendar steps", {
   expect_equal(
     bridgr:::detect_month_frequency(
       seq(as.Date("2020-01-01"), by = "month", length.out = 4)
@@ -95,7 +101,7 @@ test_that("month frequency detection distinguishes month, quarter, and year step
   )
 })
 
-test_that("period-end dates are standardized to period starts for calendar frequencies", {
+test_that("period-end dates are standardized to period starts", {
   monthly_end <- dplyr::tibble(
     id = "x",
     time = lubridate::ceiling_date(
@@ -123,7 +129,7 @@ test_that("period-end dates are standardized to period starts for calendar frequ
   )
 })
 
-test_that("observations per target period requires integer frequency alignment", {
+test_that("observations per target period requires integer alignment", {
   defaults <- bridgr:::default_frequency_conversions()
 
   expect_equal(

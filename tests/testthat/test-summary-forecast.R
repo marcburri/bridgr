@@ -1,4 +1,4 @@
-test_that("summary.bridge reports deterministic custom-weight indicators", {
+test_that("summary.bridge reports deterministic custom weights", {
   indic <- make_monthly_indicator()
   target <- make_quarter_target(indic, n_quarters = 6)
 
@@ -13,12 +13,16 @@ test_that("summary.bridge reports deterministic custom-weight indicators", {
   output <- capture.output(summary(model))
 
   expect_true(any(grepl("Bridge model summary", output, fixed = TRUE)))
-  expect_true(any(grepl("Indicator model: deterministic extension", output, fixed = TRUE)))
+  expect_true(any(grepl(
+    "Indicator model: deterministic extension",
+    output,
+    fixed = TRUE
+  )))
   expect_true(any(grepl("Aggregation: custom weights", output, fixed = TRUE)))
   expect_true(any(grepl("0.2, 0.3, 0.5", output, fixed = TRUE)))
 })
 
-test_that("summary.bridge reports parametric weights and optimization details", {
+test_that("summary.bridge reports parametric optimization details", {
   indic <- make_monthly_indicator(n = 36)
   target <- make_quarter_target(indic, n_quarters = 12)
 
@@ -27,7 +31,12 @@ test_that("summary.bridge reports parametric weights and optimization details", 
     indic = indic,
     indic_predict = "last",
     indic_aggregators = "beta",
-    solver_options = list(start_values = c(2, 3), seed = 42, n_starts = 1, maxiter = 100),
+    solver_options = list(
+      start_values = c(2, 3),
+      seed = 42,
+      n_starts = 1,
+      maxiter = 100
+    ),
     h = 1
   ))
   model$parametric_optimization$message <- "optimizer note"
@@ -35,8 +44,16 @@ test_that("summary.bridge reports parametric weights and optimization details", 
   output <- capture.output(summary(model))
 
   expect_true(any(grepl("Estimated parametric weights:", output, fixed = TRUE)))
-  expect_true(any(grepl("Estimated parametric parameters:", output, fixed = TRUE)))
-  expect_true(any(grepl("Joint parametric aggregation optimization:", output, fixed = TRUE)))
+  expect_true(any(grepl(
+    "Estimated parametric parameters:",
+    output,
+    fixed = TRUE
+  )))
+  expect_true(any(grepl(
+    "Joint parametric aggregation optimization:",
+    output,
+    fixed = TRUE
+  )))
   expect_true(any(grepl("Message: optimizer note", output, fixed = TRUE)))
 })
 
@@ -64,7 +81,10 @@ test_that("forecast.bridge accepts custom xreg for ARIMA bridge models", {
   expect_s3_class(model$model, "Arima")
   expect_s3_class(scenario_forecast, "forecast")
   expect_equal(nrow(scenario_forecast$forecast_set), 2)
-  expect_gt(max(abs(as.numeric(scenario_forecast$mean - default_forecast$mean))), 1e-6)
+  expect_gt(
+    max(abs(as.numeric(scenario_forecast$mean - default_forecast$mean))),
+    1e-6
+  )
   expect_equal(
     scenario_forecast$forecast_set[, model$regressor_names, drop = FALSE],
     dplyr::tibble(

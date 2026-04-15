@@ -1,4 +1,4 @@
-test_that("direct alignment reuses the latest complete blocks and drops incomplete tails", {
+test_that("direct alignment reuses complete blocks", {
   indicator_tbl <- dplyr::tibble(
     id = "x",
     time = seq(as.Date("2020-01-01"), by = "day", length.out = 17),
@@ -50,10 +50,16 @@ test_that("mean extension uses the latest available high-frequency block", {
     predict_method = "mean"
   )
 
-  expect_equal(utils::tail(extension$data$values, 2), c(346.667, 346.667), tolerance = 1e-6)
+  expect_equal(
+    utils::tail(extension$data$values, 2),
+    c(346.667, 346.667),
+    tolerance = 1e-6
+  )
 })
 
-test_that("direct bridge alignment works with numeric and unrestricted aggregation together", {
+test_that(
+  "direct bridge alignment works with numeric and unrestricted aggregation",
+  {
   indic_a <- dplyr::tibble(
     id = "a",
     time = seq(as.Date("2020-01-01"), by = "month", length.out = 16),
@@ -84,7 +90,8 @@ test_that("direct bridge alignment works with numeric and unrestricted aggregati
   expect_equal(model$forecast_set$b_hf1[[1]], 114)
   expect_equal(model$forecast_set$b_hf2[[1]], 115)
   expect_equal(model$forecast_set$b_hf3[[1]], 116)
-})
+  }
+)
 
 test_that("target period helpers respect mixed-frequency calendar boundaries", {
   monthly_times <- seq(as.Date("2020-01-01"), by = "month", length.out = 5)
@@ -100,7 +107,10 @@ test_that("target period helpers respect mixed-frequency calendar boundaries", {
       target_anchor = as.Date("2020-01-01"),
       target_meta = quarterly_meta
     ),
-    as.Date(c("2020-01-01", "2020-01-01", "2020-01-01", "2020-04-01", "2020-04-01"))
+    as.Date(c(
+      "2020-01-01", "2020-01-01", "2020-01-01",
+      "2020-04-01", "2020-04-01"
+    ))
   )
   expect_equal(
     bridgr:::unit_distance(
@@ -124,7 +134,7 @@ test_that("target period helpers respect mixed-frequency calendar boundaries", {
   )
 })
 
-test_that("bridge accepts end-of-period monthly and quarterly dates via period-start fallback", {
+test_that("bridge accepts end-of-period dates via fallback", {
   indic <- dplyr::tibble(
     time = lubridate::ceiling_date(
       seq(as.Date("2020-01-01"), by = "month", length.out = 15),
@@ -150,7 +160,10 @@ test_that("bridge accepts end-of-period monthly and quarterly dates via period-s
 
   expect_equal(
     model$target$time,
-    as.Date(c("2020-01-01", "2020-04-01", "2020-07-01", "2020-10-01", "2021-01-01"))
+    as.Date(c(
+      "2020-01-01", "2020-04-01", "2020-07-01",
+      "2020-10-01", "2021-01-01"
+    ))
   )
   expect_equal(
     utils::head(model$indic$time, 3),
@@ -158,7 +171,7 @@ test_that("bridge accepts end-of-period monthly and quarterly dates via period-s
   )
 })
 
-test_that("optimizer warning path keeps the best available non-converged start", {
+test_that("optimizer warning keeps the best non-converged start", {
   parametric_specs <- list(
     x = list(
       indicator_id = "x",
@@ -224,7 +237,7 @@ test_that("optimizer warning path keeps the best available non-converged start",
   expect_equal(length(result$weights$x), 3)
 })
 
-test_that("optimizer aborts when every candidate has a non-finite objective value", {
+test_that("optimizer aborts when every candidate is non-finite", {
   parametric_specs <- list(
     x = list(
       indicator_id = "x",
@@ -282,7 +295,7 @@ test_that("optimizer aborts when every candidate has a non-finite objective valu
   )
 })
 
-test_that("unrestricted warning depends on predictor density after lags and multiple indicators", {
+test_that("unrestricted warning depends on predictor density", {
   monthly_indicator <- make_monthly_indicator(n = 120)
   target <- make_quarter_target(monthly_indicator, n_quarters = 40)
 
@@ -298,7 +311,11 @@ test_that("unrestricted warning depends on predictor density after lags and mult
 
   multi_indic <- make_multi_indicator(n = 120)
   target_multi <- make_quarter_target(
-    monthly_indicator = subset(multi_indic, id == "a", select = c("time", "value")),
+      monthly_indicator = subset(
+        multi_indic,
+        id == "a",
+        select = c("time", "value")
+      ),
     n_quarters = 40
   )
 
@@ -315,13 +332,25 @@ test_that("unrestricted warning depends on predictor density after lags and mult
   )
 })
 
-test_that("named start_values flow through mixed parametric aggregators end to end", {
+test_that("named start_values flow through mixed aggregators", {
   base_indicator <- make_monthly_indicator(n = 36)
   target <- make_quarter_target(base_indicator, n_quarters = 12)
   indic <- rbind(
-    dplyr::tibble(id = "a", time = base_indicator$time, value = base_indicator$value),
-    dplyr::tibble(id = "b", time = base_indicator$time, value = base_indicator$value + 10),
-    dplyr::tibble(id = "c", time = base_indicator$time, value = base_indicator$value - 5)
+    dplyr::tibble(
+      id = "a",
+      time = base_indicator$time,
+      value = base_indicator$value
+    ),
+    dplyr::tibble(
+      id = "b",
+      time = base_indicator$time,
+      value = base_indicator$value + 10
+    ),
+    dplyr::tibble(
+      id = "c",
+      time = base_indicator$time,
+      value = base_indicator$value - 5
+    )
   )
   start_values <- list(
     a = c(0.1, 0.2),
@@ -367,7 +396,7 @@ test_that("named start_values flow through mixed parametric aggregators end to e
   expect_true(all(c("a", "b", "c") %in% names(model$parametric_weights)))
 })
 
-test_that("beta aggregation stays positive under unconstrained optimizer methods", {
+test_that("beta aggregation stays positive under BFGS", {
   indic <- make_monthly_indicator(n = 36)
   target <- make_quarter_target(indic, n_quarters = 12)
 
@@ -376,9 +405,15 @@ test_that("beta aggregation stays positive under unconstrained optimizer methods
     indic = indic,
     indic_predict = "last",
     indic_aggregators = "beta",
-    solver_options = list(method = "BFGS", n_starts = 1, maxiter = 50, start_values = c(2, 3)),
+    solver_options = list(
+      method = "BFGS",
+      n_starts = 1,
+      maxiter = 50,
+      start_values = c(2, 3)
+    ),
     h = 1
   )
 
   expect_true(all(model$parametric_parameters$indic > 0))
-})
+  }
+)

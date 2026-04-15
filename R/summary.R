@@ -69,7 +69,10 @@ summary.bridge <- function(object, ...) {
     if (!is.null(object$parametric_weights[[indicator_id]])) {
       cat("Estimated parametric weights: ")
       cat(
-        paste(round(object$parametric_weights[[indicator_id]], 3), collapse = ", ")
+        paste(
+          round(object$parametric_weights[[indicator_id]], 3),
+          collapse = ", "
+        )
       )
       cat("\n")
       if (!is.null(object$parametric_parameters[[indicator_id]])) {
