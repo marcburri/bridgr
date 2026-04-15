@@ -145,7 +145,17 @@ forecast models or parametric aggregation weights inside each bootstrap draw.
 
 # Where to Go Next
 
-The second vignette, `vignette("mixed-frequency-modeling", package = "bridgr")`,
-compares the main aggregation strategies and shows how `bridgr` moves from
-classic bridge models to unrestricted and parametric MIDAS-style
-specifications.
+The vignette
+`vignette("mixed-frequency-modeling", package = "bridgr")` compares the main
+aggregation strategies and shows how `bridgr` moves from classic bridge models
+to unrestricted and parametric MIDAS-style specifications.
+
+The vignette
+`vignette("ragged-edge-nowcasting", package = "bridgr")` focuses on
+`indic_predict` and the different ways to handle incomplete high-frequency
+data at the forecast origin.
+
+The vignette
+`vignette("uncertainty-and-scenarios", package = "bridgr")` shows how to work
+with conditional block-bootstrap uncertainty and scenario forecasts based on
+custom future regressor paths.
