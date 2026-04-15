@@ -19,6 +19,7 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 [![Lifecycle: stable](https://img.shields.io/badge/lifecycle-stable-green.svg)](https://lifecycle.r-lib.org/articles/stages.html#stable)
 [![R-CMD-check](https://github.com/marcburri/bridgr/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/marcburri/bridgr/actions/workflows/R-CMD-check.yaml)
+[![Lint](https://github.com/marcburri/bridgr/actions/workflows/lint.yaml/badge.svg)](https://github.com/marcburri/bridgr/actions/workflows/lint.yaml)
 [![bridgr status badge](https://marcburri.r-universe.dev/badges/bridgr)](https://marcburri.r-universe.dev/bridgr)
 [![CRAN status](https://www.r-pkg.org/badges/version/bridgr)](https://CRAN.R-project.org/package=bridgr)
 [![](https://cranlogs.r-pkg.org/badges/grand-total/bridgr)](https://CRAN.R-project.org/package=bridgr)
@@ -61,13 +62,13 @@ if (requireNamespace("bridgr", quietly = TRUE)) {
 gdp <- suppressMessages(tsbox::ts_na_omit(tsbox::ts_pc(bridgr::gdp)))
 
 bridge_model <- bridge(
-  target = gdp, 
-  indic = baro, 
-  indic_predict = "auto.arima", 
+  target = gdp,
+  indic = baro,
+  indic_predict = "auto.arima",
   indic_aggregators = "mean",
-  indic_lags = 2, 
-  target_lags=1, 
-  h=2
+  indic_lags = 2,
+  target_lags = 1,
+  h = 2
 )
 
 forecast(bridge_model)
