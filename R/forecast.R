@@ -4,7 +4,9 @@
 #'
 #' @param object A `"bridge"` object returned by [bridge()].
 #' @param xreg Optional future regressors in a [tsbox::ts_boxable()] format.
-#' When omitted, the forecast set stored inside `object` is used.
+#' When omitted, the forecast set stored inside `object` is used. When
+#' supplied, `xreg` must contain the same regressor names used when fitting the
+#' bridge equation.
 #' @param ... Passed to [forecast::forecast()].
 #'
 #' @return An object of class `"forecast"` with an additional
@@ -40,7 +42,9 @@ forecast.bridge <- function(object, xreg = NULL, ...) {
         regressor_names = object$regressor_names,
         call = rlang::caller_env()
       )
-      xreg_values <- as.matrix(forecast_set[, object$regressor_names, drop = FALSE])
+      xreg_values <- as.matrix(
+        forecast_set[, object$regressor_names, drop = FALSE]
+      )
     }
   }
 

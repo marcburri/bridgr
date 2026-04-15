@@ -52,8 +52,8 @@
 #' complete block is assigned to the farthest requested forecast horizon and
 #' earlier complete blocks are assigned backward from there. For
 #' `indic_predict = "mean"`, missing high-frequency observations are filled
-#' with the mean of the latest complete target-period block, and that same
-#' mean is extended across the forecast horizon.
+#' with the mean of the latest available `obs_per_target` high-frequency
+#' observations, and that same mean is extended across the forecast horizon.
 #' @param indic_aggregators A character vector of aggregation methods or a list
 #' of numeric weights. Length must be `1` or equal to the number of indicator
 #' series. Numeric weights must sum to one and have the appropriate length for
@@ -135,8 +135,9 @@
 #' *International Journal of Forecasting*, 32(2), 257-270.
 #' \doi{10.1016/j.ijforecast.2015.07.004}
 #'
-#' Burri, M. *Oxford Bulletin of Economics and Statistics*.
-#' \url{https://onlinelibrary.wiley.com/doi/10.1111/obes.70073}
+#' Burri, M. (2026). Nowcasting Swiss GDP Growth From Public Lead Texts:
+#' Simple Methods Are Sufficient. *Oxford Bulletin of Economics and
+#' Statistics*, 1-25. \doi{10.1111/obes.70073}
 #' @export
 bridge <- function(
   target,
@@ -207,7 +208,8 @@ bridge <- function(
   )
   all_target_times <- c(unique(target_tbl$time), future_target_times)
 
-  # Aggregate each indicator to target frequency, with optional parametric weights.
+  # Aggregate each indicator to target frequency, with optional
+  # parametric weights.
   indicator_results <- build_indicator_features(
     indic_tbl = indic_tbl,
     indic_meta = indic_meta,
@@ -268,7 +270,14 @@ bridge <- function(
     )
   }
 
-  if (any(vapply(config$indic_aggregators, identical, logical(1), "unrestricted"))) {
+  if (
+    any(vapply(
+      config$indic_aggregators,
+      identical,
+      logical(1),
+      "unrestricted"
+    ))
+  ) {
     unrestricted_ratio <- nrow(estimation_set) / length(regressor_names)
     if (is.finite(unrestricted_ratio) && unrestricted_ratio < 10) {
       rlang::warn(
@@ -449,7 +458,10 @@ validate_bridge_inputs <- function(
   if (any(indic_predict == "direct") && !direct_used) {
     rlang::abort(
       paste(
-        "`indic_predict = \"direct\"` must be used for all indicators or for none."
+        paste0(
+          "`indic_predict = \"direct\"` must be used for all indicators ",
+          "or for none."
+        )
       ),
       call = call
     )
@@ -576,7 +588,10 @@ build_indicator_features <- function(
         blocks = aggregation$blocks,
         obs_per_target = obs_per_target
       )
-    } else if (is.character(aggregator) && identical(aggregator, "unrestricted")) {
+    } else if (
+      is.character(aggregator) &&
+        identical(aggregator, "unrestricted")
+    ) {
       aggregated_fixed[[i]] <- as_unrestricted_indicator_long(
         indicator_id = indicator_id,
         periods = aggregation$periods,
@@ -615,7 +630,10 @@ build_indicator_features <- function(
       solver_options = solver_options,
       call = call
     )
-    fixed_aggregated <- dplyr::bind_rows(fixed_aggregated, parametric_fit$aggregated)
+    fixed_aggregated <- dplyr::bind_rows(
+      fixed_aggregated,
+      parametric_fit$aggregated
+    )
     parametric_weights <- parametric_fit$weights
     parametric_parameters <- parametric_fit$parameters
     parametric_optimization <- parametric_fit$optimization

@@ -10,7 +10,9 @@
 \item{object}{A \code{"bridge"} object returned by \code{\link[=bridge]{bridge()}}.}
 
 \item{xreg}{Optional future regressors in a \code{\link[tsbox:ts_boxable]{tsbox::ts_boxable()}} format.
-When omitted, the forecast set stored inside \code{object} is used.}
+When omitted, the forecast set stored inside \code{object} is used. When
+supplied, \code{xreg} must contain the same regressor names used when fitting the
+bridge equation.}
 
 \item{...}{Passed to \code{\link[forecast:reexports]{forecast::forecast()}}.}
 }

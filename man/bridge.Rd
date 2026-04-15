@@ -31,8 +31,8 @@ alignment must be used for all indicators at once. When \code{h > 1}, the latest
 complete block is assigned to the farthest requested forecast horizon and
 earlier complete blocks are assigned backward from there. For
 \code{indic_predict = "mean"}, missing high-frequency observations are filled
-with the mean of the latest complete target-period block, and that same
-mean is extended across the forecast horizon.}
+with the mean of the latest available \code{obs_per_target} high-frequency
+observations, and that same mean is extended across the forecast horizon.}
 
 \item{indic_aggregators}{A character vector of aggregation methods or a list
 of numeric weights. Length must be \code{1} or equal to the number of indicator
@@ -167,6 +167,7 @@ Schumacher, C. (2016). A comparison of MIDAS and bridge equations.
 \emph{International Journal of Forecasting}, 32(2), 257-270.
 \doi{10.1016/j.ijforecast.2015.07.004}
 
-Burri, M. \emph{Oxford Bulletin of Economics and Statistics}.
-\url{https://onlinelibrary.wiley.com/doi/10.1111/obes.70073}
+Burri, M. (2026). Nowcasting Swiss GDP Growth From Public Lead Texts:
+Simple Methods Are Sufficient. \emph{Oxford Bulletin of Economics and
+Statistics}, 1-25. \doi{10.1111/obes.70073}
 }
