@@ -1,8 +1,8 @@
 ---
-title: "Introduction to bridgr"
+title: "Getting Started with bridgr"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Introduction to bridgr}
+  %\VignetteIndexEntry{Getting Started with bridgr}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -12,113 +12,54 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
+
+if (requireNamespace("bridgr", quietly = TRUE)) {
+  library(bridgr)
+} else if (requireNamespace("pkgload", quietly = TRUE)) {
+  pkgload::load_all("..", export_all = FALSE, helpers = FALSE, quiet = TRUE)
+} else {
+  stop("Install `bridgr` or `pkgload` to render this vignette.")
+}
 ```
 
-# What Are Bridge Models?
+# Overview
 
-Bridge models are statistical tools designed to address the mismatch in frequency between economic indicators and a target variable, such as GDP. For instance, GDP is typically reported quarterly, while many relevant indicators (e.g., industrial production, survey data) are available monthly or even daily. Bridge models "bridge" this gap by converting high-frequency indicators into a form that aligns with the target variable's frequency.
+`bridgr` is a mixed-frequency forecasting package for bridge models, MIDAS-style
+regressions, and intermediate specifications that estimate within-period
+weights from the data.
 
-These models are widely used in nowcasting and short-term forecasting. They are particularly useful when:
+The core workflow is always the same:
 
- - Data for the target variable is reported with a lag (e.g., GDP is often released with a delay).
- - High-frequency indicators provide early signals about the state of the economy.
- 
-By leveraging real-time data, bridge models can improve forecast accuracy and provide timely insights.
+1. Provide one lower-frequency target series and one or more
+   higher-frequency indicators.
+2. Decide how missing indicator observations should be handled with
+   `indic_predict`.
+3. Decide how indicators should be aligned to the target frequency with
+   `indic_aggregators`.
+4. Fit the target equation with `bridge()`, inspect it with `summary()`, and
+   produce target-period forecasts with `forecast()`.
 
-# The Bridge Model Framework
+This vignette walks through that workflow with the package's built-in Swiss
+GDP and barometer data.
 
-Bridge models exploit the relationship between a target variable, such as quarterly GDP (\( y_t \)), and multiple high-frequency indicators (\( x_{t}^{(i)} \)), which are observed monthly or at even higher frequencies. The primary challenge is to harmonize these different frequencies while preserving the information embedded in the indicators.
+# Example Data
 
-## Aggregation of Indicators
+```{r data}
+gdp_growth <- suppressMessages(tsbox::ts_na_omit(tsbox::ts_pc(gdp)))
 
-To align high-frequency indicators (\( x_{t}^{(i)} \)) with the target variable's frequency (\( y_t \)), a transformation or aggregation process is applied. Let \( K \) represent the number of higher-frequency periods within a single lower-frequency period (e.g., \( K=3 \) for monthly data aggregated to a quarter). The aggregation step can be represented as:
-
-\[
-\bar{x}_{t}^{(i)} =  \sum_{k=0}^{K-1} \omega (k) L^{k/K} x_{t}^{(i)}
-\]
-
-where:
-
- - The lag operator is defined as \( L^{1/3} x_{t}^{(i)} = x_{t-1/3}^{(i)} \)
-
- - \( x_{t}^{(i)} \): The value of the indicator \( i \) of period \( t \).
- 
- - \( \bar{x}_{t}^{(i)} \): The aggregated indicator for period \( t \).
- 
- - \( \omega (k) \): The weight assigned to the k-th period of the higher frequency data.
-
-In many applications, \( \omega (k) \) is simply an **average** over the values in the higher frequency periods. Alternative aggregation techniques include taking the **last observation** (e.g., the last month of the quarter), applying fixed **weighted averages**, or estimating exponential-Almon weights from the data.
-
-In `bridgr`, the supported aggregation choices are:
-
- - `"mean"`
- - `"last"`
- - `"sum"`
- - numeric weights supplied in `list(...)`
- - `"expalmon"`
-
-When `"expalmon"` is used for more than one indicator, the package estimates those weight profiles jointly against the final bridge-model objective. This avoids choosing each weighting profile in isolation.
-
-## The Model Specification
-
-Once the indicators are aligned with the target frequency, the bridge model is typically specified as a linear regression:
-
-\[
-y_t = \beta_0 + \sum_{ i } \sum_{p_i=0}^{P^{(i)}} \beta_{p_i} L^p \bar{x}_{t}^{(i)} + \varepsilon_t
-\]
-
-where:
-
- - \( P^{(i)} \): The lags to include for indicator \( i \).
- 
- - \( \beta_{p_i} \): Coefficients capturing the relationship between the indicators and the target variable.
- 
- - \( \varepsilon_t \): The error term.
-
-
-Bridge models also handle cases where some high-frequency indicators are not fully observed at the time of forecasting. In such cases, missing observations for the current period are imputed or forecast using time series models (e.g., ARIMA, ETS). This allows predictions even when recent observations are missing. This combination of aggregation and forecasting ensures that bridge models are versatile tools for dealing with incomplete data scenarios.
-
-The package assumes a regular frequency ladder from `second` to `year`, with default mappings such as `60` seconds per minute, `7` days per week, and `4` weeks per month. These defaults can be adjusted through `frequency_conversions`. If a target period contains more high-frequency observations than implied by the current mapping, `bridgr` uses the most recent observations and issues a summarized warning. If it contains fewer observations than required, estimation stops with an error.
-
-
-# A Quick Example
-
-The `bridgr` package simplifies the construction and estimation of bridge models. This vignette demonstrates how to use the package with a quarterly GDP series (gdp) and a monthly economic indicator (baro).
-
-## Loading the Data
-For this example, the two follwoing Swiss datasets are used:
-
- - `gdp`: Quarterly GDP data.
- - `baro`: Monthly economic indicator data.
-
-```{r setup, message=FALSE, warning=FALSE, fig.pos="center", fig.alt = "Visualizing the data"}
-# Load libraries
-library(bridgr)
-library(tsbox)
-
-# Example data
-data("gdp") # Quarterly GDP data
-data("baro") # Monthly economic indicator
-
-gdp <- tsbox::ts_na_omit(tsbox::ts_pc(gdp)) # Calculate growth rate
-
-# Visualize the data
-ts_ggplot(
-  ts_scale(ts_c(baro, gdp)),
-  title = "Quarterly gdp and monthly economic indicator",
-  subtitle = "Scaled to mean 0 and variance 1"
-) +
-  theme_tsbox()
+head(gdp_growth)
+head(baro)
 ```
 
-By visualizing the data,it becomes obvious that the monthly economic indicator (baro) is available at a higher frequency than the quarterly GDP data. Moreover, there is a significant correlation. 
+`gdp_growth` is quarterly, while `baro` is monthly. `bridge()` recognizes the
+frequency mismatch automatically and aligns the indicator to the target
+frequency before fitting the target equation.
 
-## Estimating the Bridge Model
+# A Basic Bridge Model
 
-```{r estimating, message=T, fig.pos="center"}
-# Estimate the bridge model
+```{r basic-model}
 bridge_model <- bridge(
-  target = gdp,
+  target = gdp_growth,
   indic = baro,
   indic_predict = "auto.arima",
   indic_aggregators = "mean",
@@ -126,59 +67,85 @@ bridge_model <- bridge(
   target_lags = 1,
   h = 2
 )
+
+forecast(bridge_model)
 ```
 
+The default mean aggregator is the classic bridge-model setup: each monthly
+block is completed first, then averaged to the quarterly frequency before the
+target equation is estimated.
 
-Because by calculating the GDP growth rate, there is one observation less at the beginning of the GDP series. 
-The `bridge()` function detects mismatched starting dates and aligns them to the earliest common date. The model is then estimated using the specified lags for the target and indicator variables. The `h` argument specifies the number of periods to forecast the lower frequency variable. The fitted object returns both the target-frequency estimation sample and the forecast-period regressor set used for prediction.
+The fitted object stores the aligned data that went into estimation and the
+future target-period regressor path used for forecasting.
 
-```{r datasets, message=T, fig.pos="center"}
-# Inspect the datasets
+```{r aligned-data}
 tail(bridge_model$estimation_set)
-head(bridge_model$forecast_set)
+bridge_model$forecast_set
 ```
 
-## Forecasting
-```{r forecasting, message=F, fig.pos="center", fig.alt = "Forecasted GDP"}
-# Forecasting using the bridge model
-fcst <- forecast(bridge_model)
+# Standardized Output
 
-forecast <- data.frame(
-  "time" = fcst$forecast_set$time,
-  "forecast" = as.numeric(fcst$mean)
-)
+`summary()` and `forecast()` use a stable package-specific layout. The base
+output is the same across bridge, MIDAS-style, and direct-alignment
+specifications. Additional details, such as optimization summaries or
+bootstrap settings, are appended only when they are relevant.
 
-# Visualize the forecast
-ts_ggplot(
-  ts_span(ts_tbl(ts_c(gdp, forecast)), start = 2017),
-  title = "Forecasted GDP",
-  subtitle = "Bridge model forecast"
-) +
-  theme_tsbox()
-```
-
-
-## Summary
-```{r summary, message=T, fig.pos="center"}
-# Summarize the information in the bridge model
+```{r model-summary}
 summary(bridge_model)
 ```
 
-## Using `expalmon` Aggregation
+# Direct Alignment
 
-If you want the within-period weights to be estimated from the data rather than fixed at a simple mean, you can use `indic_aggregators = "expalmon"`. The optimizer can be controlled with `solver_options`.
+If you set `indic_predict = "direct"`, `bridgr` switches from indicator
+forecasting to direct MIDAS-style alignment. In that case, the latest complete
+high-frequency blocks are assigned backward to target periods instead of being
+forecast forward first.
 
-```{r expalmon, message=FALSE}
-expalmon_model <- bridge(
-  target = gdp,
+```{r direct-model}
+direct_model <- bridge(
+  target = gdp_growth,
   indic = baro,
-  indic_predict = "auto.arima",
-  indic_aggregators = "expalmon",
-  solver_options = list(seed = 123, n_starts = 3),
+  indic_predict = "direct",
+  indic_aggregators = "unrestricted",
   h = 1
 )
 
-summary(expalmon_model)
+forecast(direct_model)
 ```
 
-For single-indicator models this gives a data-driven weighting profile for the high-frequency observations within each target period. For multi-indicator models, all `expalmon` indicators are optimized jointly so that the weighting scheme is chosen for the bridge equation as a whole.
+This is particularly useful at the ragged edge when you want to work only with
+observed high-frequency information and avoid a separate indicator forecasting
+step.
+
+# Optional Bootstrap Uncertainty
+
+By default, `bridgr` returns point forecasts only. If you want uncertainty
+output, request it at estimation time with `se = TRUE` and a bootstrap
+configuration.
+
+```{r bootstrap-example, eval = FALSE}
+boot_model <- bridge(
+  target = gdp_growth,
+  indic = baro,
+  indic_predict = "auto.arima",
+  indic_aggregators = "mean",
+  target_lags = 1,
+  h = 1,
+  se = TRUE,
+  bootstrap = list(type = "block", N = 100, block_length = NULL)
+)
+
+forecast(boot_model)
+summary(boot_model)
+```
+
+The current uncertainty implementation is a conditional block bootstrap on the
+final target-frequency estimation sample. It does not re-estimate indicator
+forecast models or parametric aggregation weights inside each bootstrap draw.
+
+# Where to Go Next
+
+The second vignette, `vignette("mixed-frequency-modeling", package = "bridgr")`,
+compares the main aggregation strategies and shows how `bridgr` moves from
+classic bridge models to unrestricted and parametric MIDAS-style
+specifications.
