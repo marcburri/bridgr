@@ -107,14 +107,23 @@ differences between these approaches are easy to see.</p>
 <h2 id="a-small-monthly-to-quarterly-example">A Small Monthly-to-Quarterly Example<a class="anchor" aria-label="anchor" href="#a-small-monthly-to-quarterly-example"></a>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">monthly_time</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="st">"2018-01-01"</span><span class="op">)</span>, by <span class="op">=</span> <span class="st">"month"</span>, length.out <span class="op">=</span> <span class="fl">36</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">n_quarters</span> <span class="op">&lt;-</span> <span class="fl">40</span></span>
+<span><span class="va">quarter_index</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">n_quarters</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="va">slot</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span>, times <span class="op">=</span> <span class="va">n_quarters</span><span class="op">)</span></span>
+<span><span class="va">monthly_time</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="st">"2010-01-01"</span><span class="op">)</span>,</span>
+<span>  by <span class="op">=</span> <span class="st">"month"</span>,</span>
+<span>  length.out <span class="op">=</span> <span class="va">n_quarters</span> <span class="op">*</span> <span class="fl">3</span></span>
+<span><span class="op">)</span></span>
 <span><span class="va">monthly_indicator</span> <span class="op">&lt;-</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
 <span>  time <span class="op">=</span> <span class="va">monthly_time</span>,</span>
-<span>  value <span class="op">=</span> <span class="fl">15</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fl">36</span><span class="op">)</span> <span class="op">*</span> <span class="fl">0.4</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.8</span>, <span class="op">-</span><span class="fl">0.3</span>, <span class="fl">1.2</span><span class="op">)</span>, length.out <span class="op">=</span> <span class="fl">36</span><span class="op">)</span></span>
+<span>  value <span class="op">=</span> <span class="fl">15</span> <span class="op">+</span> <span class="va">quarter_index</span> <span class="op">*</span> <span class="fl">0.35</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">slot</span> <span class="op">==</span> <span class="fl">1</span>, <span class="fl">0.8</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/Trig.html" class="external-link">sin</a></span><span class="op">(</span><span class="va">quarter_index</span> <span class="op">/</span> <span class="fl">2</span><span class="op">)</span>, <span class="fl">0</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">slot</span> <span class="op">==</span> <span class="fl">2</span>, <span class="op">-</span><span class="fl">0.6</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/Trig.html" class="external-link">cos</a></span><span class="op">(</span><span class="va">quarter_index</span> <span class="op">/</span> <span class="fl">3</span><span class="op">)</span>, <span class="fl">0</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">slot</span> <span class="op">==</span> <span class="fl">3</span>, <span class="fl">0.7</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/Trig.html" class="external-link">sin</a></span><span class="op">(</span><span class="va">quarter_index</span> <span class="op">/</span> <span class="fl">4</span> <span class="op">+</span> <span class="fl">0.3</span><span class="op">)</span>, <span class="fl">0</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">quarter_time</span> <span class="op">&lt;-</span> <span class="va">monthly_time</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">36</span>, by <span class="op">=</span> <span class="fl">3</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="va">quarter_time</span> <span class="op">&lt;-</span> <span class="va">monthly_time</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">monthly_time</span><span class="op">)</span>, by <span class="op">=</span> <span class="fl">3</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="va">quarter_target</span> <span class="op">&lt;-</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
 <span>  time <span class="op">=</span> <span class="va">quarter_time</span>,</span>
 <span>  value <span class="op">=</span> <span class="fl">0.5</span> <span class="op">+</span></span>
@@ -129,7 +138,10 @@ differences between these approaches are easy to see.</p>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.1</span>, <span class="op">-</span><span class="fl">0.05</span>, <span class="fl">0.08</span>, <span class="op">-</span><span class="fl">0.02</span><span class="op">)</span>, length.out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">quarter_time</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>The target is intentionally driven more by the middle month of each
-quarter, so we can see how the different aggregation schemes react.</p>
+quarter, so we can see how the different aggregation schemes react. The
+monthly indicator also has slot-specific within-quarter movements, so
+the unrestricted specification can estimate three distinct monthly
+coefficients.</p>
 </div>
 <div class="section level2">
 <h2 id="deterministic-bridge-aggregation">Deterministic Bridge Aggregation<a class="anchor" aria-label="anchor" href="#deterministic-bridge-aggregation"></a>
@@ -158,15 +170,15 @@ quarter, so we can see how the different aggregation schemes react.</p>
 <span><span class="co">#&gt; Target frequency: quarter (step 1)</span></span>
 <span><span class="co">#&gt; Forecast horizon: 1</span></span>
 <span><span class="co">#&gt; Target model: lm</span></span>
-<span><span class="co">#&gt; Estimation rows: 12</span></span>
+<span><span class="co">#&gt; Estimation rows: 40</span></span>
 <span><span class="co">#&gt; Regressors: monthly_indicator</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Target equation coefficients:</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 3</span></span></span>
 <span><span class="co">#&gt;   term              estimate bootstrap_se</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> (Intercept)          0.227           <span style="color: #BB0000;">NA</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> monthly_indicator    0.998           <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> (Intercept)          0.516           <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> monthly_indicator    0.999           <span style="color: #BB0000;">NA</span></span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Indicator summary:</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
@@ -184,15 +196,15 @@ quarter, so we can see how the different aggregation schemes react.</p>
 <span><span class="co">#&gt; Target frequency: quarter (step 1)</span></span>
 <span><span class="co">#&gt; Forecast horizon: 1</span></span>
 <span><span class="co">#&gt; Target model: lm</span></span>
-<span><span class="co">#&gt; Estimation rows: 12</span></span>
+<span><span class="co">#&gt; Estimation rows: 40</span></span>
 <span><span class="co">#&gt; Regressors: monthly_indicator</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Target equation coefficients:</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 3</span></span></span>
 <span><span class="co">#&gt;   term              estimate bootstrap_se</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> (Intercept)         -<span style="color: #BB0000;">0.804</span>           <span style="color: #BB0000;">NA</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> monthly_indicator    0.998           <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> (Intercept)          0.590           <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> monthly_indicator    0.993           <span style="color: #BB0000;">NA</span></span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Indicator summary:</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
@@ -214,14 +226,10 @@ aggregation.</p>
 <code class="sourceCode R"><span><span class="va">unrestricted_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/bridge.html">bridge</a></span><span class="op">(</span></span>
 <span>  target <span class="op">=</span> <span class="va">quarter_target</span>,</span>
 <span>  indic <span class="op">=</span> <span class="va">monthly_indicator</span>,</span>
-<span>  indic_predict <span class="op">=</span> <span class="st">"direct"</span>,</span>
+<span>  indic_predict <span class="op">=</span> <span class="st">"last"</span>,</span>
 <span>  indic_aggregators <span class="op">=</span> <span class="st">"unrestricted"</span>,</span>
 <span>  h <span class="op">=</span> <span class="fl">1</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: The unrestricted bridge specification leaves only 3.67 estimation</span></span>
-<span><span class="co">#&gt; observations per predictor in the final regression. This is below the common</span></span>
-<span><span class="co">#&gt; 10-observations-per-predictor guideline and may indicate an over-parameterized</span></span>
-<span><span class="co">#&gt; U-MIDAS specification.</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">unrestricted_model</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Bridge model summary</span></span>
@@ -230,33 +238,34 @@ aggregation.</p>
 <span><span class="co">#&gt; Target frequency: quarter (step 1)</span></span>
 <span><span class="co">#&gt; Forecast horizon: 1</span></span>
 <span><span class="co">#&gt; Target model: lm</span></span>
-<span><span class="co">#&gt; Estimation rows: 11</span></span>
+<span><span class="co">#&gt; Estimation rows: 40</span></span>
 <span><span class="co">#&gt; Regressors: monthly_indicator_hf1, monthly_indicator_hf2, monthly_indicator_hf3</span></span>
-<span><span class="co">#&gt; Indicator handling: direct alignment</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Target equation coefficients:</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 3</span></span></span>
 <span><span class="co">#&gt;   term                  estimate bootstrap_se</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> (Intercept)               1.53           <span style="color: #BB0000;">NA</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> monthly_indicator_hf1     1.00           <span style="color: #BB0000;">NA</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> monthly_indicator_hf2    <span style="color: #BB0000;">NA</span>              <span style="color: #BB0000;">NA</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> monthly_indicator_hf3    <span style="color: #BB0000;">NA</span>              <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> (Intercept)              0.541           <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> monthly_indicator_hf1    0.198           <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> monthly_indicator_hf2    0.596           <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> monthly_indicator_hf3    0.205           <span style="color: #BB0000;">NA</span></span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Indicator summary:</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   indicator         frequency      predict aggregation  indicator_model</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> monthly_indicator month (step 1) direct  unrestricted deterministic  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> monthly_indicator month (step 1) last    unrestricted deterministic  </span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Uncertainty:</span></span>
 <span><span class="co">#&gt; Method: none</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span></code></pre></div>
 <p><code>"unrestricted"</code> estimates one coefficient for each
 within-quarter monthly observation. In a monthly-on-quarterly example
-this means three separate regressors. This corresponds to a U-MIDAS
-style specification when the frequency gap is small enough to estimate
-those coefficients reliably.</p>
+this means three separate regressors. This example keeps
+<code>indic_predict = "last"</code> so the comparison isolates the
+aggregation choice; combining <code>"unrestricted"</code> with
+<code>indic_predict = "direct"</code> gives a direct MIDAS-style
+alignment and is covered in the ragged-edge vignette.</p>
 </div>
 <div class="section level2">
 <h2 id="parametric-midas-style-weighting">Parametric MIDAS-Style Weighting<a class="anchor" aria-label="anchor" href="#parametric-midas-style-weighting"></a>
@@ -295,10 +304,7 @@ of free parameters small.</p>
 <span>  indic_aggregators <span class="op">=</span> <span class="st">"legendre"</span>,</span>
 <span>  solver_options <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>seed <span class="op">=</span> <span class="fl">123</span>, n_starts <span class="op">=</span> <span class="fl">1</span>, maxiter <span class="op">=</span> <span class="fl">100</span><span class="op">)</span>,</span>
 <span>  h <span class="op">=</span> <span class="fl">1</span></span>
-<span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in bridge(target = quarter_target, indic = monthly_indicator,</span></span>
-<span><span class="co">#&gt; indic_predict = "last", : Joint parametric aggregation optimization did not</span></span>
-<span><span class="co">#&gt; fully converge (code 52). Using the best available parameter vector.</span></span></code></pre></div>
+<span><span class="op">)</span></span></code></pre></div>
 <p>The fitted object stores both the estimated weight profile and the
 underlying parametric coefficients.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
@@ -356,12 +362,12 @@ underlying parametric coefficients.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 2</span></span></span>
 <span><span class="co">#&gt;   model        forecast</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> mean             30.8</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> last             29.7</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> unrestricted     30.9</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> expalmon         30.8</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> beta             31.6</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> legendre         30.8</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> mean             29.0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> last             28.9</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> unrestricted     29.0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> expalmon         29.0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> beta             29.0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> legendre         29.0</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="choosing-an-aggregation-strategy">Choosing an Aggregation Strategy<a class="anchor" aria-label="anchor" href="#choosing-an-aggregation-strategy"></a>

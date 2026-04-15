@@ -17,14 +17,23 @@ differences between these approaches are easy to see.
 ## A Small Monthly-to-Quarterly Example
 
 ``` r
-monthly_time <- seq(as.Date("2018-01-01"), by = "month", length.out = 36)
+n_quarters <- 40
+quarter_index <- rep(seq_len(n_quarters), each = 3)
+slot <- rep(1:3, times = n_quarters)
+monthly_time <- seq(
+  as.Date("2010-01-01"),
+  by = "month",
+  length.out = n_quarters * 3
+)
 monthly_indicator <- dplyr::tibble(
   time = monthly_time,
-  value = 15 + seq_len(36) * 0.4 +
-    rep(c(0.8, -0.3, 1.2), length.out = 36)
+  value = 15 + quarter_index * 0.35 +
+    ifelse(slot == 1, 0.8 * sin(quarter_index / 2), 0) +
+    ifelse(slot == 2, -0.6 * cos(quarter_index / 3), 0) +
+    ifelse(slot == 3, 0.7 * sin(quarter_index / 4 + 0.3), 0)
 )
 
-quarter_time <- monthly_time[seq(1, 36, by = 3)]
+quarter_time <- monthly_time[seq(1, length(monthly_time), by = 3)]
 quarter_target <- dplyr::tibble(
   time = quarter_time,
   value = 0.5 +
@@ -41,7 +50,10 @@ quarter_target <- dplyr::tibble(
 ```
 
 The target is intentionally driven more by the middle month of each
-quarter, so we can see how the different aggregation schemes react.
+quarter, so we can see how the different aggregation schemes react. The
+monthly indicator also has slot-specific within-quarter movements, so
+the unrestricted specification can estimate three distinct monthly
+coefficients.
 
 ## Deterministic Bridge Aggregation
 
@@ -69,15 +81,15 @@ summary(mean_model)
 #> Target frequency: quarter (step 1)
 #> Forecast horizon: 1
 #> Target model: lm
-#> Estimation rows: 12
+#> Estimation rows: 40
 #> Regressors: monthly_indicator
 #> -----------------------------------
 #> Target equation coefficients:
 #> # A tibble: 2 × 3
 #>   term              estimate bootstrap_se
 #>   <chr>                <dbl>        <dbl>
-#> 1 (Intercept)          0.227           NA
-#> 2 monthly_indicator    0.998           NA
+#> 1 (Intercept)          0.516           NA
+#> 2 monthly_indicator    0.999           NA
 #> -----------------------------------
 #> Indicator summary:
 #> # A tibble: 1 × 5
@@ -95,15 +107,15 @@ summary(last_model)
 #> Target frequency: quarter (step 1)
 #> Forecast horizon: 1
 #> Target model: lm
-#> Estimation rows: 12
+#> Estimation rows: 40
 #> Regressors: monthly_indicator
 #> -----------------------------------
 #> Target equation coefficients:
 #> # A tibble: 2 × 3
 #>   term              estimate bootstrap_se
 #>   <chr>                <dbl>        <dbl>
-#> 1 (Intercept)         -0.804           NA
-#> 2 monthly_indicator    0.998           NA
+#> 1 (Intercept)          0.590           NA
+#> 2 monthly_indicator    0.993           NA
 #> -----------------------------------
 #> Indicator summary:
 #> # A tibble: 1 × 5
@@ -126,14 +138,10 @@ aggregation.
 unrestricted_model <- bridge(
   target = quarter_target,
   indic = monthly_indicator,
-  indic_predict = "direct",
+  indic_predict = "last",
   indic_aggregators = "unrestricted",
   h = 1
 )
-#> Warning: The unrestricted bridge specification leaves only 3.67 estimation
-#> observations per predictor in the final regression. This is below the common
-#> 10-observations-per-predictor guideline and may indicate an over-parameterized
-#> U-MIDAS specification.
 
 summary(unrestricted_model)
 #> Bridge model summary
@@ -142,24 +150,23 @@ summary(unrestricted_model)
 #> Target frequency: quarter (step 1)
 #> Forecast horizon: 1
 #> Target model: lm
-#> Estimation rows: 11
+#> Estimation rows: 40
 #> Regressors: monthly_indicator_hf1, monthly_indicator_hf2, monthly_indicator_hf3
-#> Indicator handling: direct alignment
 #> -----------------------------------
 #> Target equation coefficients:
 #> # A tibble: 4 × 3
 #>   term                  estimate bootstrap_se
 #>   <chr>                    <dbl>        <dbl>
-#> 1 (Intercept)               1.53           NA
-#> 2 monthly_indicator_hf1     1.00           NA
-#> 3 monthly_indicator_hf2    NA              NA
-#> 4 monthly_indicator_hf3    NA              NA
+#> 1 (Intercept)              0.541           NA
+#> 2 monthly_indicator_hf1    0.198           NA
+#> 3 monthly_indicator_hf2    0.596           NA
+#> 4 monthly_indicator_hf3    0.205           NA
 #> -----------------------------------
 #> Indicator summary:
 #> # A tibble: 1 × 5
 #>   indicator         frequency      predict aggregation  indicator_model
 #>   <chr>             <chr>          <chr>   <chr>        <chr>          
-#> 1 monthly_indicator month (step 1) direct  unrestricted deterministic  
+#> 1 monthly_indicator month (step 1) last    unrestricted deterministic  
 #> -----------------------------------
 #> Uncertainty:
 #> Method: none
@@ -168,9 +175,10 @@ summary(unrestricted_model)
 
 `"unrestricted"` estimates one coefficient for each within-quarter
 monthly observation. In a monthly-on-quarterly example this means three
-separate regressors. This corresponds to a U-MIDAS style specification
-when the frequency gap is small enough to estimate those coefficients
-reliably.
+separate regressors. This example keeps `indic_predict = "last"` so the
+comparison isolates the aggregation choice; combining `"unrestricted"`
+with `indic_predict = "direct"` gives a direct MIDAS-style alignment and
+is covered in the ragged-edge vignette.
 
 ## Parametric MIDAS-Style Weighting
 
@@ -210,9 +218,6 @@ legendre_model <- bridge(
   solver_options = list(seed = 123, n_starts = 1, maxiter = 100),
   h = 1
 )
-#> Warning in bridge(target = quarter_target, indic = monthly_indicator,
-#> indic_predict = "last", : Joint parametric aggregation optimization did not
-#> fully converge (code 52). Using the best available parameter vector.
 ```
 
 The fitted object stores both the estimated weight profile and the
@@ -274,12 +279,12 @@ dplyr::bind_rows(
 #> # A tibble: 6 × 2
 #>   model        forecast
 #>   <chr>           <dbl>
-#> 1 mean             30.8
-#> 2 last             29.7
-#> 3 unrestricted     30.9
-#> 4 expalmon         30.8
-#> 5 beta             31.6
-#> 6 legendre         30.8
+#> 1 mean             29.0
+#> 2 last             28.9
+#> 3 unrestricted     29.0
+#> 4 expalmon         29.0
+#> 5 beta             29.0
+#> 6 legendre         29.0
 ```
 
 ## Choosing an Aggregation Strategy
