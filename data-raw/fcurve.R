@@ -7,7 +7,7 @@ fcurve <- fcurve %>%
   dplyr::mutate(
     time = as.Date(.[[1]]),
     values = -.[[2]]
-    ) %>%
+  ) %>%
   dplyr::select(time, values) %>%
   dplyr::filter(time >= as.Date("2004-01-01") & time <= as.Date("2022-12-31"))
 

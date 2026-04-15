@@ -97,7 +97,7 @@ library(bridgr)
 library(tsbox)
 
 # Example data
-data("gdp")  # Quarterly GDP data
+data("gdp") # Quarterly GDP data
 data("baro") # Monthly economic indicator
 
 gdp <- tsbox::ts_na_omit(tsbox::ts_pc(gdp)) # Calculate growth rate
@@ -107,9 +107,8 @@ ts_ggplot(
   ts_scale(ts_c(baro, gdp)),
   title = "Quarterly gdp and monthly economic indicator",
   subtitle = "Scaled to mean 0 and variance 1"
-  ) +
+) +
   theme_tsbox()
-
 ```
 
 By visualizing the data,it becomes obvious that the monthly economic indicator (baro) is available at a higher frequency than the quarterly GDP data. Moreover, there is a significant correlation. 
@@ -119,15 +118,14 @@ By visualizing the data,it becomes obvious that the monthly economic indicator (
 ```{r estimating, message=T, fig.pos="center"}
 # Estimate the bridge model
 bridge_model <- bridge(
-  target = gdp, 
-  indic = baro , 
+  target = gdp,
+  indic = baro,
   indic_predict = "auto.arima",
   indic_aggregators = "mean",
-  indic_lags = 1, 
-  target_lags=1, 
-  h=2 
+  indic_lags = 1,
+  target_lags = 1,
+  h = 2
 )
-
 ```
 
 
@@ -138,7 +136,6 @@ The `bridge()` function detects mismatched starting dates and aligns them to the
 # Inspect the datasets
 tail(bridge_model$estimation_set)
 head(bridge_model$forecast_set)
-
 ```
 
 ## Forecasting
@@ -158,7 +155,6 @@ ts_ggplot(
   subtitle = "Bridge model forecast"
 ) +
   theme_tsbox()
-  
 ```
 
 
@@ -166,7 +162,6 @@ ts_ggplot(
 ```{r summary, message=T, fig.pos="center"}
 # Summarize the information in the bridge model
 summary(bridge_model)
-  
 ```
 
 ## Using `expalmon` Aggregation

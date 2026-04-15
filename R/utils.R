@@ -27,9 +27,9 @@ frequency_edges <- function() {
 #' @keywords internal
 #' @noRd
 normalize_frequency_conversions <- function(
-    frequency_conversions,
-    call = rlang::caller_env()) {
-
+  frequency_conversions,
+  call = rlang::caller_env()
+) {
   defaults <- default_frequency_conversions()
   if (is.null(frequency_conversions)) {
     return(defaults)
@@ -78,11 +78,11 @@ normalize_frequency_conversions <- function(
 #' @keywords internal
 #' @noRd
 as_bridge_tbl <- function(
-    x,
-    arg,
-    default_id,
-    call = rlang::caller_env()) {
-
+  x,
+  arg,
+  default_id,
+  call = rlang::caller_env()
+) {
   if (!tsbox::ts_boxable(x)) {
     rlang::abort(
       paste0("`", arg, "` must be a ts-boxable object."),
@@ -123,12 +123,15 @@ standardize_ts_tbl <- function(ts_data) {
 #' @keywords internal
 #' @noRd
 check_bridge_series <- function(
-    data,
-    arg,
-    call = rlang::caller_env()) {
-
+  data,
+  arg,
+  call = rlang::caller_env()
+) {
   if (anyNA(data$time)) {
-    rlang::abort(paste0("`", arg, "` contains missing timestamps."), call = call)
+    rlang::abort(
+      paste0("`", arg, "` contains missing timestamps."),
+      call = call
+    )
   }
   if (anyNA(data$values)) {
     rlang::abort(paste0("`", arg, "` contains missing values."), call = call)
@@ -140,7 +143,10 @@ check_bridge_series <- function(
 
   if (nrow(duplicate_rows) > 0) {
     rlang::abort(
-      paste0("`", arg, "` contains duplicate timestamps within at least one series."),
+      paste0(
+        "`", arg,
+        "` contains duplicate timestamps within at least one series."
+      ),
       call = call
     )
   }
@@ -149,7 +155,9 @@ check_bridge_series <- function(
     dplyr::count(.data$id)
   if (any(series_sizes$n < 2)) {
     rlang::abort(
-      paste0("Each series in `", arg, "` must contain at least two observations."),
+      paste0(
+        "Each series in `", arg, "` must contain at least two observations."
+      ),
       call = call
     )
   }
@@ -162,7 +170,9 @@ check_bridge_series <- function(
 infer_frequency_table <- function(data, call = rlang::caller_env()) {
   metadata <- data |>
     dplyr::group_by(.data$id) |>
-    dplyr::group_map(~ infer_series_frequency(.x$time, .y$id[[1]], call = call)) |>
+    dplyr::group_map(
+      ~ infer_series_frequency(.x$time, .y$id[[1]], call = call)
+    ) |>
     dplyr::bind_rows()
 
   list(
@@ -218,12 +228,12 @@ detect_month_frequency <- function(times) {
   }
 
   if (month_diff %% 12 == 0 &&
-      all(times == lubridate::floor_date(times, unit = "year"))) {
+    all(times == lubridate::floor_date(times, unit = "year"))) {
     return(list(unit = "year", step = month_diff / 12))
   }
 
   if (month_diff %% 3 == 0 &&
-      all(times == lubridate::floor_date(times, unit = "quarter"))) {
+    all(times == lubridate::floor_date(times, unit = "quarter"))) {
     return(list(unit = "quarter", step = month_diff / 3))
   }
 
@@ -259,11 +269,11 @@ detect_time_frequency <- function(times) {
 #' @keywords internal
 #' @noRd
 align_bridge_inputs <- function(
-    target_tbl,
-    indic_tbl,
-    target_meta,
-    indic_meta) {
-
+  target_tbl,
+  indic_tbl,
+  target_meta,
+  indic_meta
+) {
   common_start <- max(min(target_tbl$time), min(indic_tbl$time))
 
   target_tbl <- target_tbl |>
@@ -281,13 +291,13 @@ align_bridge_inputs <- function(
 #' @keywords internal
 #' @noRd
 normalize_indicator_methods <- function(
-    methods,
-    n_series,
-    default,
-    arg,
-    valid,
-    call = rlang::caller_env()) {
-
+  methods,
+  n_series,
+  default,
+  arg,
+  valid,
+  call = rlang::caller_env()
+) {
   if (is.null(methods)) {
     return(rep(default, n_series))
   }
@@ -298,7 +308,10 @@ normalize_indicator_methods <- function(
 
   if (length(methods) != n_series) {
     rlang::abort(
-      paste0("`", arg, "` must have length 1 or match the number of indicator series."),
+      paste0(
+        "`", arg,
+        "` must have length 1 or match the number of indicator series."
+      ),
       call = call
     )
   }
@@ -306,7 +319,11 @@ normalize_indicator_methods <- function(
   invalid <- setdiff(methods, valid)
   if (length(invalid) > 0) {
     rlang::abort(
-      paste0("Unsupported values in `", arg, "`: ", paste(invalid, collapse = ", "), "."),
+      paste0(
+        "Unsupported values in `", arg, "`: ",
+        paste(invalid, collapse = ", "),
+        "."
+      ),
       call = call
     )
   }
@@ -317,10 +334,10 @@ normalize_indicator_methods <- function(
 #' @keywords internal
 #' @noRd
 normalize_indicator_aggregators <- function(
-    aggregators,
-    n_series,
-    call = rlang::caller_env()) {
-
+  aggregators,
+  n_series,
+  call = rlang::caller_env()
+) {
   if (is.null(aggregators)) {
     return(rep(list("mean"), n_series))
   }
@@ -330,7 +347,10 @@ normalize_indicator_aggregators <- function(
   } else if (is.character(aggregators)) {
     if (length(aggregators) != n_series) {
       rlang::abort(
-        "`indic_aggregators` must have length 1 or match the number of indicator series.",
+        paste(
+          "`indic_aggregators` must have length 1 or match the number of",
+          "indicator series."
+        ),
         call = call
       )
     }
@@ -343,7 +363,10 @@ normalize_indicator_aggregators <- function(
 
   if (!is.list(aggregators) || length(aggregators) != n_series) {
     rlang::abort(
-      "`indic_aggregators` must have length 1 or match the number of indicator series.",
+      paste(
+        "`indic_aggregators` must have length 1 or match the number of",
+        "indicator series."
+      ),
       call = call
     )
   }
@@ -375,9 +398,9 @@ normalize_indicator_aggregators <- function(
 #' @keywords internal
 #' @noRd
 normalize_expalmon_solver_options <- function(
-    solver_options,
-    call = rlang::caller_env()) {
-
+  solver_options,
+  call = rlang::caller_env()
+) {
   defaults <- list(
     method = "L-BFGS-B",
     maxiter = 1000L,
@@ -413,28 +436,40 @@ normalize_expalmon_solver_options <- function(
   )
 
   if (!is.numeric(defaults$maxiter) ||
-      length(defaults$maxiter) != 1 ||
-      !is.finite(defaults$maxiter) ||
-      defaults$maxiter < 1) {
-    rlang::abort("`solver_options$maxiter` must be a single integer >= 1.", call = call)
+    length(defaults$maxiter) != 1 ||
+    !is.finite(defaults$maxiter) ||
+    defaults$maxiter < 1) {
+    rlang::abort(
+      "`solver_options$maxiter` must be a single integer >= 1.",
+      call = call
+    )
   }
   if (!is.numeric(defaults$n_starts) ||
-      length(defaults$n_starts) != 1 ||
-      !is.finite(defaults$n_starts) ||
-      defaults$n_starts < 1) {
-    rlang::abort("`solver_options$n_starts` must be a single integer >= 1.", call = call)
+    length(defaults$n_starts) != 1 ||
+    !is.finite(defaults$n_starts) ||
+    defaults$n_starts < 1) {
+    rlang::abort(
+      "`solver_options$n_starts` must be a single integer >= 1.",
+      call = call
+    )
   }
   if (!is.numeric(defaults$trace) ||
-      length(defaults$trace) != 1 ||
-      !is.finite(defaults$trace) ||
-      defaults$trace < 0) {
-    rlang::abort("`solver_options$trace` must be a single integer >= 0.", call = call)
+    length(defaults$trace) != 1 ||
+    !is.finite(defaults$trace) ||
+    defaults$trace < 0) {
+    rlang::abort(
+      "`solver_options$trace` must be a single integer >= 0.",
+      call = call
+    )
   }
   if (!is.null(defaults$seed) &&
-      (!is.numeric(defaults$seed) ||
-       length(defaults$seed) != 1 ||
-       !is.finite(defaults$seed))) {
-    rlang::abort("`solver_options$seed` must be `NULL` or a single finite number.", call = call)
+    (!is.numeric(defaults$seed) ||
+      length(defaults$seed) != 1 ||
+      !is.finite(defaults$seed))) {
+    rlang::abort(
+      "`solver_options$seed` must be `NULL` or a single finite number.",
+      call = call
+    )
   }
 
   defaults$maxiter <- as.integer(round(defaults$maxiter))
@@ -461,15 +496,18 @@ bridgr_with_seed <- function(seed, expr) {
   } else {
     NULL
   }
-  on.exit({
-    if (is.null(old_seed)) {
-      if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
-        rm(".Random.seed", envir = .GlobalEnv)
+  on.exit(
+    {
+      if (is.null(old_seed)) {
+        if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+          rm(".Random.seed", envir = .GlobalEnv)
+        }
+      } else {
+        assign(".Random.seed", old_seed, envir = .GlobalEnv) # nolint: object_name_linter.
       }
-    } else {
-      assign(".Random.seed", old_seed, envir = .GlobalEnv)
-    }
-  }, add = TRUE)
+    },
+    add = TRUE
+  )
 
   set.seed(seed)
   eval(expr, envir = parent.frame())
@@ -478,11 +516,11 @@ bridgr_with_seed <- function(seed, expr) {
 #' @keywords internal
 #' @noRd
 observations_per_target_period <- function(
-    indicator_meta,
-    target_meta,
-    frequency_conversions,
-    call = rlang::caller_env()) {
-
+  indicator_meta,
+  target_meta,
+  frequency_conversions,
+  call = rlang::caller_env()
+) {
   levels <- frequency_levels()
   indicator_unit <- indicator_meta$unit[[1]]
   target_unit <- target_meta$unit[[1]]
@@ -614,17 +652,17 @@ shift_time_vec <- function(time, n, unit) {
 #' @keywords internal
 #' @noRd
 extend_indicator_series <- function(
-    indicator_tbl,
-    indicator_id,
-    indicator_meta,
-    target_meta,
-    target_anchor,
-    future_target_times,
-    obs_per_target,
-    predict_method,
-    reference_target_time,
-    call = rlang::caller_env()) {
-
+  indicator_tbl,
+  indicator_id,
+  indicator_meta,
+  target_meta,
+  target_anchor,
+  future_target_times,
+  obs_per_target,
+  predict_method,
+  reference_target_time,
+  call = rlang::caller_env()
+) {
   indicator_tbl <- indicator_tbl |>
     dplyr::arrange(.data$time)
 
@@ -672,13 +710,13 @@ extend_indicator_series <- function(
 #' @keywords internal
 #' @noRd
 forecast_indicator_values <- function(
-    indicator_tbl,
-    indicator_meta,
-    n_ahead,
-    method,
-    reference_target_time,
-    call = rlang::caller_env()) {
-
+  indicator_tbl,
+  indicator_meta,
+  n_ahead,
+  method,
+  reference_target_time,
+  call = rlang::caller_env()
+) {
   if (method == "last") {
     return(list(
       values = rep(utils::tail(indicator_tbl$values, 1), n_ahead),
@@ -721,13 +759,13 @@ forecast_indicator_values <- function(
 #' @keywords internal
 #' @noRd
 prepare_indicator_period_blocks <- function(
-    indicator_tbl,
-    indicator_id,
-    target_meta,
-    target_anchor,
-    obs_per_target,
-    call = rlang::caller_env()) {
-
+  indicator_tbl,
+  indicator_id,
+  target_meta,
+  target_anchor,
+  obs_per_target,
+  call = rlang::caller_env()
+) {
   periods <- compute_target_periods(
     indicator_tbl$time,
     target_anchor = target_anchor,
@@ -744,7 +782,9 @@ prepare_indicator_period_blocks <- function(
     rlang::abort(
       paste0(
         "Indicator `", indicator_id, "` has fewer observations within at least one target period ",
-        "than required by the current frequency mapping (required: ", obs_per_target, ")."
+        "than required by the current frequency mapping (required: ",
+        obs_per_target,
+        ")."
       ),
       call = call
     )
@@ -781,11 +821,11 @@ prepare_indicator_period_blocks <- function(
 #' @keywords internal
 #' @noRd
 aggregate_period_values <- function(
-    values,
-    aggregator,
-    indicator_id,
-    call = rlang::caller_env()) {
-
+  values,
+  aggregator,
+  indicator_id,
+  call = rlang::caller_env()
+) {
   if (is.character(aggregator)) {
     if (identical(aggregator, "mean")) {
       return(mean(values))
@@ -800,7 +840,9 @@ aggregate_period_values <- function(
 
   if (!is.numeric(aggregator)) {
     rlang::abort(
-      paste0("Unsupported aggregation method for indicator `", indicator_id, "`."),
+      paste0(
+        "Unsupported aggregation method for indicator `", indicator_id, "`."
+      ),
       call = call
     )
   }
@@ -817,7 +859,9 @@ aggregate_period_values <- function(
 
   if (!isTRUE(all.equal(sum(aggregator), 1))) {
     rlang::abort(
-      paste0("Numeric weights for indicator `", indicator_id, "` must sum to 1."),
+      paste0(
+        "Numeric weights for indicator `", indicator_id, "` must sum to 1."
+      ),
       call = call
     )
   }
@@ -828,11 +872,11 @@ aggregate_period_values <- function(
 #' @keywords internal
 #' @noRd
 aggregate_indicator_blocks <- function(
-    blocks,
-    aggregator,
-    indicator_id,
-    call = rlang::caller_env()) {
-
+  blocks,
+  aggregator,
+  indicator_id,
+  call = rlang::caller_env()
+) {
   apply(
     blocks,
     1,
@@ -856,16 +900,19 @@ as_indicator_long <- function(indicator_id, periods, values) {
 #' @keywords internal
 #' @noRd
 build_bridge_estimation_set <- function(
-    target_tbl,
-    target_name,
-    feature_long,
-    indic_lags,
-    estimation_times) {
-
+  target_tbl,
+  target_name,
+  feature_long,
+  indic_lags,
+  estimation_times
+) {
   target_long <- target_tbl |>
     dplyr::select("id", "time", "values")
 
-  features_with_lags <- add_indicator_lags(feature_long, indic_lags = indic_lags)
+  features_with_lags <- add_indicator_lags(
+    feature_long,
+    indic_lags = indic_lags
+  )
   full_long <- dplyr::bind_rows(target_long, features_with_lags) |>
     dplyr::filter(.data$time %in% estimation_times)
 
@@ -876,11 +923,11 @@ build_bridge_estimation_set <- function(
 #' @keywords internal
 #' @noRd
 compute_bridge_loss <- function(
-    estimation_set,
-    target_name,
-    target_lags,
-    call = rlang::caller_env()) {
-
+  estimation_set,
+  target_name,
+  target_lags,
+  call = rlang::caller_env()
+) {
   if (nrow(estimation_set) == 0) {
     return(Inf)
   }
@@ -989,7 +1036,10 @@ aggregate_expalmon_specs <- function(expalmon_specs, parameter_blocks) {
   for (i in seq_along(expalmon_specs)) {
     spec <- expalmon_specs[[i]]
     indicator_id <- spec$indicator_id
-    current_weights <- exp_almon(parameter_blocks[[indicator_id]], ncol(spec$blocks))
+    current_weights <- exp_almon(
+      parameter_blocks[[indicator_id]],
+      ncol(spec$blocks)
+    )
     weights[[indicator_id]] <- current_weights
     aggregated[[i]] <- as_indicator_long(
       indicator_id = indicator_id,
@@ -1007,12 +1057,12 @@ aggregate_expalmon_specs <- function(expalmon_specs, parameter_blocks) {
 #' @keywords internal
 #' @noRd
 run_expalmon_optimizer <- function(
-    objective,
-    start,
-    lower,
-    upper,
-    solver_options) {
-
+  objective,
+  start,
+  lower,
+  upper,
+  solver_options
+) {
   method <- solver_options$method
   if (method == "nlminb") {
     fit <- stats::nlminb(
@@ -1062,15 +1112,15 @@ run_expalmon_optimizer <- function(
 #' @keywords internal
 #' @noRd
 optimize_expalmon_weights <- function(
-    expalmon_specs,
-    fixed_aggregated,
-    target_tbl,
-    target_name,
-    indic_lags,
-    target_lags,
-    solver_options,
-    call = rlang::caller_env()) {
-
+  expalmon_specs,
+  fixed_aggregated,
+  target_tbl,
+  target_name,
+  indic_lags,
+  target_lags,
+  solver_options,
+  call = rlang::caller_env()
+) {
   indicator_ids <- names(expalmon_specs)
   n_indicators <- length(expalmon_specs)
   n_parameters <- 2L
@@ -1093,7 +1143,10 @@ optimize_expalmon_weights <- function(
     estimation_set <- build_bridge_estimation_set(
       target_tbl = target_tbl,
       target_name = target_name,
-      feature_long = dplyr::bind_rows(fixed_aggregated, expalmon_data$aggregated),
+      feature_long = dplyr::bind_rows(
+        fixed_aggregated,
+        expalmon_data$aggregated
+      ),
       indic_lags = indic_lags,
       estimation_times = estimation_times
     )
@@ -1112,7 +1165,11 @@ optimize_expalmon_weights <- function(
       function(start_index) {
         current_start <- base_start
         if (start_index > 1) {
-          current_start <- current_start + stats::rnorm(length(base_start), mean = 0, sd = 0.5)
+          current_start <- current_start + stats::rnorm(
+            length(base_start),
+            mean = 0,
+            sd = 0.5
+          )
           current_start <- pmax(pmin(current_start, upper), lower)
         }
         run_expalmon_optimizer(
@@ -1126,8 +1183,16 @@ optimize_expalmon_weights <- function(
     )
   })
 
-  converged <- vapply(results, function(result) isTRUE(result$convergence == 0), FUN.VALUE = logical(1))
-  objective_values <- vapply(results, function(result) result$value, FUN.VALUE = numeric(1))
+  converged <- vapply(
+    results,
+    function(result) isTRUE(result$convergence == 0),
+    FUN.VALUE = logical(1)
+  )
+  objective_values <- vapply(
+    results,
+    function(result) result$value,
+    FUN.VALUE = numeric(1)
+  )
   objective_values[!is.finite(objective_values)] <- Inf
 
   if (any(converged)) {

@@ -8,7 +8,7 @@ wea <- wea %>%
   dplyr::mutate(
     time = as.Date(.[[4]]),
     values = .[[5]]
-    ) %>%
+  ) %>%
   dplyr::select(time, values) %>%
   dplyr::filter(time >= as.Date("2005-01-01") & time <= as.Date("2022-12-31"))
 

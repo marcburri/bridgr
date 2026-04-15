@@ -30,7 +30,10 @@ summary.bridge <- function(object, ...) {
 
   for (indicator_id in object$indic_name) {
     indicator_index <- match(indicator_id, object$indicator_frequencies$id)
-    indicator_meta <- object$indicator_frequencies[indicator_index, , drop = FALSE]
+    indicator_meta <- object$indicator_frequencies[
+      indicator_index, ,
+      drop = FALSE
+    ]
     indicator_model <- object$indic_models[[indicator_id]]
     aggregator <- object$indic_aggregators[[indicator_index]]
 
@@ -43,7 +46,12 @@ summary.bridge <- function(object, ...) {
       ")\n",
       sep = ""
     )
-    cat("Forecast method: ", object$indic_predict[[indicator_index]], "\n", sep = "")
+    cat(
+      "Forecast method: ",
+      object$indic_predict[[indicator_index]],
+      "\n",
+      sep = ""
+    )
 
     if (is.null(indicator_model)) {
       cat("Indicator model: deterministic extension\n")
@@ -60,11 +68,18 @@ summary.bridge <- function(object, ...) {
 
     if (!is.null(object$expalmon_weights[[indicator_id]])) {
       cat("Estimated expalmon weights: ")
-      cat(paste(round(object$expalmon_weights[[indicator_id]], 3), collapse = ", "))
+      cat(
+        paste(round(object$expalmon_weights[[indicator_id]], 3), collapse = ", ")
+      )
       cat("\n")
       if (!is.null(object$expalmon_parameters[[indicator_id]])) {
         cat("Estimated expalmon parameters: ")
-        cat(paste(round(object$expalmon_parameters[[indicator_id]], 3), collapse = ", "))
+        cat(
+          paste(
+            round(object$expalmon_parameters[[indicator_id]], 3),
+            collapse = ", "
+          )
+        )
         cat("\n")
       }
     }
@@ -76,11 +91,28 @@ summary.bridge <- function(object, ...) {
     cat("Joint expalmon optimization:\n")
     cat("-----------------------------------\n")
     cat("Method: ", object$expalmon_optimization$method, "\n", sep = "")
-    cat("Objective value: ", round(object$expalmon_optimization$value, 4), "\n", sep = "")
-    cat("Convergence code: ", object$expalmon_optimization$convergence, "\n", sep = "")
-    cat("Best start: ", object$expalmon_optimization$best_start, " / ", object$expalmon_optimization$n_starts, "\n", sep = "")
+    cat(
+      "Objective value: ",
+      round(object$expalmon_optimization$value, 4),
+      "\n",
+      sep = ""
+    )
+    cat(
+      "Convergence code: ",
+      object$expalmon_optimization$convergence,
+      "\n",
+      sep = ""
+    )
+    cat(
+      "Best start: ",
+      object$expalmon_optimization$best_start,
+      " / ",
+      object$expalmon_optimization$n_starts,
+      "\n",
+      sep = ""
+    )
     if (!is.null(object$expalmon_optimization$message) &&
-        nzchar(object$expalmon_optimization$message)) {
+      nzchar(object$expalmon_optimization$message)) {
       cat("Message: ", object$expalmon_optimization$message, "\n", sep = "")
     }
     cat("-----------------------------------\n")

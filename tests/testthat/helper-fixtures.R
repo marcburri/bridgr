@@ -5,7 +5,12 @@ make_monthly_indicator <- function(n = 24, start = "2020-01-01", offset = 0) {
   )
 }
 
-make_quarter_target <- function(monthly_indicator, n_quarters = 6, intercept = 1, slope = 1) {
+make_quarter_target <- function(
+  monthly_indicator,
+  n_quarters = 6,
+  intercept = 1,
+  slope = 1
+) {
   values <- monthly_indicator$value[seq_len(n_quarters * 3)]
   quarter_means <- vapply(
     seq_len(n_quarters),
@@ -18,7 +23,8 @@ make_quarter_target <- function(monthly_indicator, n_quarters = 6, intercept = 1
 
   data.frame(
     time = monthly_indicator$time[seq(1, n_quarters * 3, by = 3)],
-    value = intercept + slope * quarter_means + rep(c(0.5, -0.25, 0.75, -0.5), length.out = n_quarters)
+    value = intercept + slope * quarter_means +
+      rep(c(0.5, -0.25, 0.75, -0.5), length.out = n_quarters)
   )
 }
 
@@ -59,16 +65,16 @@ make_weekly_target <- function(daily_indicator, n_weeks = 8, intercept = 0, slop
 }
 
 make_exact_multifrequency_simulation <- function(
-    n_target = 10,
-    h = 1,
-    start = "2020-01-01 00:00:00",
-    coefficients = c(
-      intercept = 1.25,
-      second = 0.8,
-      minute = -1.1,
-      hour = 0.6
-    )) {
-
+  n_target = 10,
+  h = 1,
+  start = "2020-01-01 00:00:00",
+  coefficients = c(
+    intercept = 1.25,
+    second = 0.8,
+    minute = -1.1,
+    hour = 0.6
+  )
+) {
   start_time <- as.POSIXct(start, tz = "UTC")
   n_hours_total <- n_target + h
 
@@ -78,7 +84,9 @@ make_exact_multifrequency_simulation <- function(
 
   second_values <- sin(seq_along(second_times) / 240) + seq_along(second_times) / 20000
   minute_values <- cos(seq_along(minute_times) / 4) + seq_along(minute_times) / 500
-  hour_values <- c(0.5, -1.2, 0.8, 1.4, -0.6, 0.1, 1.1, -0.9, 0.4, 1.6, -0.3)[seq_len(n_hours_total)]
+  hour_values <- c(
+    0.5, -1.2, 0.8, 1.4, -0.6, 0.1, 1.1, -0.9, 0.4, 1.6, -0.3
+  )[seq_len(n_hours_total)]
 
   second_hourly <- vapply(
     seq_len(n_hours_total),
@@ -134,16 +142,16 @@ aggregate_latest_mean_by_period <- function(values, times, periods, n_keep) {
 }
 
 make_day_week_month_simulation <- function(
-    n_months = 8,
-    h = 1,
-    start = "2020-01-01",
-    coefficients = c(
-      intercept = 0.75,
-      day = 1.2,
-      week = -0.9,
-      month = 0.5
-    )) {
-
+  n_months = 8,
+  h = 1,
+  start = "2020-01-01",
+  coefficients = c(
+    intercept = 0.75,
+    day = 1.2,
+    week = -0.9,
+    month = 0.5
+  )
+) {
   start_date <- as.Date(start)
   month_starts <- seq(start_date, by = "month", length.out = n_months + h)
   end_date <- seq(start_date, by = "month", length.out = n_months + h + 1)[n_months + h + 1] - 1
@@ -197,16 +205,16 @@ make_day_week_month_simulation <- function(
 }
 
 make_month_quarter_year_simulation <- function(
-    n_years = 8,
-    h = 1,
-    start = "2012-01-01",
-    coefficients = c(
-      intercept = -0.5,
-      month = 0.9,
-      quarter = -1.3,
-      year = 0.7
-    )) {
-
+  n_years = 8,
+  h = 1,
+  start = "2012-01-01",
+  coefficients = c(
+    intercept = -0.5,
+    month = 0.9,
+    quarter = -1.3,
+    year = 0.7
+  )
+) {
   start_date <- as.Date(start)
   month_times <- seq(start_date, by = "month", length.out = (n_years + h) * 12)
   quarter_times <- seq(start_date, by = "quarter", length.out = (n_years + h) * 4)
@@ -257,25 +265,28 @@ make_month_quarter_year_simulation <- function(
 }
 
 make_seeded_ar1_indicator <- function(
-    n = 240,
-    phi = 0.7,
-    start = "2000-01-01",
-    seed = 123) {
-
+  n = 240,
+  phi = 0.7,
+  start = "2000-01-01",
+  seed = 123
+) {
   old_seed <- if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
     get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
   } else {
     NULL
   }
-  on.exit({
-    if (exists("old_seed", inherits = FALSE)) {
-      if (is.null(old_seed)) {
-        rm(".Random.seed", envir = .GlobalEnv)
-      } else {
-        assign(".Random.seed", old_seed, envir = .GlobalEnv)
+  on.exit(
+    {
+      if (exists("old_seed", inherits = FALSE)) {
+        if (is.null(old_seed)) {
+          rm(".Random.seed", envir = .GlobalEnv)
+        } else {
+          assign(".Random.seed", old_seed, envir = .GlobalEnv) # nolint: object_name_linter.
+        }
       }
-    }
-  }, add = TRUE)
+    },
+    add = TRUE
+  )
   set.seed(seed)
 
   values <- as.numeric(stats::arima.sim(model = list(ar = phi), n = n))
@@ -287,14 +298,15 @@ make_seeded_ar1_indicator <- function(
 }
 
 make_daily_week_fixture <- function(
-    n_weeks = 12,
-    h = 1,
-    start = "2020-01-06",
-    indicator_values = NULL) {
-
+  n_weeks = 12,
+  h = 1,
+  start = "2020-01-06",
+  indicator_values = NULL
+) {
   total_days <- (n_weeks + h) * 7
   if (is.null(indicator_values)) {
-    indicator_values <- 100 + seq_len(total_days) + rep(c(0, 2, -1, 3, -2, 1, 0), length.out = total_days)
+    indicator_values <- 100 + seq_len(total_days) +
+      rep(c(0, 2, -1, 3, -2, 1, 0), length.out = total_days)
   }
 
   indic <- data.frame(
@@ -333,11 +345,11 @@ make_method_comparison_indicator <- function(n = 140, start = "2020-01-01") {
 }
 
 make_expalmon_joint_fixture <- function(
-    n_periods = 24,
-    h = 1,
-    start = "2020-01-06",
-    include_mean_indicator = FALSE) {
-
+  n_periods = 24,
+  h = 1,
+  start = "2020-01-06",
+  include_mean_indicator = FALSE
+) {
   total_periods <- n_periods + h
   total_days <- total_periods * 7
   day_index <- rep(seq_len(7), times = total_periods)
@@ -432,10 +444,10 @@ make_expalmon_joint_fixture <- function(
 }
 
 make_expalmon_single_fixture <- function(
-    n_periods = 12,
-    h = 1,
-    start = "2020-01-06") {
-
+  n_periods = 12,
+  h = 1,
+  start = "2020-01-06"
+) {
   total_periods <- n_periods + h
   total_days <- total_periods * 7
   day_index <- rep(seq_len(7), times = total_periods)

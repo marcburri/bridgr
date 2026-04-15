@@ -96,17 +96,17 @@
 #' \doi{10.1016/j.ijforecast.2015.07.004}
 #' @export
 bridge <- function(
-    target,
-    indic,
-    indic_predict = NULL,
-    indic_aggregators = NULL,
-    indic_lags = 0,
-    target_lags = 0,
-    h = 1,
-    frequency_conversions = NULL,
-    solver_options = NULL,
-    ...) {
-
+  target,
+  indic,
+  indic_predict = NULL,
+  indic_aggregators = NULL,
+  indic_lags = 0,
+  target_lags = 0,
+  h = 1,
+  frequency_conversions = NULL,
+  solver_options = NULL,
+  ...
+) {
   target_name <- deparse(substitute(target))
   indic_name <- deparse(substitute(indic))
 
@@ -196,7 +196,10 @@ bridge <- function(
 
   if (nrow(estimation_set) == 0) {
     rlang::abort(
-      "No complete estimation rows remain after aligning and aggregating the data.",
+      paste(
+        "No complete estimation rows remain after aligning and",
+        "aggregating the data."
+      ),
       call = rlang::caller_env()
     )
   }
@@ -204,7 +207,10 @@ bridge <- function(
   regressor_names <- setdiff(colnames(estimation_set), c("time", target_name))
   if (length(regressor_names) == 0) {
     rlang::abort(
-      "At least one aggregated indicator is required to estimate a bridge model.",
+      paste(
+        "At least one aggregated indicator is required to estimate",
+        "a bridge model."
+      ),
       call = rlang::caller_env()
     )
   }
@@ -213,7 +219,9 @@ bridge <- function(
     paste(target_name, "~", paste(regressor_names, collapse = " + "))
   )
 
-  estimation_xts <- suppressMessages(tsbox::ts_xts(tsbox::ts_long(estimation_set)))
+  estimation_xts <- suppressMessages(
+    tsbox::ts_xts(tsbox::ts_long(estimation_set))
+  )
   xreg_estimation <- estimation_xts[, regressor_names, drop = FALSE]
 
   model_fit <- forecast::Arima(
@@ -257,17 +265,17 @@ bridge <- function(
 #' @keywords internal
 #' @noRd
 validate_bridge_inputs <- function(
-    target_tbl,
-    indic_tbl,
-    indic_predict,
-    indic_aggregators,
-    indic_lags,
-    target_lags,
-    h,
-    frequency_conversions,
-    solver_options = NULL,
-    call = rlang::caller_env()) {
-
+  target_tbl,
+  indic_tbl,
+  indic_predict,
+  indic_aggregators,
+  indic_lags,
+  target_lags,
+  h,
+  frequency_conversions,
+  solver_options = NULL,
+  call = rlang::caller_env()
+) {
   if (length(unique(target_tbl$id)) != 1) {
     rlang::abort(
       "`target` must contain exactly one time series.",
@@ -285,13 +293,23 @@ validate_bridge_inputs <- function(
   check_bridge_series(target_tbl, "target", call = call)
   check_bridge_series(indic_tbl, "indic", call = call)
 
-  if (!is.numeric(indic_lags) || length(indic_lags) != 1 || indic_lags < 0 ||
-      indic_lags != as.integer(indic_lags)) {
-    rlang::abort("`indic_lags` must be a single non-negative integer.", call = call)
+  if (!is.numeric(indic_lags) ||
+    length(indic_lags) != 1 ||
+    indic_lags < 0 ||
+    indic_lags != as.integer(indic_lags)) {
+    rlang::abort(
+      "`indic_lags` must be a single non-negative integer.",
+      call = call
+    )
   }
-  if (!is.numeric(target_lags) || length(target_lags) != 1 || target_lags < 0 ||
-      target_lags != as.integer(target_lags)) {
-    rlang::abort("`target_lags` must be a single non-negative integer.", call = call)
+  if (!is.numeric(target_lags) ||
+    length(target_lags) != 1 ||
+    target_lags < 0 ||
+    target_lags != as.integer(target_lags)) {
+    rlang::abort(
+      "`target_lags` must be a single non-negative integer.",
+      call = call
+    )
   }
   if (!is.numeric(h) || length(h) != 1 || h < 1 || h != as.integer(h)) {
     rlang::abort("`h` must be a single positive integer.", call = call)
@@ -321,7 +339,8 @@ validate_bridge_inputs <- function(
       rlang::abort(
         paste0(
           "Indicator `", indic_meta$id[[i]],
-          "` is lower-frequency than the target and cannot be used in a bridge model."
+          "` is lower-frequency than the target and cannot be used in a ",
+          "bridge model."
         ),
         call = call
       )
@@ -354,20 +373,20 @@ validate_bridge_inputs <- function(
 #' @keywords internal
 #' @noRd
 build_indicator_features <- function(
-    indic_tbl,
-    indic_meta,
-    target_tbl,
-    target_meta,
-    target_anchor,
-    future_target_times,
-    indic_predict,
-    indic_aggregators,
-    frequency_conversions,
-    indic_lags = 0,
-    target_lags = 0,
-    solver_options = normalize_expalmon_solver_options(NULL),
-    call = rlang::caller_env()) {
-
+  indic_tbl,
+  indic_meta,
+  target_tbl,
+  target_meta,
+  target_anchor,
+  future_target_times,
+  indic_predict,
+  indic_aggregators,
+  frequency_conversions,
+  indic_lags = 0,
+  target_lags = 0,
+  solver_options = normalize_expalmon_solver_options(NULL),
+  call = rlang::caller_env()
+) {
   aggregated_fixed <- vector("list", length = nrow(indic_meta))
   models <- vector("list", length = nrow(indic_meta))
   expalmon_weights <- list()
@@ -475,12 +494,24 @@ build_indicator_features <- function(
   if (any(affected)) {
     details <- vapply(
       truncation_info[affected],
-      function(info) paste0(info$indicator_id, " (", info$n_periods, " period", if (info$n_periods == 1) "" else "s", ")"),
+      function(info) {
+        paste0(
+          info$indicator_id,
+          " (",
+          info$n_periods,
+          " period",
+          if (info$n_periods == 1) "" else "s",
+          ")"
+        )
+      },
       FUN.VALUE = character(1)
     )
     rlang::warn(
       paste0(
-        "Some indicators had more observations within a target period than implied by the current frequency mapping. ",
+        paste(
+          "Some indicators had more observations within a target period",
+          "than implied by the current frequency mapping."
+        ),
         "Using the most recent observations for: ",
         paste(details, collapse = ", "),
         "."

@@ -4,9 +4,9 @@
 #' @keywords internal
 "_PACKAGE"
 utils::globalVariables(c(
-  ".data", "id", "n", "period", "time", "values"))
+  ".data", "id", "n", "period", "time", "values"
+))
 
-#' @importFrom magrittr %>%
 #' @importFrom rlang .data
 #' @importFrom rlang %||%
 #' @importFrom lubridate %m+% %m-%

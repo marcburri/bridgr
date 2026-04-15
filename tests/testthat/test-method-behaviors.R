@@ -232,3 +232,28 @@ test_that("a full pipeline example works end to end", {
   expect_equal(nrow(fcst$forecast_set), 1)
   expect_true(all(c("indic", "indic_lag1") %in% model$regressor_names))
 })
+
+test_that("plot.bridge renders forecast and fit views", {
+  fixture <- make_daily_week_fixture(
+    n_weeks = 12,
+    h = 1,
+    indicator_values = make_method_comparison_indicator(n = 91)$value
+  )
+
+  model <- bridge(
+    target = fixture$target,
+    indic = fixture$indic,
+    indic_predict = "auto.arima",
+    indic_aggregators = "mean",
+    indic_lags = 1,
+    target_lags = 1,
+    h = 1
+  )
+
+  plot_file <- tempfile(fileext = ".pdf")
+  grDevices::pdf(plot_file)
+  on.exit(grDevices::dev.off(), add = TRUE)
+
+  expect_invisible(plot(model))
+  expect_invisible(plot(model, type = "fit"))
+})

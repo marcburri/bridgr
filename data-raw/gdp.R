@@ -8,7 +8,7 @@ gdp <- gdp %>%
     structure == "gdp",
     type == "real",
     seas_adj == "csa"
-    ) %>%
+  ) %>%
   dplyr::mutate(
     time = as.Date(.[[4]]),
     values = .[[5]]
