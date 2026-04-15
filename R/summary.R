@@ -66,17 +66,17 @@ summary.bridge <- function(object, ...) {
       cat(paste(round(aggregator, 3), collapse = ", "), "\n", sep = "")
     }
 
-    if (!is.null(object$expalmon_weights[[indicator_id]])) {
-      cat("Estimated expalmon weights: ")
+    if (!is.null(object$parametric_weights[[indicator_id]])) {
+      cat("Estimated parametric weights: ")
       cat(
-        paste(round(object$expalmon_weights[[indicator_id]], 3), collapse = ", ")
+        paste(round(object$parametric_weights[[indicator_id]], 3), collapse = ", ")
       )
       cat("\n")
-      if (!is.null(object$expalmon_parameters[[indicator_id]])) {
-        cat("Estimated expalmon parameters: ")
+      if (!is.null(object$parametric_parameters[[indicator_id]])) {
+        cat("Estimated parametric parameters: ")
         cat(
           paste(
-            round(object$expalmon_parameters[[indicator_id]], 3),
+            round(object$parametric_parameters[[indicator_id]], 3),
             collapse = ", "
           )
         )
@@ -87,33 +87,33 @@ summary.bridge <- function(object, ...) {
     cat("-----------------------------------\n")
   }
 
-  if (!is.null(object$expalmon_optimization)) {
-    cat("Joint expalmon optimization:\n")
+  if (!is.null(object$parametric_optimization)) {
+    cat("Joint parametric aggregation optimization:\n")
     cat("-----------------------------------\n")
-    cat("Method: ", object$expalmon_optimization$method, "\n", sep = "")
+    cat("Method: ", object$parametric_optimization$method, "\n", sep = "")
     cat(
       "Objective value: ",
-      round(object$expalmon_optimization$value, 4),
+      round(object$parametric_optimization$value, 4),
       "\n",
       sep = ""
     )
     cat(
       "Convergence code: ",
-      object$expalmon_optimization$convergence,
+      object$parametric_optimization$convergence,
       "\n",
       sep = ""
     )
     cat(
       "Best start: ",
-      object$expalmon_optimization$best_start,
+      object$parametric_optimization$best_start,
       " / ",
-      object$expalmon_optimization$n_starts,
+      object$parametric_optimization$n_starts,
       "\n",
       sep = ""
     )
-    if (!is.null(object$expalmon_optimization$message) &&
-      nzchar(object$expalmon_optimization$message)) {
-      cat("Message: ", object$expalmon_optimization$message, "\n", sep = "")
+    if (!is.null(object$parametric_optimization$message) &&
+      nzchar(object$parametric_optimization$message)) {
+      cat("Message: ", object$parametric_optimization$message, "\n", sep = "")
     }
     cat("-----------------------------------\n")
   }

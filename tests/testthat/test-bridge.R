@@ -87,6 +87,77 @@ test_that("invalid or lower-frequency indicators are rejected", {
   )
 })
 
+test_that("direct alignment must be used for all indicators", {
+  indic <- make_multi_indicator()
+  target <- make_quarter_target(
+    monthly_indicator = data.frame(
+      time = seq(as.Date("2020-01-01"), by = "month", length.out = 24),
+      value = 10 + seq_len(24)
+    ),
+    n_quarters = 6
+  )
+
+  expect_error(
+    bridge(
+      target = target,
+      indic = indic,
+      indic_predict = c("direct", "last"),
+      h = 1
+    ),
+    "must be used for all indicators"
+  )
+})
+
+test_that("parametric starting values must have the exact required length", {
+  indic <- make_monthly_indicator()
+  target <- make_quarter_target(indic, n_quarters = 6)
+
+  expect_error(
+    bridge(
+      target = target,
+      indic = indic,
+      indic_predict = "last",
+      indic_aggregators = "beta",
+      solver_options = list(start_values = 0.1),
+      h = 1
+    ),
+    "must contain exactly 2 values"
+  )
+
+  expect_error(
+    bridge(
+      target = target,
+      indic = data.frame(
+        id = rep(c("a", "b"), each = nrow(indic)),
+        time = rep(indic$time, times = 2),
+        value = c(indic$value, indic$value + 5)
+      ),
+      indic_predict = c("last", "last"),
+      indic_aggregators = c("expalmon", "legendre"),
+      solver_options = list(start_values = list(a = c(0, 0))),
+      h = 1
+    ),
+    "must provide exactly 2 parametric indicator start vectors"
+  )
+})
+
+test_that("deprecated solver option `start` is rejected", {
+  indic <- make_monthly_indicator()
+  target <- make_quarter_target(indic, n_quarters = 6)
+
+  expect_error(
+    bridge(
+      target = target,
+      indic = indic,
+      indic_predict = "last",
+      indic_aggregators = "expalmon",
+      solver_options = list(start = c(0, 0)),
+      h = 1
+    ),
+    "Invalid `solver_options`: start"
+  )
+})
+
 test_that("forecast.bridge uses stored future regressors and accepts custom xreg", {
   indic <- make_monthly_indicator()
   target <- make_quarter_target(indic, n_quarters = 6)
@@ -193,12 +264,14 @@ test_that(
       target_meta,
       1
     )
+    all_target_times <- c(unique(aligned$target$time), future_target_times)
     indicator_results <- bridgr:::build_indicator_features(
       indic_tbl = aligned$indic,
       indic_meta = indic_meta,
       target_tbl = aligned$target,
       target_meta = target_meta,
       target_anchor = aligned$target_anchor,
+      all_target_times = all_target_times,
       future_target_times = future_target_times,
       indic_predict = c("last", "last", "last"),
       indic_aggregators = config$indic_aggregators,
@@ -261,6 +334,7 @@ test_that(
       target_meta,
       1
     )
+    all_target_times <- c(unique(aligned$target$time), future_target_times)
     expect_warning(
       indicator_results <- bridgr:::build_indicator_features(
         indic_tbl = aligned$indic,
@@ -268,6 +342,7 @@ test_that(
         target_tbl = aligned$target,
         target_meta = target_meta,
         target_anchor = aligned$target_anchor,
+        all_target_times = all_target_times,
         future_target_times = future_target_times,
         indic_predict = c("last", "last", "last"),
         indic_aggregators = config$indic_aggregators,
@@ -332,12 +407,14 @@ test_that(
       target_meta,
       1
     )
+    all_target_times <- c(unique(aligned$target$time), future_target_times)
     indicator_results <- bridgr:::build_indicator_features(
       indic_tbl = aligned$indic,
       indic_meta = indic_meta,
       target_tbl = aligned$target,
       target_meta = target_meta,
       target_anchor = aligned$target_anchor,
+      all_target_times = all_target_times,
       future_target_times = future_target_times,
       indic_predict = c("last", "last", "last"),
       indic_aggregators = config$indic_aggregators,

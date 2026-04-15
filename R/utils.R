@@ -186,6 +186,7 @@ infer_frequency_table <- function(data, call = rlang::caller_env()) {
 infer_series_frequency <- function(times, id, call = rlang::caller_env()) {
   times <- sort(unique(times))
 
+  # Prefer calendar-aligned month/quarter/year detection when possible.
   month_candidate <- detect_month_frequency(times)
   if (!is.null(month_candidate)) {
     return(dplyr::tibble(
@@ -371,7 +372,8 @@ normalize_indicator_aggregators <- function(
     )
   }
 
-  valid_names <- c("mean", "last", "sum", "expalmon")
+  valid_names <- c("mean", "last", "sum", "expalmon", "beta", "legendre")
+  valid_names <- c(valid_names, "unrestricted")
 
   for (aggregator in aggregators) {
     if (is.character(aggregator)) {
@@ -397,7 +399,46 @@ normalize_indicator_aggregators <- function(
 
 #' @keywords internal
 #' @noRd
-normalize_expalmon_solver_options <- function(
+is_parametric_aggregator <- function(aggregator) {
+  is.character(aggregator) &&
+    length(aggregator) == 1 &&
+    aggregator %in% c("expalmon", "beta", "legendre")
+}
+
+#' @keywords internal
+#' @noRd
+parametric_parameter_names <- function(aggregator) {
+  switch(
+    aggregator,
+    "expalmon" = c("linear", "quadratic"),
+    "beta" = c("left_shape", "right_shape"),
+    "legendre" = c("first_order", "second_order"),
+    rlang::abort(
+      paste0("Unsupported parametric aggregator `", aggregator, "`."),
+      call = rlang::caller_env()
+    )
+  )
+}
+
+#' @keywords internal
+#' @noRd
+parametric_parameter_count <- function(aggregator) {
+  length(parametric_parameter_names(aggregator))
+}
+
+#' @keywords internal
+#' @noRd
+default_parametric_start <- function(aggregator) {
+  if (identical(aggregator, "beta")) {
+    return(c(1, 1))
+  }
+
+  rep(0, parametric_parameter_count(aggregator))
+}
+
+#' @keywords internal
+#' @noRd
+normalize_parametric_solver_options <- function(
   solver_options,
   call = rlang::caller_env()
 ) {
@@ -406,7 +447,8 @@ normalize_expalmon_solver_options <- function(
     maxiter = 1000L,
     n_starts = 5L,
     seed = NULL,
-    trace = 0L
+    trace = 0L,
+    start_values = NULL
   )
 
   if (is.null(solver_options)) {
@@ -484,6 +526,153 @@ normalize_expalmon_solver_options <- function(
 
 #' @keywords internal
 #' @noRd
+validate_parametric_solver_start <- function(
+  solver_options,
+  parametric_specs,
+  call = rlang::caller_env()
+) {
+  if (length(parametric_specs) == 0 || is.null(solver_options$start_values)) {
+    return(solver_options)
+  }
+
+  spec_names <- names(parametric_specs)
+  required_lengths <- vapply(
+    parametric_specs,
+    function(spec) parametric_parameter_count(spec$aggregator),
+    FUN.VALUE = integer(1)
+  )
+
+  if (is.numeric(solver_options$start_values)) {
+    expected_total <- sum(required_lengths)
+    if (length(solver_options$start_values) != expected_total) {
+      rlang::abort(
+        paste0(
+          "`solver_options$start_values` must contain exactly ",
+          expected_total,
+          " values across the parametric indicators."
+        ),
+        call = call
+      )
+    }
+
+    if (any(!is.finite(solver_options$start_values))) {
+      rlang::abort(
+        "`solver_options$start_values` must contain only finite numbers.",
+        call = call
+      )
+    }
+
+    solver_options$start_values <- split_parameter_vector(
+      parameters = as.numeric(solver_options$start_values),
+      specs = parametric_specs
+    )
+    names(solver_options$start_values) <- spec_names
+  }
+
+  if (!is.list(solver_options$start_values)) {
+    rlang::abort(
+      paste(
+        "`solver_options$start_values` must be a numeric vector or a named",
+        "list of numeric vectors."
+      ),
+      call = call
+    )
+  }
+
+  if (length(solver_options$start_values) != length(parametric_specs)) {
+    rlang::abort(
+      paste0(
+        "`solver_options$start_values` must provide exactly ",
+        length(parametric_specs),
+        " parametric indicator start vector",
+        if (length(parametric_specs) == 1) "" else "s",
+        "."
+      ),
+      call = call
+    )
+  }
+
+  if (is.null(names(solver_options$start_values))) {
+    if (length(parametric_specs) > 1) {
+      rlang::abort(
+        paste0(
+          "`solver_options$start_values` must be named for the parametric indicators: ",
+          paste(spec_names, collapse = ", "),
+          "."
+        ),
+        call = call
+      )
+    }
+    names(solver_options$start_values) <- spec_names
+  }
+
+  invalid_names <- setdiff(names(solver_options$start_values), spec_names)
+  if (length(invalid_names) > 0) {
+    rlang::abort(
+      paste0(
+        "Unknown entries in `solver_options$start_values`: ",
+        paste(invalid_names, collapse = ", "),
+        "."
+      ),
+      call = call
+    )
+  }
+
+  missing_names <- setdiff(spec_names, names(solver_options$start_values))
+  if (length(missing_names) > 0) {
+    rlang::abort(
+      paste0(
+        "`solver_options$start_values` is missing values for: ",
+        paste(missing_names, collapse = ", "),
+        "."
+      ),
+      call = call
+    )
+  }
+
+  solver_options$start_values <- lapply(
+    spec_names,
+    function(indicator_id) {
+      start_values <- solver_options$start_values[[indicator_id]]
+      required_length <- required_lengths[[indicator_id]]
+      aggregator <- parametric_specs[[indicator_id]]$aggregator
+
+      if (!is.numeric(start_values) ||
+        any(!is.finite(start_values)) ||
+        length(start_values) != required_length) {
+        rlang::abort(
+          paste0(
+            "`solver_options$start_values$", indicator_id,
+            "` must contain exactly ",
+            required_length,
+            " value",
+            if (required_length == 1) "" else "s",
+            "."
+          ),
+          call = call
+        )
+      }
+
+      if (identical(aggregator, "beta") && any(start_values <= 0)) {
+        rlang::abort(
+          paste0(
+            "`solver_options$start_values$", indicator_id,
+            "` must be strictly positive for `beta` aggregation."
+          ),
+          call = call
+        )
+      }
+
+      as.numeric(start_values)
+    }
+  )
+  names(solver_options$start_values) <- spec_names
+
+  solver_options
+}
+
+#' @keywords internal
+#' @noRd
 bridgr_with_seed <- function(seed, expr) {
   expr <- substitute(expr)
 
@@ -540,6 +729,7 @@ observations_per_target_period <- function(
 
   ratio <- ratio * target_meta$step[[1]] / indicator_meta$step[[1]]
 
+  # Only integer ratios can be mapped cleanly into target-period blocks.
   if (!isTRUE(all.equal(ratio, round(ratio)))) {
     rlang::abort(
       paste0(
@@ -566,6 +756,7 @@ target_future_times <- function(last_time, target_meta, h) {
 #' @keywords internal
 #' @noRd
 compute_target_periods <- function(times, target_anchor, target_meta) {
+  # Map each timestamp into the target period it belongs to.
   period_index <- floor(
     unit_distance(times, target_anchor, target_meta$unit[[1]]) / target_meta$step[[1]]
   )
@@ -677,6 +868,7 @@ extend_indicator_series <- function(
 
   model <- NULL
   if (missing_obs > 0) {
+    # Forecast only the high-frequency points needed to populate future target periods.
     extension <- forecast_indicator_values(
       indicator_tbl = indicator_tbl,
       indicator_meta = indicator_meta,
@@ -793,6 +985,7 @@ prepare_indicator_period_blocks <- function(
   truncated_periods <- counts |>
     dplyr::filter(.data$n_obs > obs_per_target)
 
+  # Keep the most recent observations when a period is overfilled.
   grouped <- indicator_tbl |>
     dplyr::mutate(period = periods) |>
     dplyr::group_by(.data$period) |>
@@ -816,6 +1009,85 @@ prepare_indicator_period_blocks <- function(
       n_periods = nrow(truncated_periods)
     )
   )
+}
+
+#' @keywords internal
+#' @noRd
+prepare_indicator_direct_blocks <- function(
+  indicator_tbl,
+  indicator_id,
+  target_times,
+  obs_per_target,
+  call = rlang::caller_env()
+) {
+  indicator_tbl <- indicator_tbl |>
+    dplyr::arrange(.data$time)
+
+  n_available_blocks <- floor(nrow(indicator_tbl) / obs_per_target)
+  if (n_available_blocks < 1) {
+    rlang::abort(
+      paste0(
+        "Indicator `", indicator_id,
+        "` does not contain enough observations for direct alignment ",
+        "(required at least ", obs_per_target, ", available: ", nrow(indicator_tbl), ")."
+      ),
+      call = call
+    )
+  }
+
+  n_used_obs <- n_available_blocks * obs_per_target
+  used_values <- utils::tail(indicator_tbl$values, n_used_obs)
+  blocks <- matrix(used_values, ncol = obs_per_target, byrow = TRUE)
+  storage.mode(blocks) <- "double"
+
+  list(
+    periods = utils::tail(target_times, n_available_blocks),
+    blocks = blocks,
+    truncation = list(
+      indicator_id = indicator_id,
+      n_periods = 0
+    )
+  )
+}
+
+#' @keywords internal
+#' @noRd
+as_unrestricted_indicator_long <- function(indicator_id, periods, blocks) {
+  indicator_ids <- paste0(indicator_id, "_hf", seq_len(ncol(blocks)))
+
+  dplyr::tibble(
+    id = rep(indicator_ids, each = nrow(blocks)),
+    time = rep(periods, times = ncol(blocks)),
+    values = as.numeric(as.vector(blocks))
+  )
+}
+
+#' @keywords internal
+#' @noRd
+shifted_legendre_basis <- function(n_weights, degree) {
+  positions <- seq(0, 1, length.out = n_weights)
+  basis_raw <- matrix(1, nrow = n_weights, ncol = degree + 2)
+  basis <- matrix(1, nrow = n_weights, ncol = degree + 1)
+
+  if (degree >= 0) {
+    basis[, 1] <- 1
+  }
+  if (degree >= 1) {
+    basis_raw[, 2] <- 2 * positions - 1
+  }
+
+  for (i in seq_len(degree)) {
+    basis[, i + 1] <- sqrt(2 * i + 1) * basis_raw[, i + 1]
+    if (i < degree) {
+      basis_raw[, i + 2] <- ((2 * i + 1) / (i + 1)) *
+        basis_raw[, 2] *
+        basis_raw[, i + 1] -
+        (i / (i + 1)) *
+        basis_raw[, i]
+    }
+  }
+
+  basis
 }
 
 #' @keywords internal
@@ -941,6 +1213,7 @@ compute_bridge_loss <- function(
   xreg <- as.matrix(estimation_set[, regressor_names, drop = FALSE])
 
   if (target_lags == 0) {
+    # With no AR terms, RSS is enough to compare expalmon candidates.
     fit <- stats::lm.fit(
       x = cbind("(Intercept)" = 1, xreg),
       y = y
@@ -980,18 +1253,26 @@ compute_bridge_loss <- function(
 
 #' @keywords internal
 #' @noRd
-expalmon_positions <- function(n_weights) {
+parametric_positions <- function(aggregator, n_weights) {
   if (n_weights == 1) {
-    return(0)
+    return(1)
   }
 
-  seq(-1, 1, length.out = n_weights)
+  if (identical(aggregator, "expalmon")) {
+    return(seq(-1, 1, length.out = n_weights))
+  }
+
+  seq(0, 1, length.out = n_weights)
 }
 
 #' @keywords internal
 #' @noRd
 exp_almon_gradient <- function(parameters, n_weights) {
-  basis <- expalmon_basis(parameters, n_weights)
+  basis <- parametric_polynomial_basis(
+    aggregator = "expalmon",
+    parameters = parameters,
+    n_weights = n_weights
+  )
   weights <- exp_almon(parameters, n_weights)
   weighted_basis <- colSums(weights * basis)
 
@@ -1001,44 +1282,145 @@ exp_almon_gradient <- function(parameters, n_weights) {
 
 #' @keywords internal
 #' @noRd
-expalmon_basis <- function(parameters, n_weights) {
-  positions <- expalmon_positions(n_weights)
+parametric_polynomial_basis <- function(aggregator, parameters, n_weights) {
+  positions <- parametric_positions(aggregator, n_weights)
 
-  vapply(
-    seq_along(parameters),
-    function(i) positions^i,
-    FUN.VALUE = numeric(n_weights)
+  if (identical(aggregator, "expalmon")) {
+    return(vapply(
+      seq_along(parameters),
+      function(i) positions^i,
+      FUN.VALUE = numeric(n_weights)
+    ))
+  }
+
+  if (identical(aggregator, "legendre")) {
+    basis <- shifted_legendre_basis(
+      n_weights = n_weights,
+      degree = length(parameters)
+    )
+    return(basis[, seq_along(parameters) + 1, drop = FALSE])
+  }
+
+  rlang::abort(
+    paste0("Unsupported polynomial aggregator `", aggregator, "`."),
+    call = rlang::caller_env()
   )
 }
 
 #' @keywords internal
 #' @noRd
-repeat_block_bounds <- function(value, n_indicators, n_parameters) {
-  rep(value, length.out = n_indicators * n_parameters)
-}
+parametric_weights <- function(aggregator, parameters, n_weights) {
+  expected_length <- parametric_parameter_count(aggregator)
+  if (!is.numeric(parameters) || length(parameters) != expected_length) {
+    rlang::abort(
+      paste0(
+        "`parameters` must contain exactly ",
+        expected_length,
+        " value",
+        if (expected_length == 1) "" else "s",
+        " for `",
+        aggregator,
+        "` weights."
+      ),
+      call = rlang::caller_env()
+    )
+  }
 
-#' @keywords internal
-#' @noRd
-split_expalmon_parameters <- function(parameters, indicator_ids, n_parameters) {
-  indices <- split(
-    seq_along(parameters),
-    rep(indicator_ids, each = n_parameters)
+  if (identical(aggregator, "beta")) {
+    if (n_weights == 1) {
+      return(1)
+    }
+
+    eps <- .Machine$double.eps
+    positions <- (seq_len(n_weights) - 1) / (n_weights - 1)
+    positions[[1]] <- positions[[1]] + eps
+    positions[[n_weights]] <- positions[[n_weights]] - eps
+    raw_weights <- positions^(parameters[[1]] - 1) *
+      (1 - positions)^(parameters[[2]] - 1)
+    return(raw_weights / sum(raw_weights))
+  }
+
+  basis <- parametric_polynomial_basis(
+    aggregator = aggregator,
+    parameters = parameters,
+    n_weights = n_weights
   )
-  lapply(indices, function(index) parameters[index])
+  log_weights <- drop(basis %*% parameters)
+  log_weights <- log_weights - max(log_weights)
+  raw_weights <- exp(log_weights)
+  raw_weights / sum(raw_weights)
 }
 
 #' @keywords internal
 #' @noRd
-aggregate_expalmon_specs <- function(expalmon_specs, parameter_blocks) {
-  aggregated <- vector("list", length(expalmon_specs))
-  weights <- vector("list", length(expalmon_specs))
+parametric_bounds <- function(specs) {
+  lower <- unlist(
+    lapply(
+      specs,
+      function(spec) {
+        if (identical(spec$aggregator, "beta")) {
+          return(rep(1e-6, parametric_parameter_count(spec$aggregator)))
+        }
+        rep(-10, parametric_parameter_count(spec$aggregator))
+      }
+    ),
+    use.names = FALSE
+  )
+  upper <- unlist(
+    lapply(
+      specs,
+      function(spec) {
+        if (identical(spec$aggregator, "beta")) {
+          return(rep(70, parametric_parameter_count(spec$aggregator)))
+        }
+        rep(10, parametric_parameter_count(spec$aggregator))
+      }
+    ),
+    use.names = FALSE
+  )
 
-  for (i in seq_along(expalmon_specs)) {
-    spec <- expalmon_specs[[i]]
+  list(lower = lower, upper = upper)
+}
+
+split_parameter_vector <- function(parameters, specs) {
+  block_sizes <- vapply(
+    specs,
+    function(spec) parametric_parameter_count(spec$aggregator),
+    FUN.VALUE = integer(1)
+  )
+  split_indices <- rep(seq_along(specs), times = block_sizes)
+  split(parameters, split_indices) |>
+    stats::setNames(names(specs))
+}
+
+#' @keywords internal
+#' @noRd
+flatten_parameter_blocks <- function(parameter_blocks, specs) {
+  unlist(
+    lapply(
+      names(specs),
+      function(indicator_id) {
+        as.numeric(parameter_blocks[[indicator_id]])
+      }
+    ),
+    use.names = FALSE
+  )
+}
+
+#' @keywords internal
+#' @noRd
+aggregate_parametric_specs <- function(parametric_specs, parameter_blocks) {
+  aggregated <- vector("list", length(parametric_specs))
+  weights <- vector("list", length(parametric_specs))
+
+  for (i in seq_along(parametric_specs)) {
+    spec <- parametric_specs[[i]]
     indicator_id <- spec$indicator_id
-    current_weights <- exp_almon(
-      parameter_blocks[[indicator_id]],
-      ncol(spec$blocks)
+    # Rebuild each indicator's target-frequency series from the current weight guess.
+    current_weights <- parametric_weights(
+      aggregator = spec$aggregator,
+      parameters = parameter_blocks[[indicator_id]],
+      n_weights = ncol(spec$blocks)
     )
     weights[[indicator_id]] <- current_weights
     aggregated[[i]] <- as_indicator_long(
@@ -1056,7 +1438,7 @@ aggregate_expalmon_specs <- function(expalmon_specs, parameter_blocks) {
 
 #' @keywords internal
 #' @noRd
-run_expalmon_optimizer <- function(
+run_parametric_optimizer <- function(
   objective,
   start,
   lower,
@@ -1111,8 +1493,8 @@ run_expalmon_optimizer <- function(
 
 #' @keywords internal
 #' @noRd
-optimize_expalmon_weights <- function(
-  expalmon_specs,
+optimize_parametric_weights <- function(
+  parametric_specs,
   fixed_aggregated,
   target_tbl,
   target_name,
@@ -1121,22 +1503,33 @@ optimize_expalmon_weights <- function(
   solver_options,
   call = rlang::caller_env()
 ) {
-  indicator_ids <- names(expalmon_specs)
-  n_indicators <- length(expalmon_specs)
-  n_parameters <- 2L
-  base_start <- rep(c(0, 0), times = n_indicators)
-  lower <- repeat_block_bounds(-10, n_indicators, n_parameters)
-  upper <- repeat_block_bounds(10, n_indicators, n_parameters)
+  indicator_ids <- names(parametric_specs)
+  base_blocks <- solver_options$start_values
+  if (is.null(base_blocks)) {
+    base_blocks <- lapply(
+      parametric_specs,
+      function(spec) default_parametric_start(spec$aggregator)
+    )
+    names(base_blocks) <- indicator_ids
+  }
+
+  base_start <- flatten_parameter_blocks(
+    parameter_blocks = base_blocks,
+    specs = parametric_specs
+  )
+  bounds <- parametric_bounds(parametric_specs)
+  lower <- bounds$lower
+  upper <- bounds$upper
   estimation_times <- unique(target_tbl$time)
 
+  # Score candidate weights by the final bridge-model fit, not indicator fit alone.
   objective <- function(parameters) {
-    parameter_blocks <- split_expalmon_parameters(
+    parameter_blocks <- split_parameter_vector(
       parameters = parameters,
-      indicator_ids = indicator_ids,
-      n_parameters = n_parameters
+      specs = parametric_specs
     )
-    expalmon_data <- aggregate_expalmon_specs(
-      expalmon_specs = expalmon_specs,
+    parametric_data <- aggregate_parametric_specs(
+      parametric_specs = parametric_specs,
       parameter_blocks = parameter_blocks
     )
 
@@ -1145,7 +1538,7 @@ optimize_expalmon_weights <- function(
       target_name = target_name,
       feature_long = dplyr::bind_rows(
         fixed_aggregated,
-        expalmon_data$aggregated
+        parametric_data$aggregated
       ),
       indic_lags = indic_lags,
       estimation_times = estimation_times
@@ -1165,6 +1558,7 @@ optimize_expalmon_weights <- function(
       function(start_index) {
         current_start <- base_start
         if (start_index > 1) {
+          # Jitter later starts so the optimizer can escape poor local solutions.
           current_start <- current_start + stats::rnorm(
             length(base_start),
             mean = 0,
@@ -1172,7 +1566,7 @@ optimize_expalmon_weights <- function(
           )
           current_start <- pmax(pmin(current_start, upper), lower)
         }
-        run_expalmon_optimizer(
+        run_parametric_optimizer(
           objective = objective,
           start = current_start,
           lower = lower,
@@ -1204,7 +1598,10 @@ optimize_expalmon_weights <- function(
 
   if (!is.finite(best_result$value)) {
     rlang::abort(
-      "Joint `expalmon` optimization failed to find a finite objective value.",
+      paste(
+        "Joint parametric aggregation optimization failed to find",
+        "a finite objective value."
+      ),
       call = call
     )
   }
@@ -1212,7 +1609,7 @@ optimize_expalmon_weights <- function(
   if (!isTRUE(best_result$convergence == 0)) {
     rlang::warn(
       paste0(
-        "Joint `expalmon` optimization did not fully converge (code ",
+        "Joint parametric aggregation optimization did not fully converge (code ",
         best_result$convergence,
         "). Using the best available parameter vector."
       ),
@@ -1220,19 +1617,18 @@ optimize_expalmon_weights <- function(
     )
   }
 
-  best_blocks <- split_expalmon_parameters(
+  best_blocks <- split_parameter_vector(
     parameters = best_result$par,
-    indicator_ids = indicator_ids,
-    n_parameters = n_parameters
+    specs = parametric_specs
   )
-  expalmon_data <- aggregate_expalmon_specs(
-    expalmon_specs = expalmon_specs,
+  parametric_data <- aggregate_parametric_specs(
+    parametric_specs = parametric_specs,
     parameter_blocks = best_blocks
   )
 
   list(
-    aggregated = expalmon_data$aggregated,
-    weights = expalmon_data$weights,
+    aggregated = parametric_data$aggregated,
+    weights = parametric_data$weights,
     parameters = best_blocks,
     optimization = list(
       method = best_result$method,
@@ -1256,6 +1652,7 @@ add_indicator_lags <- function(data, indic_lags) {
 
   lagged <- vector("list", indic_lags)
   for (lag_index in seq_len(indic_lags)) {
+    # Lag each indicator within series so target-period alignment stays intact.
     lagged[[lag_index]] <- data |>
       dplyr::group_by(.data$id) |>
       dplyr::arrange(.data$time, .by_group = TRUE) |>
@@ -1303,16 +1700,9 @@ as_forecast_xreg <- function(xreg, regressor_names, call = rlang::caller_env()) 
 #' @keywords internal
 #' @noRd
 exp_almon <- function(parameters, n_weights) {
-  if (length(parameters) < 1) {
-    rlang::abort(
-      "`parameters` must contain at least one value.",
-      call = rlang::caller_env()
-    )
-  }
-
-  basis <- expalmon_basis(parameters, n_weights)
-  log_weights <- drop(basis %*% parameters)
-  log_weights <- log_weights - max(log_weights)
-  raw_weights <- exp(log_weights)
-  raw_weights / sum(raw_weights)
+  parametric_weights(
+    aggregator = "expalmon",
+    parameters = parameters,
+    n_weights = n_weights
+  )
 }

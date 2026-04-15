@@ -23,12 +23,24 @@ bridge(
 \item{indic}{One or more indicator series in a \code{\link[tsbox:ts_boxable]{tsbox::ts_boxable()}} format.}
 
 \item{indic_predict}{A character vector of indicator forecasting methods.
-Length must be \code{1} or equal to the number of indicator series.}
+Length must be \code{1} or equal to the number of indicator series. Setting
+\code{indic_predict = "direct"} switches to direct MIDAS-style alignment: the
+indicators are not forecasted, and the most recent complete
+high-frequency blocks are assigned backward to the target periods. Direct
+alignment must be used for all indicators at once. When \code{h > 1}, the latest
+complete block is assigned to the farthest requested forecast horizon and
+earlier complete blocks are assigned backward from there.}
 
 \item{indic_aggregators}{A character vector of aggregation methods or a list
 of numeric weights. Length must be \code{1} or equal to the number of indicator
 series. Numeric weights must sum to one and have the appropriate length for
-the inferred target-period block size.}
+the inferred target-period block size. \code{"unrestricted"} keeps one separate
+coefficient per high-frequency observation within the target period. The
+parametric aggregators use two coefficients each: \code{"expalmon"} uses
+\verb{(linear, quadratic)}, \code{"beta"} uses \verb{(left_shape, right_shape)} as the
+normalized beta shape parameters, and \code{"legendre"} uses
+\verb{(first_order, second_order)} as coefficients on the first two shifted
+orthonormal Legendre basis functions.}
 
 \item{indic_lags}{A non-negative integer giving the number of target-period
 lags to add for each aggregated indicator.}
@@ -42,10 +54,20 @@ the target equation.}
 regular frequency ladder. Supported names are \code{spm}, \code{mph}, \code{hpd}, \code{dpw},
 \code{wpm}, \code{mpq}, and \code{qpy}.}
 
-\item{solver_options}{A list of optional controls for joint \code{expalmon}
-optimization. Supported entries are \code{method}, \code{maxiter}, \code{n_starts},
-\code{seed}, and \code{trace}. These controls are ignored unless at least one
-indicator uses \code{indic_aggregators = "expalmon"}.}
+\item{solver_options}{A list of optional controls for joint parametric-weight
+optimization. Supported entries are:
+\code{method} for the optimizer (\code{"L-BFGS-B"}, \code{"BFGS"}, \code{"Nelder-Mead"}, or
+\code{"nlminb"}), \code{maxiter} for the iteration budget per optimization run,
+\code{n_starts} for the number of multi-start attempts, \code{seed} for reproducible
+random restarts, \code{trace} for optimizer verbosity, and \code{start_values} for
+user-supplied initial parameter values. \code{start_values} can be either a
+numeric vector or a named list. For a numeric vector, values are concatenated
+in indicator order across the parametric aggregators. Within each indicator,
+the parameter order is \verb{(linear, quadratic)} for \code{"expalmon"},
+\verb{(left_shape, right_shape)} for \code{"beta"}, and \verb{(first_order, second_order)}
+for \code{"legendre"}. Named-list \code{start_values} must provide exactly the
+required number of values for each parametric indicator. These controls are
+ignored unless at least one indicator uses a parametric aggregator.}
 
 \item{...}{Reserved for future extensions.}
 }
@@ -63,11 +85,20 @@ aggregating them within each target period.
 }
 \details{
 Supported indicator forecasting methods are \code{"mean"}, \code{"last"},
-\code{"auto.arima"}, and \code{"ets"}. Supported aggregation methods are \code{"mean"},
-\code{"last"}, \code{"sum"}, \code{"expalmon"}, or a numeric weight vector supplied inside
-a \code{list()}. When one or more indicators use \code{"expalmon"}, the corresponding
-aggregation weights are estimated jointly against the final bridge-model
-objective rather than one indicator at a time.
+\code{"auto.arima"}, \code{"ets"}, and \code{"direct"}. Supported aggregation methods are
+\code{"mean"}, \code{"last"}, \code{"sum"}, \code{"unrestricted"}, \code{"expalmon"}, \code{"beta"},
+\code{"legendre"}, or a numeric weight vector supplied inside a \code{list()}.
+\code{"unrestricted"} expands each high-frequency observation within a target
+period into its own bridge regressor, which corresponds to a U-MIDAS style
+specification when the frequency gap is small. When one or more indicators
+use a parametric aggregator, the corresponding aggregation weights are
+estimated jointly against the final bridge-model objective rather than one
+indicator at a time.
+
+Unrestricted mixed-frequency regressions can become parameter-heavy quickly.
+When \code{indic_aggregators = "unrestricted"}, \code{bridge()} warns if the final
+estimation sample contains fewer than 10 observations per predictor in the
+bridge regression.
 
 The package assumes a regular frequency ladder
 \code{second -> minute -> hour -> day -> week -> month -> quarter -> year}.
