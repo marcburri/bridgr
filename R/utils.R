@@ -177,7 +177,7 @@ as_bridge_tbl <- function(
 #' @keywords internal
 #' @noRd
 standardize_ts_tbl <- function(ts_data) {
-  tsbox::ts_tbl(ts_data) |>
+  suppressMessages(tsbox::ts_tbl(ts_data)) |>
     dplyr::rename(values = dplyr::any_of(c("value", "values")))
 }
 

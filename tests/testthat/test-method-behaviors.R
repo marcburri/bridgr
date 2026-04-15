@@ -46,6 +46,25 @@ test_that("forecast method `mean` repeats the last block mean", {
   )
 })
 
+test_that("bridge suppresses tsbox value-name messages", {
+  gdp_growth <- suppressMessages(tsbox::ts_na_omit(tsbox::ts_pc(gdp)))
+  gdp_nowcast <- gdp_growth |>
+    dplyr::slice_head(n = nrow(gdp_growth) - 1)
+  baro_ragged <- baro |>
+    dplyr::slice_head(n = nrow(baro) - 2)
+
+  expect_no_message(
+    bridge(
+      target = gdp_nowcast,
+      indic = baro_ragged,
+      indic_predict = "mean",
+      indic_aggregators = "mean",
+      target_lags = 1,
+      h = 1
+    )
+  )
+})
+
 test_that("forecast method `auto.arima` matches direct indicator forecasting", {
   indicator_values <- make_method_comparison_indicator(n = 147)$value
   fixture <- make_daily_week_fixture(

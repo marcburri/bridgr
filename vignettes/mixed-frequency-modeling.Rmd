@@ -160,21 +160,23 @@ The fitted object stores both the estimated weight profile and the underlying
 parametric coefficients.
 
 ```{r weight-comparison}
+indicator_id <- expalmon_model$indic_name[[1]]
+
 dplyr::bind_rows(
   dplyr::tibble(
     model = "expalmon",
-    month = seq_along(expalmon_model$parametric_weights$indic),
-    weight = expalmon_model$parametric_weights$indic
+    month = seq_along(expalmon_model$parametric_weights[[indicator_id]]),
+    weight = expalmon_model$parametric_weights[[indicator_id]]
   ),
   dplyr::tibble(
     model = "beta",
-    month = seq_along(beta_model$parametric_weights$indic),
-    weight = beta_model$parametric_weights$indic
+    month = seq_along(beta_model$parametric_weights[[indicator_id]]),
+    weight = beta_model$parametric_weights[[indicator_id]]
   ),
   dplyr::tibble(
     model = "legendre",
-    month = seq_along(legendre_model$parametric_weights$indic),
-    weight = legendre_model$parametric_weights$indic
+    month = seq_along(legendre_model$parametric_weights[[indicator_id]]),
+    weight = legendre_model$parametric_weights[[indicator_id]]
   )
 )
 ```
