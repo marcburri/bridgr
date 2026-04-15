@@ -521,9 +521,9 @@ test_that("a full pipeline example works end to end", {
 
 test_that("plot.bridge renders forecast and fit views", {
   fixture <- make_daily_week_fixture(
-    n_weeks = 12,
-    h = 1,
-    indicator_values = make_method_comparison_indicator(n = 91)$value
+    n_weeks = 60,
+    h = 3,
+    indicator_values = make_method_comparison_indicator(n = 441)$value
   )
 
   model <- bridge(
@@ -536,10 +536,24 @@ test_that("plot.bridge renders forecast and fit views", {
     h = 1
   )
 
-  plot_file <- tempfile(fileext = ".pdf")
-  grDevices::pdf(plot_file)
-  on.exit(grDevices::dev.off(), add = TRUE)
+  interval_model <- bridge(
+    target = fixture$target,
+    indic = fixture$indic,
+    indic_predict = "auto.arima",
+    indic_aggregators = "mean",
+    indic_lags = 1,
+    target_lags = 1,
+    h = 3,
+    se = TRUE,
+    bootstrap = list(N = 8, block_length = 4)
+  )
 
-  expect_invisible(plot(model))
-  expect_invisible(plot(model, type = "fit"))
+  forecast_plot <- plot(interval_model)
+  fit_plot <- plot(model, type = "fit")
+  forecast_build <- ggplot2::ggplot_build(forecast_plot)
+
+  expect_s3_class(forecast_plot, "ggplot")
+  expect_s3_class(fit_plot, "ggplot")
+  expect_equal(min(forecast_build$data[[1]]$x), as.numeric(fixture$target$time[[11]]))
+  expect_equal(nrow(forecast_build$data[[1]]), 50)
 })

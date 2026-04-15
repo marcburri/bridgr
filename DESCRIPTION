@@ -34,7 +34,9 @@ Imports:
     rlang,
     tsbox,
     lubridate,
-    forecast
+    forecast,
+    ggplot2,
+    scales
 Suggests:
     knitr,
     rmarkdown,

@@ -127,16 +127,16 @@ By default, `bridgr` returns point forecasts only. If you want uncertainty
 output, request it at estimation time with `se = TRUE` and a bootstrap
 configuration.
 
-```{r bootstrap-example, eval = FALSE}
+```{r bootstrap-example}
 boot_model <- bridge(
   target = gdp_growth,
   indic = baro,
   indic_predict = "auto.arima",
   indic_aggregators = "mean",
   target_lags = 1,
-  h = 1,
+  h = 4,
   se = TRUE,
-  bootstrap = list(type = "block", N = 100, block_length = NULL)
+  bootstrap = list(type = "block", N = 40, block_length = NULL)
 )
 
 forecast(boot_model)

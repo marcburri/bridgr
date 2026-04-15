@@ -8,14 +8,10 @@
   x,
   type = c("forecast", "fit"),
   level = 95,
+  history_n = 50,
   xlab = NULL,
   ylab = NULL,
   main = NULL,
-  col_history = "black",
-  col_fit = "#1b9e77",
-  col_forecast = "#d95f02",
-  col_interval = grDevices::adjustcolor("#d95f02", alpha.f = 0.2),
-  lwd = 2,
   ...
 )
 }
@@ -29,18 +25,16 @@ target to the in-sample fitted values.}
 \item{level}{Forecast interval level passed to \code{\link[=forecast.bridge]{forecast.bridge()}} when
 \code{type = "forecast"}.}
 
+\item{history_n}{Number of historical target observations to display.
+Defaults to the most recent \code{50}. Set to \code{NULL} to show the full history.}
+
 \item{xlab, ylab, main}{Optional axis and title labels. When omitted, sensible
 defaults are chosen from \code{type}.}
 
-\item{col_history, col_fit, col_forecast, col_interval}{Colors used for the
-historical target, fitted values, forecast mean, and forecast interval.}
-
-\item{lwd}{Line width for the main series.}
-
-\item{...}{Additional graphical parameters passed to \code{\link[graphics:plot.default]{graphics::plot()}}.}
+\item{...}{Additional arguments passed to \code{\link[=theme_bridgr]{theme_bridgr()}}.}
 }
 \value{
-\code{x}, invisibly.
+A ggplot2 object.
 }
 \description{
 Visualize a fitted \code{\link[=bridge]{bridge()}} model either as an in-sample fit or as a
