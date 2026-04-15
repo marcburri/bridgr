@@ -65,14 +65,10 @@ forecast with prediction intervals.</p>
 <span>  <span class="va">x</span>,</span>
 <span>  type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"forecast"</span>, <span class="st">"fit"</span><span class="op">)</span>,</span>
 <span>  level <span class="op">=</span> <span class="fl">95</span>,</span>
+<span>  history_n <span class="op">=</span> <span class="fl">50</span>,</span>
 <span>  xlab <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  ylab <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  main <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  col_history <span class="op">=</span> <span class="st">"black"</span>,</span>
-<span>  col_fit <span class="op">=</span> <span class="st">"#1b9e77"</span>,</span>
-<span>  col_forecast <span class="op">=</span> <span class="st">"#d95f02"</span>,</span>
-<span>  col_interval <span class="op">=</span> <span class="fu">grDevices</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/grDevices/adjustcolor.html" class="external-link">adjustcolor</a></span><span class="op">(</span><span class="st">"#d95f02"</span>, alpha.f <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span>,</span>
-<span>  lwd <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -96,27 +92,23 @@ target to the in-sample fitted values.</p></dd>
 <code>type = "forecast"</code>.</p></dd>
 
 
+<dt id="arg-history-n">history_n<a class="anchor" aria-label="anchor" href="#arg-history-n"></a></dt>
+<dd><p>Number of historical target observations to display.
+Defaults to the most recent <code>50</code>. Set to <code>NULL</code> to show the full history.</p></dd>
+
+
 <dt id="arg-xlab-ylab-main">xlab, ylab, main<a class="anchor" aria-label="anchor" href="#arg-xlab-ylab-main"></a></dt>
 <dd><p>Optional axis and title labels. When omitted, sensible
 defaults are chosen from <code>type</code>.</p></dd>
 
 
-<dt id="arg-col-history-col-fit-col-forecast-col-interval">col_history, col_fit, col_forecast, col_interval<a class="anchor" aria-label="anchor" href="#arg-col-history-col-fit-col-forecast-col-interval"></a></dt>
-<dd><p>Colors used for the
-historical target, fitted values, forecast mean, and forecast interval.</p></dd>
-
-
-<dt id="arg-lwd">lwd<a class="anchor" aria-label="anchor" href="#arg-lwd"></a></dt>
-<dd><p>Line width for the main series.</p></dd>
-
-
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>Additional graphical parameters passed to <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">graphics::plot()</a></code>.</p></dd>
+<dd><p>Additional arguments passed to <code><a href="theme_bridgr.html">theme_bridgr()</a></code>.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p><code>x</code>, invisibly.</p>
+    <p>A ggplot2 object.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

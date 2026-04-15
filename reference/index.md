@@ -16,3 +16,8 @@
   : Plot a Bridge Model
 - [`summary(`*`<bridge>`*`)`](https://marcburri.github.io/bridgr/reference/summary.bridge.md)
   : Summarize a Bridge Model
+- [`theme_bridgr()`](https://marcburri.github.io/bridgr/reference/theme_bridgr.md)
+  [`colors_bridgr()`](https://marcburri.github.io/bridgr/reference/theme_bridgr.md)
+  [`scale_color_bridgr()`](https://marcburri.github.io/bridgr/reference/theme_bridgr.md)
+  [`scale_fill_bridgr()`](https://marcburri.github.io/bridgr/reference/theme_bridgr.md)
+  : bridgr Plot Theme and Color Scales

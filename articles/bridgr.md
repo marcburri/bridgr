@@ -209,15 +209,61 @@ boot_model <- bridge(
   indic_predict = "auto.arima",
   indic_aggregators = "mean",
   target_lags = 1,
-  h = 1,
+  h = 4,
   se = TRUE,
-  bootstrap = list(type = "block", N = 100, block_length = NULL)
+  bootstrap = list(type = "block", N = 40, block_length = NULL)
 )
 
 forecast(boot_model)
+#> Bridge forecast
+#> -----------------------------------
+#> Target series: gdp_growth
+#> Forecast horizon: 4
+#> Target model: fc_model
+#> Uncertainty: conditional block bootstrap
+#> Bootstrap draws: 40 / 40
+#> Block length: 5
+#> -----------------------------------
+#> # A tibble: 4 × 7
+#>   time        mean    se lower_80 upper_80 lower_95 upper_95
+#>   <date>     <dbl> <dbl>    <dbl>    <dbl>    <dbl>    <dbl>
+#> 1 2023-01-01 0.116 0.234 -0.00117    0.465   -0.369    0.878
+#> 2 2023-04-01 0.428 0.115  0.315      0.615    0.203    0.673
+#> 3 2023-07-01 0.487 0.103  0.389      0.663    0.339    0.705
+#> 4 2023-10-01 0.509 0.103  0.401      0.676    0.358    0.743
 summary(boot_model)
+#> Bridge model summary
+#> -----------------------------------
+#> Target series: gdp_growth
+#> Target frequency: quarter (step 1)
+#> Forecast horizon: 4
+#> Target model: fc_model
+#> Estimation rows: 75
+#> Regressors: baro
+#> -----------------------------------
+#> Target equation coefficients:
+#> # A tibble: 3 × 3
+#>   term      estimate bootstrap_se
+#>   <chr>        <dbl>        <dbl>
+#> 1 ar1        -0.135        0.209 
+#> 2 intercept  -9.06         3.32  
+#> 3 baro        0.0950       0.0330
+#> -----------------------------------
+#> Indicator summary:
+#> # A tibble: 1 × 5
+#>   indicator frequency      predict    aggregation indicator_model
+#>   <chr>     <chr>          <chr>      <chr>       <chr>          
+#> 1 baro      month (step 1) auto.arima mean        fc_model       
+#> -----------------------------------
+#> Uncertainty:
+#> Method: conditional block bootstrap
+#> Bootstrap draws: 40 / 40
+#> Block length: 5
+#> -----------------------------------
 plot(boot_model, type = "forecast")
 ```
+
+![](bridgr_files/figure-html/bootstrap-example-1.png)
 
 The current uncertainty implementation is a conditional block bootstrap
 on the final target-frequency estimation sample. It does not re-estimate

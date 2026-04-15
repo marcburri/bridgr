@@ -283,14 +283,59 @@ want uncertainty output, request it at estimation time with
 <span>  indic_predict <span class="op">=</span> <span class="st">"auto.arima"</span>,</span>
 <span>  indic_aggregators <span class="op">=</span> <span class="st">"mean"</span>,</span>
 <span>  target_lags <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>  h <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  h <span class="op">=</span> <span class="fl">4</span>,</span>
 <span>  se <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  bootstrap <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"block"</span>, N <span class="op">=</span> <span class="fl">100</span>, block_length <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
+<span>  bootstrap <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"block"</span>, N <span class="op">=</span> <span class="fl">40</span>, block_length <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://generics.r-lib.org/reference/forecast.html" class="external-link">forecast</a></span><span class="op">(</span><span class="va">boot_model</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Bridge forecast</span></span>
+<span><span class="co">#&gt; -----------------------------------</span></span>
+<span><span class="co">#&gt; Target series: gdp_growth</span></span>
+<span><span class="co">#&gt; Forecast horizon: 4</span></span>
+<span><span class="co">#&gt; Target model: fc_model</span></span>
+<span><span class="co">#&gt; Uncertainty: conditional block bootstrap</span></span>
+<span><span class="co">#&gt; Bootstrap draws: 40 / 40</span></span>
+<span><span class="co">#&gt; Block length: 5</span></span>
+<span><span class="co">#&gt; -----------------------------------</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 7</span></span></span>
+<span><span class="co">#&gt;   time        mean    se lower_80 upper_80 lower_95 upper_95</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;date&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 2023-01-01 0.116 0.234 -<span style="color: #BB0000;">0.001</span><span style="color: #BB0000; text-decoration: underline;">17</span>    0.465   -<span style="color: #BB0000;">0.369</span>    0.878</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> 2023-04-01 0.428 0.115  0.315      0.615    0.203    0.673</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> 2023-07-01 0.487 0.103  0.389      0.663    0.339    0.705</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> 2023-10-01 0.509 0.103  0.401      0.676    0.358    0.743</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">boot_model</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Bridge model summary</span></span>
+<span><span class="co">#&gt; -----------------------------------</span></span>
+<span><span class="co">#&gt; Target series: gdp_growth</span></span>
+<span><span class="co">#&gt; Target frequency: quarter (step 1)</span></span>
+<span><span class="co">#&gt; Forecast horizon: 4</span></span>
+<span><span class="co">#&gt; Target model: fc_model</span></span>
+<span><span class="co">#&gt; Estimation rows: 75</span></span>
+<span><span class="co">#&gt; Regressors: baro</span></span>
+<span><span class="co">#&gt; -----------------------------------</span></span>
+<span><span class="co">#&gt; Target equation coefficients:</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 3 × 3</span></span></span>
+<span><span class="co">#&gt;   term      estimate bootstrap_se</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> ar1        -<span style="color: #BB0000;">0.135</span>        0.209 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> intercept  -<span style="color: #BB0000;">9.06</span>         3.32  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> baro        0.095<span style="text-decoration: underline;">0</span>       0.033<span style="text-decoration: underline;">0</span></span></span>
+<span><span class="co">#&gt; -----------------------------------</span></span>
+<span><span class="co">#&gt; Indicator summary:</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
+<span><span class="co">#&gt;   indicator frequency      predict    aggregation indicator_model</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> baro      month (step 1) auto.arima mean        fc_model       </span></span>
+<span><span class="co">#&gt; -----------------------------------</span></span>
+<span><span class="co">#&gt; Uncertainty:</span></span>
+<span><span class="co">#&gt; Method: conditional block bootstrap</span></span>
+<span><span class="co">#&gt; Bootstrap draws: 40 / 40</span></span>
+<span><span class="co">#&gt; Block length: 5</span></span>
+<span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">boot_model</span>, type <span class="op">=</span> <span class="st">"forecast"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="bridgr_files/figure-html/bootstrap-example-1.png" class="r-plt" alt="" width="700"></p>
 <p>The current uncertainty implementation is a conditional block
 bootstrap on the final target-frequency estimation sample. It does not
 re-estimate indicator forecast models or parametric aggregation weights
