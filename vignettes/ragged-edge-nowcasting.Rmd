@@ -1,0 +1,157 @@
+---
+title: "Ragged-Edge Nowcasting with bridgr"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Ragged-Edge Nowcasting with bridgr}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+
+library(bridgr)
+```
+
+# Why Ragged Edges Matter
+
+Mixed-frequency nowcasting usually happens at the ragged edge: the
+lower-frequency target has not been released yet, and the higher-frequency
+indicators are only partially observed for the current target period.
+
+`bridgr` handles that situation through `indic_predict`, which controls how
+the missing high-frequency tail is completed before the target equation is
+estimated or forecast.
+
+The currently supported options are:
+
+- `"last"`: extend the latest available high-frequency observation.
+- `"mean"`: extend the mean of the latest available high-frequency block.
+- `"auto.arima"`: fit an automatic ARIMA model to each indicator and forecast
+  the missing observations.
+- `"ets"`: fit an ETS model to each indicator and forecast the missing
+  observations.
+- `"direct"`: do not forecast the indicator at all. Instead, align the latest
+  observed complete high-frequency blocks directly to the target periods.
+
+# A Ragged-Edge Example
+
+We start from the package's quarterly GDP growth series and monthly barometer,
+then remove the last quarterly GDP observation and the last two monthly
+indicator observations. That creates a clean nowcast setup: the final quarter
+is now forecasted rather than estimated, and the monthly indicator is only
+partially observed for that forecast quarter.
+
+```{r data}
+gdp_growth <- suppressMessages(tsbox::ts_na_omit(tsbox::ts_pc(gdp)))
+gdp_nowcast <- gdp_growth |>
+  dplyr::slice_head(n = nrow(gdp_growth) - 1)
+
+baro_ragged <- baro |>
+  dplyr::slice_head(n = nrow(baro) - 2)
+
+tail(gdp_growth)
+tail(gdp_nowcast)
+tail(baro_ragged)
+```
+
+The target history now ends one quarter earlier, while the monthly indicator
+contains only a partial block for the quarter we want to nowcast.
+
+# Comparing Indicator Completion Rules
+
+```{r compare-methods}
+predict_methods <- c("last", "mean", "auto.arima", "ets")
+
+models <- lapply(
+  predict_methods,
+  function(method) {
+    bridge(
+      target = gdp_nowcast,
+      indic = baro_ragged,
+      indic_predict = method,
+      indic_aggregators = "mean",
+      target_lags = 1,
+      h = 1
+    )
+  }
+)
+names(models) <- predict_methods
+
+dplyr::bind_rows(
+  lapply(
+    predict_methods,
+    function(method) {
+      fc <- forecast(models[[method]])
+      dplyr::tibble(
+        method = method,
+        forecast_time = fc$time,
+        forecast = as.numeric(fc$mean)
+      )
+    }
+  )
+)
+```
+
+The model specification is the same in each case. The only difference is how
+the missing monthly observations are completed before the indicator is
+aggregated to the quarterly frequency.
+
+# Looking at the Forecast Regressor Set
+
+The easiest way to see what each method is doing is to inspect
+`forecast_set`, which stores the target-period regressors used for the final
+forecast.
+
+```{r forecast-sets}
+lapply(
+  models[c("last", "mean")],
+  function(model) {
+    model$forecast_set
+  }
+)
+```
+
+With `"last"`, the last observed monthly value is extended forward. With
+`"mean"`, the mean of the latest available high-frequency block is extended
+forward instead.
+
+# Direct Alignment
+
+`"direct"` takes a different route. The indicator is not forecasted. Instead,
+`bridgr` assigns the latest complete high-frequency blocks backward to the
+target periods. That is closest to a direct MIDAS-style setup.
+
+```{r direct}
+direct_model <- bridge(
+  target = gdp_nowcast,
+  indic = baro_ragged,
+  indic_predict = "direct",
+  indic_aggregators = "unrestricted",
+  h = 1
+)
+
+forecast(direct_model)
+```
+
+This is especially useful when you want to avoid a separate indicator
+forecasting step and prefer to work only with observed high-frequency data.
+
+# When to Use Which Option
+
+As a rough guide:
+
+- Use `"last"` when a simple carry-forward rule is acceptable.
+- Use `"mean"` when you want a stable deterministic fill based on the latest
+  high-frequency block.
+- Use `"auto.arima"` or `"ets"` when the indicator has meaningful time-series
+  structure and a separate extrapolation step is sensible.
+- Use `"direct"` when you want direct MIDAS-style alignment without indicator
+  forecasting.
+
+The good part is that the downstream workflow does not change. The same
+`summary()` and `forecast()` interface works across all of these nowcasting
+choices.

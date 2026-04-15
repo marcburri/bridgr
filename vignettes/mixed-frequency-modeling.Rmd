@@ -1,0 +1,218 @@
+---
+title: "Aggregation and Mixed-Frequency Modeling in bridgr"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Aggregation and Mixed-Frequency Modeling in bridgr}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+
+library(bridgr)
+```
+
+# The Bridge-to-MIDAS Spectrum
+
+`bridgr` supports several ways to map higher-frequency observations into a
+lower-frequency target equation. Those choices span a continuum:
+
+- Bridge-style deterministic aggregation: `"mean"`, `"last"`, `"sum"`, or
+  fixed numeric weights.
+- Unrestricted mixed-frequency regression: `"unrestricted"`.
+- Parametric MIDAS-style weighting: `"expalmon"`, `"beta"`, and `"legendre"`.
+
+This vignette uses a simple monthly-to-quarterly simulation so the differences
+between these approaches are easy to see.
+
+# A Small Monthly-to-Quarterly Example
+
+```{r simulation}
+monthly_time <- seq(as.Date("2018-01-01"), by = "month", length.out = 36)
+monthly_indicator <- dplyr::tibble(
+  time = monthly_time,
+  value = 15 + seq_len(36) * 0.4 +
+    rep(c(0.8, -0.3, 1.2), length.out = 36)
+)
+
+quarter_time <- monthly_time[seq(1, 36, by = 3)]
+quarter_target <- dplyr::tibble(
+  time = quarter_time,
+  value = 0.5 +
+    vapply(
+      seq_along(quarter_time),
+      function(i) {
+        block <- monthly_indicator$value[((i - 1) * 3 + 1):(i * 3)]
+        0.2 * block[[1]] + 0.6 * block[[2]] + 0.2 * block[[3]]
+      },
+      numeric(1)
+    ) +
+    rep(c(0.1, -0.05, 0.08, -0.02), length.out = length(quarter_time))
+)
+```
+
+The target is intentionally driven more by the middle month of each quarter, so
+we can see how the different aggregation schemes react.
+
+# Deterministic Bridge Aggregation
+
+```{r deterministic}
+mean_model <- bridge(
+  target = quarter_target,
+  indic = monthly_indicator,
+  indic_predict = "last",
+  indic_aggregators = "mean",
+  h = 1
+)
+
+last_model <- bridge(
+  target = quarter_target,
+  indic = monthly_indicator,
+  indic_predict = "last",
+  indic_aggregators = "last",
+  h = 1
+)
+
+summary(mean_model)
+summary(last_model)
+```
+
+These are classic bridge-model choices. They are easy to interpret and often
+work well when you want a transparent rule for within-period aggregation.
+
+# Unrestricted Mixed-Frequency Regression
+
+```{r unrestricted}
+unrestricted_model <- bridge(
+  target = quarter_target,
+  indic = monthly_indicator,
+  indic_predict = "direct",
+  indic_aggregators = "unrestricted",
+  h = 1
+)
+
+summary(unrestricted_model)
+```
+
+`"unrestricted"` estimates one coefficient for each within-quarter monthly
+observation. In a monthly-on-quarterly example this means three separate
+regressors. This corresponds to a U-MIDAS style specification when the
+frequency gap is small enough to estimate those coefficients reliably.
+
+# Parametric MIDAS-Style Weighting
+
+`bridgr` also supports parametric weighting rules that estimate the
+within-period shape from the data while keeping the number of free parameters
+small.
+
+```{r parametric}
+expalmon_model <- bridge(
+  target = quarter_target,
+  indic = monthly_indicator,
+  indic_predict = "last",
+  indic_aggregators = "expalmon",
+  solver_options = list(seed = 123, n_starts = 1, maxiter = 100),
+  h = 1
+)
+
+beta_model <- bridge(
+  target = quarter_target,
+  indic = monthly_indicator,
+  indic_predict = "last",
+  indic_aggregators = "beta",
+  solver_options = list(
+    seed = 123,
+    n_starts = 1,
+    maxiter = 100,
+    start_values = c(2, 2)
+  ),
+  h = 1
+)
+
+legendre_model <- bridge(
+  target = quarter_target,
+  indic = monthly_indicator,
+  indic_predict = "last",
+  indic_aggregators = "legendre",
+  solver_options = list(seed = 123, n_starts = 1, maxiter = 100),
+  h = 1
+)
+```
+
+The fitted object stores both the estimated weight profile and the underlying
+parametric coefficients.
+
+```{r weight-comparison}
+dplyr::bind_rows(
+  dplyr::tibble(
+    model = "expalmon",
+    month = seq_along(expalmon_model$parametric_weights$indic),
+    weight = expalmon_model$parametric_weights$indic
+  ),
+  dplyr::tibble(
+    model = "beta",
+    month = seq_along(beta_model$parametric_weights$indic),
+    weight = beta_model$parametric_weights$indic
+  ),
+  dplyr::tibble(
+    model = "legendre",
+    month = seq_along(legendre_model$parametric_weights$indic),
+    weight = legendre_model$parametric_weights$indic
+  )
+)
+```
+
+# Forecast Comparison
+
+All of these models share the same downstream interface.
+
+```{r forecast-comparison}
+dplyr::bind_rows(
+  dplyr::tibble(
+    model = "mean",
+    forecast = as.numeric(forecast(mean_model)$mean)
+  ),
+  dplyr::tibble(
+    model = "last",
+    forecast = as.numeric(forecast(last_model)$mean)
+  ),
+  dplyr::tibble(
+    model = "unrestricted",
+    forecast = as.numeric(forecast(unrestricted_model)$mean)
+  ),
+  dplyr::tibble(
+    model = "expalmon",
+    forecast = as.numeric(forecast(expalmon_model)$mean)
+  ),
+  dplyr::tibble(
+    model = "beta",
+    forecast = as.numeric(forecast(beta_model)$mean)
+  ),
+  dplyr::tibble(
+    model = "legendre",
+    forecast = as.numeric(forecast(legendre_model)$mean)
+  )
+)
+```
+
+# Choosing an Aggregation Strategy
+
+As a rough guide:
+
+- Use deterministic bridge aggregation when you want a transparent and stable
+  nowcasting rule.
+- Use `"unrestricted"` when the frequency gap is small and you want each
+  within-period observation to have its own coefficient.
+- Use `"expalmon"`, `"beta"`, or `"legendre"` when you want data-driven
+  within-period weights but would like a more parsimonious parameterization
+  than `"unrestricted"`.
+- Use `indic_predict = "direct"` when you want direct MIDAS-style alignment
+  based only on the latest observed high-frequency blocks.
+
+The key design choice in `bridgr` is that all of these specifications share
+the same estimation, forecasting, and summary workflow. You can therefore move
+between bridge and MIDAS-style models without switching to a different API.

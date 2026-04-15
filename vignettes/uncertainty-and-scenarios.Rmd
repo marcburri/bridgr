@@ -1,0 +1,148 @@
+---
+title: "Bootstrap Uncertainty and Scenario Forecasting"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Bootstrap Uncertainty and Scenario Forecasting}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+
+library(bridgr)
+```
+
+# Overview
+
+`bridgr` can return point forecasts only, or it can also compute conditional
+bootstrap uncertainty for the fitted target equation.
+
+The relevant estimation arguments are:
+
+- `se = FALSE`: point forecasts only.
+- `se = TRUE`: compute conditional bootstrap uncertainty.
+- `bootstrap = list(type = "block", N = 100, block_length = NULL)`: control
+  the bootstrap.
+
+At the moment, `"block"` is the only supported bootstrap type.
+
+# Fitting a Model with Bootstrap Uncertainty
+
+```{r bootstrap-model}
+gdp_growth <- suppressMessages(tsbox::ts_na_omit(tsbox::ts_pc(gdp)))
+
+boot_model <- bridge(
+  target = gdp_growth,
+  indic = baro,
+  indic_predict = "auto.arima",
+  indic_aggregators = "mean",
+  indic_lags = 1,
+  target_lags = 1,
+  h = 2,
+  se = TRUE,
+  bootstrap = list(type = "block", N = 20, block_length = NULL)
+)
+```
+
+The current implementation uses a conditional block bootstrap on the final
+target-frequency estimation sample. It does not re-estimate indicator forecast
+models or parametric aggregation weights inside each bootstrap draw.
+
+# Forecast Output
+
+Once the model has been estimated with `se = TRUE`, `forecast()` returns a
+standardized forecast object with:
+
+- `mean`
+- `se`
+- `lower`
+- `upper`
+- `forecast_set`
+- bootstrap metadata
+
+```{r forecast-output}
+fc <- forecast(boot_model)
+
+fc
+fc$bootstrap
+```
+
+The intervals are empirical bootstrap intervals based on the stored bootstrap
+forecast draws.
+
+# Summary Output
+
+The same bootstrap run also feeds into `summary()`.
+
+```{r summary-output}
+summary(boot_model)
+```
+
+The printed summary keeps the same base layout as a point-estimate model and
+adds the uncertainty section only when bootstrap output is available.
+
+# Scenario Forecasting with `xreg`
+
+If you want to forecast the target under a different future regressor path,
+pass a custom `xreg` object to `forecast()`. The custom regressor names must
+match the ones used in the fitted target equation.
+
+```{r scenario}
+scenario_xreg <- dplyr::tibble(
+  id = rep(boot_model$regressor_names, each = nrow(boot_model$forecast_set)),
+  time = rep(
+    boot_model$forecast_set$time,
+    times = length(boot_model$regressor_names)
+  ),
+  value = c(
+    boot_model$forecast_set$baro + 5,
+    boot_model$forecast_set$baro_lag1 + 5
+  )
+)
+
+scenario_fc <- forecast(boot_model, xreg = scenario_xreg)
+
+dplyr::tibble(
+  time = fc$time,
+  baseline = as.numeric(fc$mean),
+  scenario = as.numeric(scenario_fc$mean)
+)
+```
+
+When a model contains stored bootstrap draws, `forecast(..., xreg = ...)`
+reuses the bootstrap refits and evaluates them on the scenario regressor path.
+That keeps the uncertainty handling consistent between the baseline forecast
+and scenario forecasts.
+
+# Point Forecasts Only
+
+If you are only interested in point estimates, leave `se = FALSE`. In that
+case, `bootstrap` is ignored and `forecast()` still returns the same object
+shape, with `NA` uncertainty fields.
+
+```{r point-only}
+point_model <- bridge(
+  target = gdp_growth,
+  indic = baro,
+  indic_predict = "auto.arima",
+  indic_aggregators = "mean",
+  indic_lags = 1,
+  target_lags = 1,
+  h = 1,
+  se = FALSE,
+  bootstrap = list(type = "block", N = 20)
+)
+
+forecast(point_model)
+```
+
+# Interpretation
+
+These intervals are conditional on the aligned target-frequency design matrix.
+That means they are most naturally interpreted as uncertainty for the final
+target equation given the regressor path, rather than full end-to-end
+uncertainty for the whole mixed-frequency system.
