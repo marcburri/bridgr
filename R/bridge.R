@@ -118,13 +118,20 @@
 #' the euro area GDP. *International Journal of Forecasting*, 20(3), 447-460.
 #' \doi{10.1016/S0169-2070(03)00067-0}
 #'
-#' Burri, M. (2023). Do daily lead texts help nowcasting GDP growth? IRENE
-#' Working Papers 23-02.
-#' \url{https://www5.unine.ch/RePEc/ftp/irn/pdfs/WP23-02.pdf}
+#' Ghysels, E., Sinko, A., & Valkanov, R. (2007). MIDAS regressions: Further
+#' results and new directions. *Econometric Reviews*, 26(1), 53-90.
+#' \doi{10.1080/07474930600972467}
+#'
+#' Andreou, E., Ghysels, E., & Kourtellos, A. (2010). Regression models with
+#' mixed sampling frequencies. *Journal of Econometrics*, 158(2), 246-261.
+#' \doi{10.1016/j.jeconom.2010.01.004}
 #'
 #' Schumacher, C. (2016). A comparison of MIDAS and bridge equations.
 #' *International Journal of Forecasting*, 32(2), 257-270.
 #' \doi{10.1016/j.ijforecast.2015.07.004}
+#'
+#' Burri, M. *Oxford Bulletin of Economics and Statistics*.
+#' \url{https://onlinelibrary.wiley.com/doi/10.1111/obes.70073}
 #' @export
 bridge <- function(
   target,
