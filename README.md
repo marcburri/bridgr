@@ -56,13 +56,7 @@ devtools::install_github("marcburri/bridgr")
 This is a basic example with the default mean aggregation:
 
 ``` r
-if (requireNamespace("bridgr", quietly = TRUE)) {
-  library(bridgr)
-} else {
-  pkgload::load_all(".", export_all = FALSE, helpers = FALSE, quiet = TRUE)
-}
-#> Warning in system("timedatectl", intern = TRUE): running command 'timedatectl'
-#> had status 1
+library(bridgr)
 
 gdp <- suppressMessages(tsbox::ts_na_omit(tsbox::ts_pc(bridgr::gdp)))
 
