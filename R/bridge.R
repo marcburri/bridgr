@@ -37,7 +37,9 @@
 #' `frequency_conversions`. If a target period contains more high-frequency
 #' observations than implied by the current mapping, `bridge()` keeps the most
 #' recent observations and emits a summarized warning. If a target period
-#' contains fewer observations than required, the call fails.
+#' contains fewer observations than required, the call fails. Month-, quarter-,
+#' and year-based input dates are standardized to period starts when needed
+#' for frequency recognition.
 #'
 #' @param target A single target series in a [tsbox::ts_boxable()] format.
 #' @param indic One or more indicator series in a [tsbox::ts_boxable()] format.
@@ -48,7 +50,10 @@
 #' high-frequency blocks are assigned backward to the target periods. Direct
 #' alignment must be used for all indicators at once. When `h > 1`, the latest
 #' complete block is assigned to the farthest requested forecast horizon and
-#' earlier complete blocks are assigned backward from there.
+#' earlier complete blocks are assigned backward from there. For
+#' `indic_predict = "mean"`, missing high-frequency observations are filled
+#' with the mean of the latest complete target-period block, and that same
+#' mean is extended across the forecast horizon.
 #' @param indic_aggregators A character vector of aggregation methods or a list
 #' of numeric weights. Length must be `1` or equal to the number of indicator
 #' series. Numeric weights must sum to one and have the appropriate length for
@@ -159,6 +164,8 @@ bridge <- function(
     arg = "indic",
     default_id = indic_name
   )
+  target_tbl <- normalize_period_start_data(target_tbl)
+  indic_tbl <- normalize_period_start_data(indic_tbl)
 
   config <- validate_bridge_inputs(
     target_tbl = target_tbl,
@@ -510,7 +517,6 @@ build_indicator_features <- function(
   parametric_specs <- list()
 
   target_name <- unique(target_tbl$id)
-  last_target_time <- max(target_tbl$time)
 
   for (i in seq_len(nrow(indic_meta))) {
     indicator_id <- indic_meta$id[[i]]
@@ -544,7 +550,7 @@ build_indicator_features <- function(
         future_target_times = future_target_times,
         obs_per_target = obs_per_target,
         predict_method = indic_predict[[i]],
-        reference_target_time = last_target_time
+        call = call
       )
       indicator_tbl <- indicator_extension$data
 

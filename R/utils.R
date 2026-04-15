@@ -122,6 +122,57 @@ standardize_ts_tbl <- function(ts_data) {
 
 #' @keywords internal
 #' @noRd
+as_period_start <- function(times, unit) {
+  converted <- lubridate::floor_date(times, unit = unit)
+
+  if (inherits(times, "Date")) {
+    return(as.Date(converted))
+  }
+
+  as.POSIXct(converted, tz = lubridate::tz(times[[1]]) %||% "UTC")
+}
+
+#' @keywords internal
+#' @noRd
+fallback_period_start_times <- function(times) {
+  if (!(inherits(times, "Date") || inherits(times, "POSIXt"))) {
+    return(times)
+  }
+
+  raw_times <- sort(unique(times))
+  if (!is.null(detect_month_frequency(raw_times)) ||
+    !is.null(detect_time_frequency(raw_times))) {
+    return(times)
+  }
+
+  for (unit in c("year", "quarter", "month")) {
+    candidate_times <- as_period_start(times, unit = unit)
+    if (length(unique(candidate_times)) != length(unique(times))) {
+      next
+    }
+    candidate_frequency <- detect_month_frequency(sort(unique(candidate_times)))
+
+    if (!is.null(candidate_frequency) && identical(candidate_frequency$unit, unit)) {
+      return(candidate_times)
+    }
+  }
+
+  times
+}
+
+#' @keywords internal
+#' @noRd
+normalize_period_start_data <- function(data) {
+  data |>
+    dplyr::group_by(.data$id) |>
+    dplyr::group_modify(
+      ~ dplyr::mutate(.x, time = fallback_period_start_times(.data$time))
+    ) |>
+    dplyr::ungroup()
+}
+
+#' @keywords internal
+#' @noRd
 check_bridge_series <- function(
   data,
   arg,
@@ -851,7 +902,6 @@ extend_indicator_series <- function(
   future_target_times,
   obs_per_target,
   predict_method,
-  reference_target_time,
   call = rlang::caller_env()
 ) {
   indicator_tbl <- indicator_tbl |>
@@ -868,13 +918,22 @@ extend_indicator_series <- function(
 
   model <- NULL
   if (missing_obs > 0) {
+    mean_reference_values <- NULL
+    if (identical(predict_method, "mean")) {
+      mean_reference_values <- latest_available_block_values(
+        indicator_tbl = indicator_tbl,
+        obs_per_target = obs_per_target
+      )
+    }
+
     # Forecast only the high-frequency points needed to populate future target periods.
     extension <- forecast_indicator_values(
       indicator_tbl = indicator_tbl,
       indicator_meta = indicator_meta,
       n_ahead = missing_obs,
       method = predict_method,
-      reference_target_time = reference_target_time,
+      obs_per_target = obs_per_target,
+      mean_reference_values = mean_reference_values,
       call = call
     )
     model <- extension$model
@@ -901,12 +960,25 @@ extend_indicator_series <- function(
 
 #' @keywords internal
 #' @noRd
+latest_available_block_values <- function(
+  indicator_tbl,
+  obs_per_target
+) {
+  utils::tail(
+    indicator_tbl$values,
+    min(obs_per_target, nrow(indicator_tbl))
+  )
+}
+
+#' @keywords internal
+#' @noRd
 forecast_indicator_values <- function(
   indicator_tbl,
   indicator_meta,
   n_ahead,
   method,
-  reference_target_time,
+  obs_per_target,
+  mean_reference_values = NULL,
   call = rlang::caller_env()
 ) {
   if (method == "last") {
@@ -917,12 +989,10 @@ forecast_indicator_values <- function(
   }
 
   if (method == "mean") {
-    recent_values <- indicator_tbl |>
-      dplyr::filter(.data$time >= reference_target_time) |>
-      dplyr::pull(.data$values)
-    if (length(recent_values) == 0) {
-      recent_values <- indicator_tbl$values
-    }
+    recent_values <- mean_reference_values %||% utils::tail(
+      indicator_tbl$values,
+      min(obs_per_target, nrow(indicator_tbl))
+    )
     return(list(
       values = rep(mean(recent_values), n_ahead),
       model = NULL
@@ -1359,7 +1429,7 @@ parametric_bounds <- function(specs) {
       specs,
       function(spec) {
         if (identical(spec$aggregator, "beta")) {
-          return(rep(1e-6, parametric_parameter_count(spec$aggregator)))
+          return(rep(-10, parametric_parameter_count(spec$aggregator)))
         }
         rep(-10, parametric_parameter_count(spec$aggregator))
       }
@@ -1371,7 +1441,7 @@ parametric_bounds <- function(specs) {
       specs,
       function(spec) {
         if (identical(spec$aggregator, "beta")) {
-          return(rep(70, parametric_parameter_count(spec$aggregator)))
+          return(rep(10, parametric_parameter_count(spec$aggregator)))
         }
         rep(10, parametric_parameter_count(spec$aggregator))
       }
@@ -1405,6 +1475,52 @@ flatten_parameter_blocks <- function(parameter_blocks, specs) {
     ),
     use.names = FALSE
   )
+}
+
+#' @keywords internal
+#' @noRd
+to_optimizer_scale <- function(parameters, aggregator) {
+  parameters <- as.numeric(parameters)
+
+  if (identical(aggregator, "beta")) {
+    return(log(parameters))
+  }
+
+  parameters
+}
+
+#' @keywords internal
+#' @noRd
+from_optimizer_scale <- function(parameters, aggregator) {
+  parameters <- as.numeric(parameters)
+
+  if (identical(aggregator, "beta")) {
+    return(exp(parameters))
+  }
+
+  parameters
+}
+
+#' @keywords internal
+#' @noRd
+parameter_blocks_from_optimizer <- function(parameters, specs) {
+  optimizer_blocks <- split_parameter_vector(
+    parameters = parameters,
+    specs = specs
+  )
+
+  blocks <- lapply(
+    names(specs),
+    function(indicator_id) {
+      from_optimizer_scale(
+        parameters = optimizer_blocks[[indicator_id]],
+        aggregator = specs[[indicator_id]]$aggregator
+      )
+    }
+  )
+  names(blocks) <- names(specs)
+
+  blocks
 }
 
 #' @keywords internal
@@ -1514,7 +1630,16 @@ optimize_parametric_weights <- function(
   }
 
   base_start <- flatten_parameter_blocks(
-    parameter_blocks = base_blocks,
+    parameter_blocks = lapply(
+      names(parametric_specs),
+      function(indicator_id) {
+        to_optimizer_scale(
+          parameters = base_blocks[[indicator_id]],
+          aggregator = parametric_specs[[indicator_id]]$aggregator
+        )
+      }
+    ) |>
+      stats::setNames(names(parametric_specs)),
     specs = parametric_specs
   )
   bounds <- parametric_bounds(parametric_specs)
@@ -1524,7 +1649,7 @@ optimize_parametric_weights <- function(
 
   # Score candidate weights by the final bridge-model fit, not indicator fit alone.
   objective <- function(parameters) {
-    parameter_blocks <- split_parameter_vector(
+    parameter_blocks <- parameter_blocks_from_optimizer(
       parameters = parameters,
       specs = parametric_specs
     )
@@ -1617,7 +1742,7 @@ optimize_parametric_weights <- function(
     )
   }
 
-  best_blocks <- split_parameter_vector(
+  best_blocks <- parameter_blocks_from_optimizer(
     parameters = best_result$par,
     specs = parametric_specs
   )
@@ -1693,7 +1818,7 @@ as_forecast_xreg <- function(xreg, regressor_names, call = rlang::caller_env()) 
     )
   }
 
-  xreg_wide[, regressor_names, drop = FALSE]
+  xreg_wide[, c("time", regressor_names), drop = FALSE]
 }
 
 #' Exponential Almon polynomial weights

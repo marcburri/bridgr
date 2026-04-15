@@ -13,6 +13,8 @@
 #' @method forecast bridge
 #' @export
 forecast.bridge <- function(object, xreg = NULL, ...) {
+  forecast_set <- object$forecast_set
+
   if (inherits(object$model, "lm")) {
     if (is.null(xreg)) {
       newdata <- object$forecast_set
@@ -23,6 +25,7 @@ forecast.bridge <- function(object, xreg = NULL, ...) {
         call = rlang::caller_env()
       )
       newdata[[object$target_name]] <- NA_real_
+      forecast_set <- newdata[, c("time", object$regressor_names), drop = FALSE]
     }
   } else {
     if (is.null(xreg)) {
@@ -32,12 +35,12 @@ forecast.bridge <- function(object, xreg = NULL, ...) {
         as.matrix(object$forecast_set[, object$regressor_names, drop = FALSE])
       }
     } else {
-      xreg_values <- as_forecast_xreg(
+      forecast_set <- as_forecast_xreg(
         xreg = xreg,
         regressor_names = object$regressor_names,
         call = rlang::caller_env()
-      ) |>
-        as.matrix()
+      )
+      xreg_values <- as.matrix(forecast_set[, object$regressor_names, drop = FALSE])
     }
   }
 
@@ -47,7 +50,6 @@ forecast.bridge <- function(object, xreg = NULL, ...) {
     forecast::forecast(object$model, xreg = xreg_values, ...)
   }
 
-  forecast_set <- object$forecast_set
   forecast_set[[object$target_name]] <- as.numeric(forecast_object$mean)
   forecast_object$forecast_set <- forecast_set
   forecast_object

@@ -29,7 +29,10 @@ indicators are not forecasted, and the most recent complete
 high-frequency blocks are assigned backward to the target periods. Direct
 alignment must be used for all indicators at once. When \code{h > 1}, the latest
 complete block is assigned to the farthest requested forecast horizon and
-earlier complete blocks are assigned backward from there.}
+earlier complete blocks are assigned backward from there. For
+\code{indic_predict = "mean"}, missing high-frequency observations are filled
+with the mean of the latest complete target-period block, and that same
+mean is extended across the forecast horizon.}
 
 \item{indic_aggregators}{A character vector of aggregation methods or a list
 of numeric weights. Length must be \code{1} or equal to the number of indicator
@@ -117,7 +120,9 @@ Users can override any subset of these values with
 \code{frequency_conversions}. If a target period contains more high-frequency
 observations than implied by the current mapping, \code{bridge()} keeps the most
 recent observations and emits a summarized warning. If a target period
-contains fewer observations than required, the call fails.
+contains fewer observations than required, the call fails. Month-, quarter-,
+and year-based input dates are standardized to period starts when needed
+for frequency recognition.
 }
 \examples{
 gdp_growth <- suppressMessages(tsbox::ts_na_omit(tsbox::ts_pc(gdp)))
