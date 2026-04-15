@@ -2,6 +2,7 @@
 
 S3method(forecast,bridge)
 S3method(plot,bridge)
+S3method(print,bridge_forecast)
 S3method(summary,bridge)
 export(bridge)
 export(forecast)

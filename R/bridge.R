@@ -72,6 +72,17 @@
 #' @param frequency_conversions A named numeric vector used to customize the
 #' regular frequency ladder. Supported names are `spm`, `mph`, `hpd`, `dpw`,
 #' `wpm`, `mpq`, and `qpy`.
+#' @param se Logical flag indicating whether conditional bootstrap standard
+#' errors and forecast intervals should be computed. When `FALSE`, `bootstrap`
+#' is ignored.
+#' @param bootstrap A list of bootstrap controls. Currently only
+#' `list(type = "block", N = 100, block_length = NULL)` is supported.
+#' `type` must be `"block"`, `N` is the number of bootstrap replications, and
+#' `block_length` is the target-frequency block length. When `block_length` is
+#' `NULL`, `bridge()` uses `ceiling(n^(1/3))` based on the final target-period
+#' estimation sample size. The bootstrap is conditional on the aligned
+#' low-frequency design matrix and therefore does not re-estimate indicator
+#' forecasts or aggregation weights.
 #' @param solver_options A list of optional controls for joint parametric-weight
 #' optimization. Supported entries are:
 #' `method` for the optimizer (`"L-BFGS-B"`, `"BFGS"`, `"Nelder-Mead"`, or
@@ -148,6 +159,8 @@ bridge <- function(
   target_lags = 0,
   h = 1,
   frequency_conversions = NULL,
+  se = FALSE,
+  bootstrap = NULL,
   solver_options = NULL,
   ...
 ) {
@@ -177,6 +190,8 @@ bridge <- function(
     target_lags = target_lags,
     h = h,
     frequency_conversions = frequency_conversions,
+    se = se,
+    bootstrap = bootstrap,
     solver_options = solver_options
   )
 
@@ -303,21 +318,27 @@ bridge <- function(
     )
   )
 
-  estimation_xts <- suppressMessages(
-    tsbox::ts_xts(tsbox::ts_long(estimation_set))
-  )
-  xreg_estimation <- estimation_xts[, regressor_names, drop = FALSE]
-
   # Fit a linear bridge equation unless target AR dynamics are requested.
-  if (target_lags == 0) {
-    model_fit <- stats::lm(formula = formula, data = estimation_set)
-  } else {
-    model_fit <- forecast::Arima(
-      y = estimation_xts[, target_name],
-      order = c(target_lags, 0, 0),
-      xreg = xreg_estimation
-    )
-  }
+  model_fit <- fit_target_model(
+    estimation_set = estimation_set,
+    target_name = target_name,
+    regressor_names = regressor_names,
+    formula = formula,
+    target_lags = target_lags
+  )
+
+  bootstrap_fit <- bootstrap_target_equation(
+    enabled = config$se,
+    model = model_fit,
+    estimation_set = estimation_set,
+    forecast_set = forecast_set,
+    target_name = target_name,
+    regressor_names = regressor_names,
+    formula = formula,
+    target_lags = target_lags,
+    bootstrap = config$bootstrap,
+    call = rlang::caller_env()
+  )
 
   structure(
     list(
@@ -333,6 +354,8 @@ bridge <- function(
       target_lags = target_lags,
       h = h,
       frequency_conversions = config$frequency_conversions,
+      se = config$se,
+      bootstrap = bootstrap_fit,
       solver_options = config$solver_options,
       formula = formula,
       estimation_set = estimation_set,
@@ -365,6 +388,8 @@ validate_bridge_inputs <- function(
   target_lags,
   h,
   frequency_conversions,
+  se = FALSE,
+  bootstrap = NULL,
   solver_options = NULL,
   call = rlang::caller_env()
 ) {
@@ -406,9 +431,16 @@ validate_bridge_inputs <- function(
   if (!is.numeric(h) || length(h) != 1 || h < 1 || h != as.integer(h)) {
     rlang::abort("`h` must be a single positive integer.", call = call)
   }
+  if (!is.logical(se) || length(se) != 1 || is.na(se)) {
+    rlang::abort("`se` must be either `TRUE` or `FALSE`.", call = call)
+  }
 
   frequency_conversions <- normalize_frequency_conversions(
     frequency_conversions,
+    call = call
+  )
+  bootstrap <- normalize_bridge_bootstrap(
+    bootstrap = bootstrap,
     call = call
   )
   solver_options <- normalize_parametric_solver_options(
@@ -496,6 +528,8 @@ validate_bridge_inputs <- function(
     indic_predict = indic_predict,
     indic_aggregators = indic_aggregators,
     frequency_conversions = frequency_conversions,
+    se = isTRUE(se),
+    bootstrap = bootstrap,
     solver_options = solver_options
   )
 }

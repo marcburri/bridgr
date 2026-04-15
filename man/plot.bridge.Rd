@@ -26,7 +26,7 @@
 together with the bridge forecast, or \code{"fit"} to compare the observed
 target to the in-sample fitted values.}
 
-\item{level}{Prediction interval level passed to \code{\link[forecast:reexports]{forecast::forecast()}} when
+\item{level}{Forecast interval level passed to \code{\link[=forecast.bridge]{forecast.bridge()}} when
 \code{type = "forecast"}.}
 
 \item{xlab, ylab, main}{Optional axis and title labels. When omitted, sensible

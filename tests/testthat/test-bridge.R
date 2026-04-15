@@ -167,12 +167,18 @@ test_that("forecast.bridge uses stored regressors and accepts xreg", {
     indic = indic,
     indic_predict = "last",
     indic_lags = 1,
+    se = TRUE,
+    bootstrap = list(N = 8, block_length = 2),
     h = 2
   )
 
   default_forecast <- forecast(model)
+  expect_s3_class(default_forecast, "bridge_forecast")
   expect_s3_class(default_forecast, "forecast")
   expect_equal(nrow(default_forecast$forecast_set), 2)
+  expect_equal(length(default_forecast$se), 2)
+  expect_gt(default_forecast$bootstrap$valid_N, 0L)
+  expect_lte(default_forecast$bootstrap$valid_N, 8L)
 
   custom_xreg <- dplyr::tibble(
     id = rep(c("indic", "indic_lag1"), each = 2),
@@ -199,6 +205,27 @@ test_that("summary.bridge prints model information", {
   output <- capture.output(summary(model))
   expect_true(any(grepl("Bridge model summary", output)))
   expect_true(any(grepl("Target series:", output)))
+  expect_true(any(grepl("Indicator summary:", output)))
+})
+
+test_that("se = FALSE leaves bootstrap inactive", {
+  indic <- make_monthly_indicator()
+  target <- make_quarter_target(indic, n_quarters = 6)
+
+  model <- bridge(
+    target = target,
+    indic = indic,
+    indic_predict = "last",
+    se = FALSE,
+    bootstrap = list(N = 10, block_length = 2),
+    h = 1
+  )
+  fc <- forecast(model)
+
+  expect_false(model$bootstrap$enabled)
+  expect_true(all(is.na(fc$se)))
+  expect_true(all(is.na(fc$lower)))
+  expect_true(all(is.na(fc$upper)))
 })
 
 test_that("bridge validates duplicate timestamps and missing values", {

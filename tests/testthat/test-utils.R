@@ -37,6 +37,33 @@ test_that("solver option normalization validates controls", {
   )
 })
 
+test_that("bootstrap controls are normalized and validated", {
+  options <- bridgr:::normalize_bridge_bootstrap(
+    list(type = "block", N = 25.2, block_length = 4.8)
+  )
+
+  expect_equal(options$type, "block")
+  expect_equal(options$N, 25L)
+  expect_equal(options$block_length, 5L)
+
+  expect_error(
+    bridgr:::normalize_bridge_bootstrap("bad"),
+    "`bootstrap` must be a list"
+  )
+  expect_error(
+    bridgr:::normalize_bridge_bootstrap(list(type = "wild")),
+    "'arg' should be \"block\""
+  )
+  expect_error(
+    bridgr:::normalize_bridge_bootstrap(list(N = 0)),
+    "`bootstrap\\$N` must be a single integer >= 1"
+  )
+  expect_error(
+    bridgr:::normalize_bridge_bootstrap(list(block_length = 0)),
+    "`bootstrap\\$block_length` must be `NULL` or a single integer >= 1"
+  )
+})
+
 test_that("parametric start values are validated", {
   parametric_specs <- list(
     a = list(aggregator = "beta"),

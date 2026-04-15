@@ -7,7 +7,7 @@
 #' @param type Plot type. Use `"forecast"` to plot the observed target history
 #'   together with the bridge forecast, or `"fit"` to compare the observed
 #'   target to the in-sample fitted values.
-#' @param level Prediction interval level passed to [forecast::forecast()] when
+#' @param level Forecast interval level passed to [forecast.bridge()] when
 #'   `type = "forecast"`.
 #' @param xlab,ylab,main Optional axis and title labels. When omitted, sensible
 #'   defaults are chosen from `type`.
@@ -85,8 +85,14 @@ plot.bridge <- function(
   forecast_object <- forecast::forecast(x, level = level)
   forecast_time <- x$future_target_times
   forecast_mean <- as.numeric(forecast_object$mean)
-  lower <- as.numeric(forecast_object$lower[, 1])
-  upper <- as.numeric(forecast_object$upper[, 1])
+  show_interval <- !all(is.na(forecast_object$lower[, 1]))
+
+  if (show_interval) {
+    lower <- as.numeric(forecast_object$lower[, 1])
+    upper <- as.numeric(forecast_object$upper[, 1])
+  } else {
+    lower <- upper <- forecast_mean
+  }
 
   if (is.null(main)) {
     main <- "Bridge Forecast"
@@ -112,14 +118,16 @@ plot.bridge <- function(
     ...
   )
 
-  polygon_x <- c(forecast_time, rev(forecast_time))
-  polygon_y <- c(lower, rev(upper))
-  graphics::polygon(
-    x = polygon_x,
-    y = polygon_y,
-    border = NA,
-    col = col_interval
-  )
+  if (show_interval) {
+    polygon_x <- c(forecast_time, rev(forecast_time))
+    polygon_y <- c(lower, rev(upper))
+    graphics::polygon(
+      x = polygon_x,
+      y = polygon_y,
+      border = NA,
+      col = col_interval
+    )
+  }
   graphics::lines(
     c(utils::tail(target_time, 1), forecast_time),
     c(utils::tail(target_values, 1), forecast_mean),
@@ -132,14 +140,30 @@ plot.bridge <- function(
     col = col_forecast,
     pch = 16
   )
+  legend_entries <- c("Observed", "Forecast")
+  legend_colors <- c(col_history, col_forecast)
+  legend_lty <- c(1, 1)
+  legend_lwd <- c(lwd, lwd)
+  legend_pch <- c(NA, 16)
+  legend_pt_cex <- c(1, 1)
+
+  if (show_interval) {
+    legend_entries <- c(legend_entries, paste0(level, "% interval"))
+    legend_colors <- c(legend_colors, col_interval)
+    legend_lty <- c(legend_lty, NA)
+    legend_lwd <- c(legend_lwd, NA)
+    legend_pch <- c(legend_pch, 15)
+    legend_pt_cex <- c(legend_pt_cex, 2)
+  }
+
   graphics::legend(
     "topleft",
-    legend = c("Observed", "Forecast", paste0(level, "% interval")),
-    col = c(col_history, col_forecast, col_interval),
-    lty = c(1, 1, NA),
-    lwd = c(lwd, lwd, NA),
-    pch = c(NA, 16, 15),
-    pt.cex = c(1, 1, 2),
+    legend = legend_entries,
+    col = legend_colors,
+    lty = legend_lty,
+    lwd = legend_lwd,
+    pch = legend_pch,
+    pt.cex = legend_pt_cex,
     bty = "n"
   )
 

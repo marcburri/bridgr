@@ -77,6 +77,67 @@ normalize_frequency_conversions <- function(
 
 #' @keywords internal
 #' @noRd
+normalize_bridge_bootstrap <- function(
+  bootstrap,
+  call = rlang::caller_env()
+) {
+  defaults <- list(
+    type = "block",
+    N = 100L,
+    block_length = NULL
+  )
+
+  if (is.null(bootstrap)) {
+    return(defaults)
+  }
+  if (!is.list(bootstrap)) {
+    rlang::abort("`bootstrap` must be a list.", call = call)
+  }
+
+  invalid <- setdiff(names(bootstrap), names(defaults))
+  if (length(invalid) > 0) {
+    rlang::abort(
+      paste0(
+        "Invalid `bootstrap` entries: ",
+        paste(invalid, collapse = ", "),
+        "."
+      ),
+      call = call
+    )
+  }
+
+  defaults[names(bootstrap)] <- bootstrap
+  defaults$type <- match.arg(defaults$type, c("block"))
+
+  if (!is.numeric(defaults$N) ||
+    length(defaults$N) != 1 ||
+    !is.finite(defaults$N) ||
+    defaults$N < 1) {
+    rlang::abort(
+      "`bootstrap$N` must be a single integer >= 1.",
+      call = call
+    )
+  }
+  defaults$N <- as.integer(round(defaults$N))
+
+  if (!is.null(defaults$block_length)) {
+    if (!is.numeric(defaults$block_length) ||
+      length(defaults$block_length) != 1 ||
+      !is.finite(defaults$block_length) ||
+      defaults$block_length < 1) {
+      rlang::abort(
+        "`bootstrap$block_length` must be `NULL` or a single integer >= 1.",
+        call = call
+      )
+    }
+    defaults$block_length <- as.integer(round(defaults$block_length))
+  }
+
+  defaults
+}
+
+#' @keywords internal
+#' @noRd
 as_bridge_tbl <- function(
   x,
   arg,
@@ -761,6 +822,324 @@ bridgr_with_seed <- function(seed, expr) {
 
   set.seed(seed)
   eval(expr, envir = parent.frame())
+}
+
+#' @keywords internal
+#' @noRd
+default_bootstrap_block_length <- function(n_rows) {
+  max(1L, min(as.integer(n_rows), as.integer(ceiling(n_rows^(1 / 3)))))
+}
+
+#' @keywords internal
+#' @noRd
+resolve_bootstrap_block_length <- function(n_rows, block_length) {
+  if (is.null(block_length)) {
+    return(default_bootstrap_block_length(n_rows))
+  }
+
+  max(1L, min(as.integer(n_rows), as.integer(block_length)))
+}
+
+#' @keywords internal
+#' @noRd
+circular_block_bootstrap_indices <- function(n_rows, block_length) {
+  n_blocks <- ceiling(n_rows / block_length)
+  starts <- sample.int(n_rows, size = n_blocks, replace = TRUE)
+
+  indices <- unlist(
+    lapply(
+      starts,
+      function(start) {
+        ((start - 1L + seq_len(block_length) - 1L) %% n_rows) + 1L
+      }
+    ),
+    use.names = FALSE
+  )
+
+  indices[seq_len(n_rows)]
+}
+
+#' @keywords internal
+#' @noRd
+fit_target_model <- function(
+  estimation_set,
+  target_name,
+  regressor_names,
+  formula,
+  target_lags
+) {
+  if (target_lags == 0) {
+    return(stats::lm(formula = formula, data = estimation_set))
+  }
+
+  forecast::Arima(
+    y = estimation_set[[target_name]],
+    order = c(target_lags, 0, 0),
+    xreg = as.matrix(estimation_set[, regressor_names, drop = FALSE])
+  )
+}
+
+#' @keywords internal
+#' @noRd
+extract_model_coefficients <- function(model, coefficient_names) {
+  coefficients <- rep(NA_real_, length(coefficient_names))
+  names(coefficients) <- coefficient_names
+
+  model_coefficients <- stats::coef(model)
+  matched <- match(names(model_coefficients), coefficient_names)
+  coefficients[matched[!is.na(matched)]] <- as.numeric(model_coefficients)
+
+  coefficients
+}
+
+#' @keywords internal
+#' @noRd
+forecast_target_model_mean <- function(
+  model,
+  forecast_set,
+  target_name,
+  regressor_names
+) {
+  if (inherits(model, "lm")) {
+    newdata <- forecast_set
+    newdata[[target_name]] <- NA_real_
+    return(as.numeric(stats::predict(model, newdata = newdata)))
+  }
+
+  xreg_values <- if (length(regressor_names) == 0) {
+    NULL
+  } else {
+    as.matrix(forecast_set[, regressor_names, drop = FALSE])
+  }
+
+  as.numeric(forecast::forecast(model, xreg = xreg_values)$mean)
+}
+
+#' @keywords internal
+#' @noRd
+bootstrap_forecast_draws <- function(
+  models,
+  forecast_set,
+  target_name,
+  regressor_names
+) {
+  if (length(models) == 0) {
+    return(NULL)
+  }
+
+  draws <- vapply(
+    models,
+    function(model) {
+      forecast_target_model_mean(
+        model = model,
+        forecast_set = forecast_set,
+        target_name = target_name,
+        regressor_names = regressor_names
+      )
+    },
+    FUN.VALUE = numeric(nrow(forecast_set))
+  )
+
+  t(draws)
+}
+
+#' @keywords internal
+#' @noRd
+bootstrap_target_equation <- function(
+  enabled,
+  model,
+  estimation_set,
+  forecast_set,
+  target_name,
+  regressor_names,
+  formula,
+  target_lags,
+  bootstrap,
+  call = rlang::caller_env()
+) {
+  if (!enabled) {
+    return(list(
+      enabled = FALSE,
+      type = bootstrap$type,
+      N = bootstrap$N,
+      valid_N = 0L,
+      block_length = bootstrap$block_length,
+      conditional = TRUE,
+      coefficient_draws = NULL,
+      coefficient_se = NULL,
+      forecast_draws = NULL,
+      models = NULL
+    ))
+  }
+
+  n_rows <- nrow(estimation_set)
+  block_length <- resolve_bootstrap_block_length(
+    n_rows = n_rows,
+    block_length = bootstrap$block_length
+  )
+  coefficient_names <- names(stats::coef(model))
+  requested_n <- bootstrap$N
+
+  models <- vector("list", requested_n)
+  coefficient_draws <- matrix(
+    NA_real_,
+    nrow = requested_n,
+    ncol = length(coefficient_names),
+    dimnames = list(NULL, coefficient_names)
+  )
+  forecast_draws <- matrix(
+    NA_real_,
+    nrow = requested_n,
+    ncol = nrow(forecast_set)
+  )
+  valid <- rep(FALSE, requested_n)
+
+  for (draw_index in seq_len(requested_n)) {
+    draw_indices <- circular_block_bootstrap_indices(
+      n_rows = n_rows,
+      block_length = block_length
+    )
+    draw_data <- estimation_set[draw_indices, , drop = FALSE]
+    draw_fit <- suppressWarnings(try(
+      fit_target_model(
+        estimation_set = draw_data,
+        target_name = target_name,
+        regressor_names = regressor_names,
+        formula = formula,
+        target_lags = target_lags
+      ),
+      silent = TRUE
+    ))
+
+    if (inherits(draw_fit, "try-error")) {
+      next
+    }
+
+    draw_forecast <- suppressWarnings(try(
+      forecast_target_model_mean(
+        model = draw_fit,
+        forecast_set = forecast_set,
+        target_name = target_name,
+        regressor_names = regressor_names
+      ),
+      silent = TRUE
+    ))
+
+    if (
+      inherits(draw_forecast, "try-error") ||
+        any(!is.finite(draw_forecast))
+    ) {
+      next
+    }
+
+    models[[draw_index]] <- draw_fit
+    coefficient_draws[draw_index, ] <- extract_model_coefficients(
+      model = draw_fit,
+      coefficient_names = coefficient_names
+    )
+    forecast_draws[draw_index, ] <- draw_forecast
+    valid[[draw_index]] <- TRUE
+  }
+
+  if (!any(valid)) {
+    rlang::warn(
+      paste(
+        "Conditional block bootstrap failed for every resample.",
+        "Point estimates will still be returned without uncertainty output."
+      ),
+      call = call
+    )
+
+    return(list(
+      enabled = FALSE,
+      type = bootstrap$type,
+      N = requested_n,
+      valid_N = 0L,
+      block_length = block_length,
+      conditional = TRUE,
+      coefficient_draws = NULL,
+      coefficient_se = NULL,
+      forecast_draws = NULL,
+      models = NULL
+    ))
+  }
+
+  if (sum(valid) < requested_n) {
+    rlang::warn(
+      paste0(
+        "Conditional block bootstrap produced ",
+        sum(valid),
+        " valid draws out of ",
+        requested_n,
+        "."
+      ),
+      call = call
+    )
+  }
+
+  coefficient_draws <- coefficient_draws[valid, , drop = FALSE]
+  forecast_draws <- forecast_draws[valid, , drop = FALSE]
+  models <- models[valid]
+
+  list(
+    enabled = TRUE,
+    type = bootstrap$type,
+    N = requested_n,
+    valid_N = length(models),
+    block_length = block_length,
+    conditional = TRUE,
+    coefficient_draws = coefficient_draws,
+    coefficient_se = apply(coefficient_draws, 2, stats::sd, na.rm = TRUE),
+    forecast_draws = forecast_draws,
+    models = models
+  )
+}
+
+#' @keywords internal
+#' @noRd
+bootstrap_interval_matrices <- function(draws, level, horizon) {
+  level_names <- paste0(level, "%")
+  lower <- matrix(
+    NA_real_,
+    nrow = horizon,
+    ncol = length(level),
+    dimnames = list(NULL, level_names)
+  )
+  upper <- matrix(
+    NA_real_,
+    nrow = horizon,
+    ncol = length(level),
+    dimnames = list(NULL, level_names)
+  )
+  se <- rep(NA_real_, horizon)
+
+  if (is.null(draws) || nrow(draws) < 2) {
+    return(list(se = se, lower = lower, upper = upper))
+  }
+
+  se <- apply(draws, 2, stats::sd, na.rm = TRUE)
+  alpha <- (100 - level) / 200
+
+  for (level_index in seq_along(level)) {
+    lower[, level_index] <- apply(
+      draws,
+      2,
+      stats::quantile,
+      probs = alpha[[level_index]],
+      na.rm = TRUE,
+      type = 8
+    )
+    upper[, level_index] <- apply(
+      draws,
+      2,
+      stats::quantile,
+      probs = 1 - alpha[[level_index]],
+      na.rm = TRUE,
+      type = 8
+    )
+  }
+
+  list(se = as.numeric(se), lower = lower, upper = upper)
 }
 
 #' @keywords internal

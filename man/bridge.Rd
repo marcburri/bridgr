@@ -13,6 +13,8 @@ bridge(
   target_lags = 0,
   h = 1,
   frequency_conversions = NULL,
+  se = FALSE,
+  bootstrap = NULL,
   solver_options = NULL,
   ...
 )
@@ -56,6 +58,19 @@ the target equation.}
 \item{frequency_conversions}{A named numeric vector used to customize the
 regular frequency ladder. Supported names are \code{spm}, \code{mph}, \code{hpd}, \code{dpw},
 \code{wpm}, \code{mpq}, and \code{qpy}.}
+
+\item{se}{Logical flag indicating whether conditional bootstrap standard
+errors and forecast intervals should be computed. When \code{FALSE}, \code{bootstrap}
+is ignored.}
+
+\item{bootstrap}{A list of bootstrap controls. Currently only
+\code{list(type = "block", N = 100, block_length = NULL)} is supported.
+\code{type} must be \code{"block"}, \code{N} is the number of bootstrap replications, and
+\code{block_length} is the target-frequency block length. When \code{block_length} is
+\code{NULL}, \code{bridge()} uses \code{ceiling(n^(1/3))} based on the final target-period
+estimation sample size. The bootstrap is conditional on the aligned
+low-frequency design matrix and therefore does not re-estimate indicator
+forecasts or aggregation weights.}
 
 \item{solver_options}{A list of optional controls for joint parametric-weight
 optimization. Supported entries are:
