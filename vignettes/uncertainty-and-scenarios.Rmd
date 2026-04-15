@@ -13,13 +13,7 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 
-if (requireNamespace("bridgr", quietly = TRUE)) {
-  library(bridgr)
-} else if (requireNamespace("pkgload", quietly = TRUE)) {
-  pkgload::load_all("..", export_all = FALSE, helpers = FALSE, quiet = TRUE)
-} else {
-  stop("Install `bridgr` or `pkgload` to render this vignette.")
-}
+library(bridgr)
 ```
 
 # Overview

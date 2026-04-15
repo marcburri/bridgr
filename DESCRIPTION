@@ -37,7 +37,6 @@ Imports:
     forecast
 Suggests:
     knitr,
-    pkgload,
     rmarkdown,
     testthat (>= 3.0.0),
     xts
