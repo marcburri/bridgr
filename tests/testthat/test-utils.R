@@ -95,13 +95,49 @@ test_that("month frequency detection distinguishes month, quarter, and year step
   )
 })
 
+test_that("period-end dates are standardized to period starts for calendar frequencies", {
+  monthly_end <- dplyr::tibble(
+    id = "x",
+    time = lubridate::ceiling_date(
+      seq(as.Date("2020-01-01"), by = "month", length.out = 4),
+      unit = "month"
+    ) - lubridate::days(1),
+    values = 1:4
+  )
+  quarter_end <- dplyr::tibble(
+    id = "x",
+    time = lubridate::ceiling_date(
+      seq(as.Date("2020-01-01"), by = "quarter", length.out = 4),
+      unit = "quarter"
+    ) - lubridate::days(1),
+    values = 1:4
+  )
+
+  expect_equal(
+    bridgr:::normalize_period_start_data(monthly_end)$time,
+    as.Date(c("2020-01-01", "2020-02-01", "2020-03-01", "2020-04-01"))
+  )
+  expect_equal(
+    bridgr:::normalize_period_start_data(quarter_end)$time,
+    as.Date(c("2020-01-01", "2020-04-01", "2020-07-01", "2020-10-01"))
+  )
+})
+
 test_that("observations per target period requires integer frequency alignment", {
   defaults <- bridgr:::default_frequency_conversions()
 
   expect_equal(
     bridgr:::observations_per_target_period(
-      indicator_meta = tibble::tibble(id = "x", unit = "month", step = 1),
-      target_meta = tibble::tibble(id = "target", unit = "quarter", step = 1),
+      indicator_meta = dplyr::tibble(
+        id = "x",
+        unit = "month",
+        step = 1
+      ),
+      target_meta = dplyr::tibble(
+        id = "target",
+        unit = "quarter",
+        step = 1
+      ),
       frequency_conversions = defaults
     ),
     3L
@@ -109,8 +145,16 @@ test_that("observations per target period requires integer frequency alignment",
 
   expect_error(
     bridgr:::observations_per_target_period(
-      indicator_meta = tibble::tibble(id = "x", unit = "month", step = 2),
-      target_meta = tibble::tibble(id = "target", unit = "quarter", step = 1),
+      indicator_meta = dplyr::tibble(
+        id = "x",
+        unit = "month",
+        step = 2
+      ),
+      target_meta = dplyr::tibble(
+        id = "target",
+        unit = "quarter",
+        step = 1
+      ),
       frequency_conversions = defaults
     ),
     "not aligned under the supplied `frequency_conversions`"
@@ -133,5 +177,16 @@ test_that("shift_time preserves calendar-end behavior across larger units", {
   expect_error(
     bridgr:::shift_time(as.Date("2020-01-31"), 1, "fortnight"),
     "Unsupported unit `fortnight`"
+  )
+})
+
+test_that("beta parameters are mapped to and from optimizer scale positively", {
+  expect_equal(
+    bridgr:::to_optimizer_scale(c(2, 3), "beta"),
+    log(c(2, 3))
+  )
+  expect_equal(
+    bridgr:::from_optimizer_scale(log(c(2, 3)), "beta"),
+    c(2, 3)
   )
 })

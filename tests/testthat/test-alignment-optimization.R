@@ -1,5 +1,5 @@
 test_that("direct alignment reuses the latest complete blocks and drops incomplete tails", {
-  indicator_tbl <- data.frame(
+  indicator_tbl <- dplyr::tibble(
     id = "x",
     time = seq(as.Date("2020-01-01"), by = "day", length.out = 17),
     values = seq_len(17)
@@ -19,19 +19,53 @@ test_that("direct alignment reuses the latest complete blocks and drops incomple
   expect_equal(direct_blocks$truncation$n_periods, 0)
 })
 
+test_that("mean extension uses the latest available high-frequency block", {
+  target <- dplyr::tibble(
+    time = as.Date(c("2020-01-01", "2020-04-01", "2020-07-01")),
+    value = c(1, 2, 3)
+  )
+  indic <- dplyr::tibble(
+    time = as.Date(c(
+      "2020-01-01", "2020-02-01", "2020-03-01",
+      "2020-04-01", "2020-05-01", "2020-06-01",
+      "2020-07-01", "2020-08-01", "2020-09-01",
+      "2020-10-01"
+    )),
+    value = c(5, 5, 5, 10, 10, 10, 20, 20, 20, 1000)
+  )
+
+  target_tbl <- bridgr:::as_bridge_tbl(target, "target", "target")
+  indic_tbl <- bridgr:::as_bridge_tbl(indic, "indic", "indic")
+  target_meta <- bridgr:::infer_frequency_table(target_tbl)$target
+  indic_meta <- bridgr:::infer_frequency_table(indic_tbl)$indicators
+
+  extension <- bridgr:::extend_indicator_series(
+    indicator_tbl = indic_tbl,
+    indicator_id = "indic",
+    indicator_meta = indic_meta,
+    target_meta = target_meta,
+    target_anchor = min(target$time),
+    future_target_times = as.Date("2020-10-01"),
+    obs_per_target = 3,
+    predict_method = "mean"
+  )
+
+  expect_equal(utils::tail(extension$data$values, 2), c(346.667, 346.667), tolerance = 1e-6)
+})
+
 test_that("direct bridge alignment works with numeric and unrestricted aggregation together", {
-  indic_a <- data.frame(
+  indic_a <- dplyr::tibble(
     id = "a",
     time = seq(as.Date("2020-01-01"), by = "month", length.out = 16),
     value = seq_len(16)
   )
-  indic_b <- data.frame(
+  indic_b <- dplyr::tibble(
     id = "b",
     time = seq(as.Date("2020-01-01"), by = "month", length.out = 16),
     value = 100 + seq_len(16)
   )
   indic <- rbind(indic_a, indic_b)
-  target <- data.frame(
+  target <- dplyr::tibble(
     time = seq(as.Date("2020-01-01"), by = "quarter", length.out = 6),
     value = seq_len(6)
   )
@@ -54,7 +88,11 @@ test_that("direct bridge alignment works with numeric and unrestricted aggregati
 
 test_that("target period helpers respect mixed-frequency calendar boundaries", {
   monthly_times <- seq(as.Date("2020-01-01"), by = "month", length.out = 5)
-  quarterly_meta <- tibble::tibble(id = "target", unit = "quarter", step = 1)
+  quarterly_meta <- dplyr::tibble(
+    id = "target",
+    unit = "quarter",
+    step = 1
+  )
 
   expect_equal(
     bridgr:::compute_target_periods(
@@ -75,10 +113,48 @@ test_that("target period helpers respect mixed-frequency calendar boundaries", {
   expect_equal(
     bridgr:::target_future_times(
       last_time = as.Date("2020-01-31"),
-      target_meta = tibble::tibble(id = "target", unit = "month", step = 1),
+      target_meta = dplyr::tibble(
+        id = "target",
+        unit = "month",
+        step = 1
+      ),
       h = 3
     ),
     as.Date(c("2020-02-29", "2020-03-31", "2020-04-30"))
+  )
+})
+
+test_that("bridge accepts end-of-period monthly and quarterly dates via period-start fallback", {
+  indic <- dplyr::tibble(
+    time = lubridate::ceiling_date(
+      seq(as.Date("2020-01-01"), by = "month", length.out = 15),
+      unit = "month"
+    ) - lubridate::days(1),
+    value = seq_len(15)
+  )
+  target <- dplyr::tibble(
+    time = lubridate::ceiling_date(
+      seq(as.Date("2020-01-01"), by = "quarter", length.out = 5),
+      unit = "quarter"
+    ) - lubridate::days(1),
+    value = c(2, 5, 8, 11, 14)
+  )
+
+  model <- bridge(
+    target = target,
+    indic = indic,
+    indic_predict = "last",
+    indic_aggregators = "mean",
+    h = 1
+  )
+
+  expect_equal(
+    model$target$time,
+    as.Date(c("2020-01-01", "2020-04-01", "2020-07-01", "2020-10-01", "2021-01-01"))
+  )
+  expect_equal(
+    utils::head(model$indic$time, 3),
+    as.Date(c("2020-01-01", "2020-02-01", "2020-03-01"))
   )
 })
 
@@ -92,7 +168,7 @@ test_that("optimizer warning path keeps the best available non-converged start",
       obs_per_target = 3
     )
   )
-  target_tbl <- tibble::tibble(
+  target_tbl <- dplyr::tibble(
     id = "target",
     time = seq(as.Date("2020-01-01"), by = "quarter", length.out = 4),
     values = c(1, 2, 3, 4)
@@ -120,9 +196,9 @@ test_that("optimizer warning path keeps the best available non-converged start",
   expect_warning(
     result <- bridgr:::optimize_parametric_weights(
       parametric_specs = parametric_specs,
-      fixed_aggregated = tibble::tibble(
+      fixed_aggregated = dplyr::tibble(
         id = character(),
-        time = target_tbl$time[0],
+        time = as.Date(character()),
         values = numeric()
       ),
       target_tbl = target_tbl,
@@ -158,7 +234,7 @@ test_that("optimizer aborts when every candidate has a non-finite objective valu
       obs_per_target = 3
     )
   )
-  target_tbl <- tibble::tibble(
+  target_tbl <- dplyr::tibble(
     id = "target",
     time = seq(as.Date("2020-01-01"), by = "quarter", length.out = 4),
     values = c(1, 2, 3, 4)
@@ -184,9 +260,9 @@ test_that("optimizer aborts when every candidate has a non-finite objective valu
   expect_error(
     bridgr:::optimize_parametric_weights(
       parametric_specs = parametric_specs,
-      fixed_aggregated = tibble::tibble(
+      fixed_aggregated = dplyr::tibble(
         id = character(),
-        time = target_tbl$time[0],
+        time = as.Date(character()),
         values = numeric()
       ),
       target_tbl = target_tbl,
@@ -243,9 +319,9 @@ test_that("named start_values flow through mixed parametric aggregators end to e
   base_indicator <- make_monthly_indicator(n = 36)
   target <- make_quarter_target(base_indicator, n_quarters = 12)
   indic <- rbind(
-    data.frame(id = "a", time = base_indicator$time, value = base_indicator$value),
-    data.frame(id = "b", time = base_indicator$time, value = base_indicator$value + 10),
-    data.frame(id = "c", time = base_indicator$time, value = base_indicator$value - 5)
+    dplyr::tibble(id = "a", time = base_indicator$time, value = base_indicator$value),
+    dplyr::tibble(id = "b", time = base_indicator$time, value = base_indicator$value + 10),
+    dplyr::tibble(id = "c", time = base_indicator$time, value = base_indicator$value - 5)
   )
   start_values <- list(
     a = c(0.1, 0.2),
@@ -289,4 +365,20 @@ test_that("named start_values flow through mixed parametric aggregators end to e
   expect_equal(model$parametric_parameters$c, start_values$c)
   expect_equal(model$parametric_optimization$best_start, 1L)
   expect_true(all(c("a", "b", "c") %in% names(model$parametric_weights)))
+})
+
+test_that("beta aggregation stays positive under unconstrained optimizer methods", {
+  indic <- make_monthly_indicator(n = 36)
+  target <- make_quarter_target(indic, n_quarters = 12)
+
+  model <- bridge(
+    target = target,
+    indic = indic,
+    indic_predict = "last",
+    indic_aggregators = "beta",
+    solver_options = list(method = "BFGS", n_starts = 1, maxiter = 50, start_values = c(2, 3)),
+    h = 1
+  )
+
+  expect_true(all(model$parametric_parameters$indic > 0))
 })

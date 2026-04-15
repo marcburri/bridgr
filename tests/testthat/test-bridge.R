@@ -17,7 +17,7 @@ test_that("bridge keeps indicators that already extend beyond the forecast horiz
 test_that("bridge supports multiple indicators with per-series aggregation choices", {
   indic <- make_multi_indicator()
   target <- make_quarter_target(
-    monthly_indicator = data.frame(
+    monthly_indicator = dplyr::tibble(
       time = seq(as.Date("2020-01-01"), by = "month", length.out = 24),
       value = 10 + seq_len(24) + rep(c(0, 2, -1, 3), length.out = 24)
     ),
@@ -72,11 +72,11 @@ test_that("too few high-frequency observations within a target period fail", {
 })
 
 test_that("invalid or lower-frequency indicators are rejected", {
-  indic <- data.frame(
+  indic <- dplyr::tibble(
     time = seq(as.Date("2020-01-01"), by = "quarter", length.out = 4),
     value = c(1, 2, 3, 4)
   )
-  target <- data.frame(
+  target <- dplyr::tibble(
     time = seq(as.Date("2020-01-01"), by = "month", length.out = 12),
     value = seq_len(12)
   )
@@ -90,7 +90,7 @@ test_that("invalid or lower-frequency indicators are rejected", {
 test_that("direct alignment must be used for all indicators", {
   indic <- make_multi_indicator()
   target <- make_quarter_target(
-    monthly_indicator = data.frame(
+    monthly_indicator = dplyr::tibble(
       time = seq(as.Date("2020-01-01"), by = "month", length.out = 24),
       value = 10 + seq_len(24)
     ),
@@ -127,7 +127,7 @@ test_that("parametric starting values must have the exact required length", {
   expect_error(
     bridge(
       target = target,
-      indic = data.frame(
+      indic = dplyr::tibble(
         id = rep(c("a", "b"), each = nrow(indic)),
         time = rep(indic$time, times = 2),
         value = c(indic$value, indic$value + 5)
@@ -174,7 +174,7 @@ test_that("forecast.bridge uses stored future regressors and accepts custom xreg
   expect_s3_class(default_forecast, "forecast")
   expect_equal(nrow(default_forecast$forecast_set), 2)
 
-  custom_xreg <- data.frame(
+  custom_xreg <- dplyr::tibble(
     id = rep(c("indic", "indic_lag1"), each = 2),
     time = rep(model$forecast_set$time, times = 2),
     value = c(model$forecast_set$indic + 1, model$forecast_set$indic_lag1 + 1)
@@ -202,7 +202,7 @@ test_that("summary.bridge prints model information", {
 })
 
 test_that("bridge validates duplicate timestamps and missing values", {
-  duplicate_target <- data.frame(
+  duplicate_target <- dplyr::tibble(
     time = as.Date(c("2020-01-01", "2020-01-01", "2020-04-01")),
     value = c(1, 2, 3)
   )

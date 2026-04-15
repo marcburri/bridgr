@@ -1,5 +1,5 @@
 make_monthly_indicator <- function(n = 24, start = "2020-01-01", offset = 0) {
-  data.frame(
+  dplyr::tibble(
     time = seq(as.Date(start), by = "month", length.out = n),
     value = 10 + seq_len(n) + rep(c(0, 2, -1, 3), length.out = n) + offset
   )
@@ -21,7 +21,7 @@ make_quarter_target <- function(
     FUN.VALUE = numeric(1)
   )
 
-  data.frame(
+  dplyr::tibble(
     time = monthly_indicator$time[seq(1, n_quarters * 3, by = 3)],
     value = intercept + slope * quarter_means +
       rep(c(0.5, -0.25, 0.75, -0.5), length.out = n_quarters)
@@ -30,7 +30,7 @@ make_quarter_target <- function(
 
 make_multi_indicator <- function(n = 24, start = "2020-01-01") {
   dates <- seq(as.Date(start), by = "month", length.out = n)
-  data.frame(
+  dplyr::tibble(
     id = rep(c("a", "b"), each = n),
     time = rep(dates, times = 2),
     value = c(
@@ -41,7 +41,7 @@ make_multi_indicator <- function(n = 24, start = "2020-01-01") {
 }
 
 make_daily_indicator <- function(n = 84, start = "2020-01-01") {
-  data.frame(
+  dplyr::tibble(
     time = seq(as.Date(start), by = "day", length.out = n),
     value = 50 + seq_len(n) * 0.5 + rep(c(0, 1, -1, 2, -2, 1, 0), length.out = n)
   )
@@ -58,7 +58,7 @@ make_weekly_target <- function(daily_indicator, n_weeks = 8, intercept = 0, slop
     FUN.VALUE = numeric(1)
   )
 
-  data.frame(
+  dplyr::tibble(
     time = daily_indicator$time[seq(1, n_weeks * 7, by = 7)],
     value = intercept + slope * week_means + rep(c(0.25, -0.5, 0.75, -0.25), length.out = n_weeks)
   )
@@ -112,11 +112,11 @@ make_exact_multifrequency_simulation <- function(
     rep(c(0.01, -0.015, 0.02, -0.005, 0.012), length.out = n_target)
 
   list(
-    target = data.frame(
+    target = dplyr::tibble(
       time = hour_times[seq_len(n_target)],
       value = target_values
     ),
-    indic = data.frame(
+    indic = dplyr::tibble(
       id = c(
         rep("second", length(second_times)),
         rep("minute", length(minute_times)),
@@ -187,11 +187,11 @@ make_day_week_month_simulation <- function(
     rep(c(0.015, -0.01, 0.02, -0.005), length.out = n_months)
 
   list(
-    target = data.frame(
+    target = dplyr::tibble(
       time = month_times[seq_len(n_months)],
       value = target_values
     ),
-    indic = data.frame(
+    indic = dplyr::tibble(
       id = c(
         rep("day", length(day_times)),
         rep("week", length(week_times)),
@@ -247,11 +247,11 @@ make_month_quarter_year_simulation <- function(
     rep(c(0.02, -0.015, 0.01), length.out = n_years)
 
   list(
-    target = data.frame(
+    target = dplyr::tibble(
       time = year_times[seq_len(n_years)],
       value = target_values
     ),
-    indic = data.frame(
+    indic = dplyr::tibble(
       id = c(
         rep("month", length(month_times)),
         rep("quarter", length(quarter_times)),
@@ -291,7 +291,7 @@ make_seeded_ar1_indicator <- function(
 
   values <- as.numeric(stats::arima.sim(model = list(ar = phi), n = n))
 
-  data.frame(
+  dplyr::tibble(
     time = seq(as.Date(start), by = "month", length.out = n),
     value = values
   )
@@ -309,7 +309,7 @@ make_daily_week_fixture <- function(
       rep(c(0, 2, -1, 3, -2, 1, 0), length.out = total_days)
   }
 
-  indic <- data.frame(
+  indic <- dplyr::tibble(
     time = seq(as.Date(start), by = "day", length.out = total_days - 7 * h),
     value = indicator_values[seq_len(total_days - 7 * h)]
   )
@@ -323,7 +323,7 @@ make_daily_week_fixture <- function(
     FUN.VALUE = numeric(1)
   )
 
-  target <- data.frame(
+  target <- dplyr::tibble(
     time = seq(as.Date(start), by = "week", length.out = n_weeks),
     value = week_values
   )
@@ -338,7 +338,7 @@ make_daily_week_fixture <- function(
 
 make_method_comparison_indicator <- function(n = 140, start = "2020-01-01") {
   index <- seq_len(n)
-  data.frame(
+  dplyr::tibble(
     time = seq(as.Date(start), by = "day", length.out = n),
     value = 20 + 0.15 * index + sin(index / 5) + cos(index / 11)
   )
@@ -397,7 +397,7 @@ make_expalmon_joint_fixture <- function(
     FUN.VALUE = numeric(1)
   )
 
-  indic <- data.frame(
+  indic <- dplyr::tibble(
     id = c(rep("x1", n_periods * 7), rep("x2", n_periods * 7)),
     time = rep(times[seq_len(n_periods * 7)], times = 2),
     value = c(x1_full[seq_len(n_periods * 7)], x2_full[seq_len(n_periods * 7)])
@@ -424,7 +424,7 @@ make_expalmon_joint_fixture <- function(
     target_value <- target_value + coefficients[["x3"]] * agg_x3[seq_len(n_periods)]
     indic <- rbind(
       indic,
-      data.frame(
+      dplyr::tibble(
         id = rep("x3", n_periods * 7),
         time = times[seq_len(n_periods * 7)],
         value = x3_full[seq_len(n_periods * 7)]
@@ -433,7 +433,7 @@ make_expalmon_joint_fixture <- function(
   }
 
   list(
-    target = data.frame(
+    target = dplyr::tibble(
       time = seq(as.Date(start), by = "week", length.out = n_periods),
       value = target_value
     ),
@@ -474,11 +474,11 @@ make_expalmon_single_fixture <- function(
   )
 
   list(
-    target = data.frame(
+    target = dplyr::tibble(
       time = seq(as.Date(start), by = "week", length.out = n_periods),
       value = 2 + 1.2 * aggregated[seq_len(n_periods)]
     ),
-    indic = data.frame(
+    indic = dplyr::tibble(
       time = times[seq_len(n_periods * 7)],
       value = indicator_full[seq_len(n_periods * 7)]
     ),

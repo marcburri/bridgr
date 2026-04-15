@@ -283,7 +283,7 @@ test_that("forecast method `direct` aligns the latest complete blocks backward",
     h = 1,
     indicator_values = seq_len(49)
   )
-  indic <- data.frame(
+  indic <- dplyr::tibble(
     time = seq(min(fixture$indic$time), by = "day", length.out = 43),
     value = seq_len(43)
   )
@@ -306,7 +306,7 @@ test_that("forecast method `direct` also works with parametric aggregators", {
     h = 1,
     indicator_values = seq_len(49)
   )
-  indic <- data.frame(
+  indic <- dplyr::tibble(
     time = seq(min(fixture$indic$time), by = "day", length.out = 43),
     value = seq_len(43)
   )
@@ -334,7 +334,7 @@ test_that("forecast method `direct` supports horizons greater than one", {
     h = 2,
     indicator_values = seq_len(56)
   )
-  indic <- data.frame(
+  indic <- dplyr::tibble(
     time = seq(min(fixture$indic$time), by = "day", length.out = 43),
     value = seq_len(43)
   )
