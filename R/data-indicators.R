@@ -17,12 +17,14 @@
 #'     - `values`: Numeric, the value of the KOF barometer.
 #'
 #' - `fcurve`:
-#'   - Source: [Burri and Kaufmann GitHub](https://github.com/dankaufmann/f-curve)
+#'   - Source:
+#'     [Burri and Kaufmann GitHub](https://github.com/dankaufmann/f-curve)
 #'   - Timeframe: January 2004 - December 2022
 #'   - Frequency: Daily
 #'   - Format: A tibble with daily observations and 2 variables:
 #'     - `time`: Date, the date of the observation.
-#'     - `values`: Numeric, the value of the F-curve (inverted for compatibility).
+#'     - `values`: Numeric, the value of the F-curve
+#'       (inverted for compatibility).
 #'
 #' - `gdp`:
 #'   - Source: [SECO](https://www.seco.admin.ch/)

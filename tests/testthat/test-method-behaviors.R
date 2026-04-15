@@ -1,4 +1,6 @@
-test_that("forecast method `last` repeats the latest observed high-frequency value", {
+test_that(
+  "forecast method `last` repeats the latest observed value",
+  {
   fixture <- make_daily_week_fixture(
     n_weeks = 6,
     h = 1,
@@ -17,9 +19,10 @@ test_that("forecast method `last` repeats the latest observed high-frequency val
 
   expected <- utils::tail(fixture$observed_indicator_values, 1)
   expect_equal(model$forecast_set[[model$indic_name[[1]]]][[1]], expected)
-})
+  }
+)
 
-test_that("forecast method `mean` repeats the last target-period mean", {
+test_that("forecast method `mean` repeats the last block mean", {
   fixture <- make_daily_week_fixture(
     n_weeks = 6,
     h = 1,
@@ -37,7 +40,10 @@ test_that("forecast method `mean` repeats the last target-period mean", {
   )
 
   expected <- mean(fixture$observed_indicator_values[36:42])
-  expect_equal(model$forecast_set[[model$indic_name[[1]]]][[1]], expected)
+  expect_equal(
+    model$forecast_set[[model$indic_name[[1]]]][[1]],
+    expected
+  )
 })
 
 test_that("forecast method `auto.arima` matches direct indicator forecasting", {
@@ -67,7 +73,11 @@ test_that("forecast method `auto.arima` matches direct indicator forecasting", {
     unname(stats::coef(direct_fit)),
     tolerance = 1e-8
   )
-  expect_equal(model$forecast_set[[model$indic_name[[1]]]][[1]], expected, tolerance = 1e-8)
+  expect_equal(
+    model$forecast_set[[model$indic_name[[1]]]][[1]],
+    expected,
+    tolerance = 1e-8
+  )
 })
 
 test_that("forecast method `ets` matches direct indicator forecasting", {
@@ -92,7 +102,11 @@ test_that("forecast method `ets` matches direct indicator forecasting", {
   expected <- mean(as.numeric(forecast::forecast(direct_fit, h = 7)$mean))
 
   expect_s3_class(model$indic_models[[model$indic_name[[1]]]], "ets")
-  expect_equal(model$forecast_set[[model$indic_name[[1]]]][[1]], expected, tolerance = 1e-8)
+  expect_equal(
+    model$forecast_set[[model$indic_name[[1]]]][[1]],
+    expected,
+    tolerance = 1e-8
+  )
 })
 
 test_that("aggregation method `mean` uses the within-period mean", {
@@ -173,14 +187,42 @@ test_that("aggregation with numeric weights uses the supplied weights", {
     h = 1
   )
 
-  expect_equal(model$estimation_set[[model$indic_name[[1]]]][[6]], sum(weights * (36:42)))
+  expect_equal(
+    model$estimation_set[[model$indic_name[[1]]]][[6]],
+    sum(weights * (36:42))
+  )
 })
+
+test_that(
+  "aggregation method `unrestricted` keeps one regressor per slot",
+  {
+  fixture <- make_daily_week_fixture(
+    n_weeks = 6,
+    h = 1,
+    indicator_values = seq_len(49)
+  )
+
+  model <- suppressWarnings(bridge(
+    target = fixture$target,
+    indic = fixture$indic,
+    indic_predict = "last",
+    indic_aggregators = "unrestricted",
+    h = 1
+  ))
+
+  prefix <- model$indic_name[[1]]
+  expect_true(all(paste0(prefix, "_hf", 1:7) %in% model$regressor_names))
+  expect_equal(model$estimation_set[[paste0(prefix, "_hf1")]][[6]], 36)
+  expect_equal(model$estimation_set[[paste0(prefix, "_hf7")]][[6]], 42)
+  }
+)
 
 test_that("aggregation method `expalmon` uses its estimated weights", {
   fixture <- make_daily_week_fixture(
     n_weeks = 12,
     h = 1,
-    indicator_values = 50 + seq_len(91) + rep(c(0, 2, -1, 3, -2, 1, 0), length.out = 91)
+    indicator_values = 50 + seq_len(91) +
+      rep(c(0, 2, -1, 3, -2, 1, 0), length.out = 91)
   )
   target <- fixture$target
   indic <- fixture$indic
@@ -203,6 +245,183 @@ test_that("aggregation method `expalmon` uses its estimated weights", {
     tolerance = 1e-8
   )
 })
+
+test_that("aggregation method `beta` uses its estimated weights", {
+  fixture <- make_daily_week_fixture(
+    n_weeks = 12,
+    h = 1,
+    indicator_values = 60 + seq_len(91) +
+      rep(c(1, -1, 2, -2, 3, -3, 0), length.out = 91)
+  )
+
+  model <- bridge(
+    target = fixture$target,
+    indic = fixture$indic,
+    indic_predict = "last",
+    indic_aggregators = "beta",
+    solver_options = list(seed = 42, n_starts = 2, maxiter = 150),
+    h = 1
+  )
+
+  weights <- model$parametric_weights[[model$indic_name[[1]]]]
+  expect_length(weights, 7)
+  expect_equal(sum(weights), 1, tolerance = 1e-8)
+  expect_equal(
+    model$estimation_set[[model$indic_name[[1]]]][[12]],
+    sum(weights * fixture$observed_indicator_values[78:84]),
+    tolerance = 1e-8
+  )
+})
+
+test_that("aggregation method `legendre` uses its estimated weights", {
+  fixture <- make_daily_week_fixture(
+    n_weeks = 12,
+    h = 1,
+    indicator_values = 75 + seq_len(91) +
+      rep(c(2, 1, 0, -1, -2, 1, 3), length.out = 91)
+  )
+
+  model <- bridge(
+    target = fixture$target,
+    indic = fixture$indic,
+    indic_predict = "last",
+    indic_aggregators = "legendre",
+    solver_options = list(seed = 84, n_starts = 2, maxiter = 150),
+    h = 1
+  )
+
+  weights <- model$parametric_weights[[model$indic_name[[1]]]]
+  expect_length(weights, 7)
+  expect_equal(sum(weights), 1, tolerance = 1e-8)
+  expect_equal(
+    model$estimation_set[[model$indic_name[[1]]]][[12]],
+    sum(weights * fixture$observed_indicator_values[78:84]),
+    tolerance = 1e-8
+  )
+})
+
+test_that("forecast method `direct` aligns blocks backward", {
+  fixture <- make_daily_week_fixture(
+    n_weeks = 6,
+    h = 1,
+    indicator_values = seq_len(49)
+  )
+  indic <- dplyr::tibble(
+    time = seq(min(fixture$indic$time), by = "day", length.out = 43),
+    value = seq_len(43)
+  )
+
+  model <- bridge(
+    target = fixture$target,
+    indic = indic,
+    indic_predict = "direct",
+    indic_aggregators = "mean",
+    h = 1
+  )
+
+  expect_equal(model$forecast_set[[model$indic_name[[1]]]][[1]], mean(37:43))
+  expect_equal(min(model$estimation_set$time), fixture$target$time[[2]])
+})
+
+test_that("forecast method `direct` also works with parametric aggregators", {
+  fixture <- make_daily_week_fixture(
+    n_weeks = 6,
+    h = 1,
+    indicator_values = seq_len(49)
+  )
+  indic <- dplyr::tibble(
+    time = seq(min(fixture$indic$time), by = "day", length.out = 43),
+    value = seq_len(43)
+  )
+
+  model <- bridge(
+    target = fixture$target,
+    indic = indic,
+    indic_predict = "direct",
+    indic_aggregators = "expalmon",
+    solver_options = list(seed = 7, n_starts = 2, maxiter = 100),
+    h = 1
+  )
+
+  weights <- model$parametric_weights[[model$indic_name[[1]]]]
+  expect_equal(
+    model$forecast_set[[model$indic_name[[1]]]][[1]],
+    sum(weights * (37:43)),
+    tolerance = 1e-8
+  )
+})
+
+test_that("forecast method `direct` supports horizons greater than one", {
+  fixture <- make_daily_week_fixture(
+    n_weeks = 6,
+    h = 2,
+    indicator_values = seq_len(56)
+  )
+  indic <- dplyr::tibble(
+    time = seq(min(fixture$indic$time), by = "day", length.out = 43),
+    value = seq_len(43)
+  )
+
+  model <- bridge(
+    target = fixture$target,
+    indic = indic,
+    indic_predict = "direct",
+    indic_aggregators = "mean",
+    h = 2
+  )
+
+  expect_equal(nrow(model$forecast_set), 2)
+  expect_equal(model$forecast_set[[model$indic_name[[1]]]][[1]], mean(30:36))
+  expect_equal(model$forecast_set[[model$indic_name[[1]]]][[2]], mean(37:43))
+})
+
+test_that("beta weights match the normalized beta definition used by midasr", {
+  weights <- bridgr:::parametric_weights("beta", c(2, 4), 7)
+  eps <- .Machine$double.eps
+  positions <- (0:6) / 6
+  positions[[1]] <- positions[[1]] + eps
+  positions[[7]] <- positions[[7]] - eps
+  expected <- positions^(2 - 1) * (1 - positions)^(4 - 1)
+  expected <- expected / sum(expected)
+
+  expect_equal(weights, expected, tolerance = 1e-12)
+})
+
+test_that(
+  "legendre basis matches the shifted orthonormal midasml definition",
+  {
+  basis <- bridgr:::parametric_polynomial_basis("legendre", c(0, 0), 5)
+  x <- seq(0, 1, length.out = 5)
+  expected <- cbind(
+    sqrt(3) * (2 * x - 1),
+    sqrt(5) * (6 * x^2 - 6 * x + 1)
+  )
+
+  expect_equal(basis, expected, tolerance = 1e-12)
+  }
+)
+
+test_that(
+  "aggregation method `unrestricted` warns for dense predictors",
+  {
+  fixture <- make_daily_week_fixture(
+    n_weeks = 12,
+    h = 1,
+    indicator_values = seq_len(91)
+  )
+
+  expect_warning(
+    bridge(
+      target = fixture$target,
+      indic = fixture$indic,
+      indic_predict = "last",
+      indic_aggregators = "unrestricted",
+      h = 1
+    ),
+    "10-observations-per-predictor guideline"
+  )
+  }
+)
 
 test_that("a full pipeline example works end to end", {
   indicator_values <- make_method_comparison_indicator(n = 147)$value
@@ -231,4 +450,29 @@ test_that("a full pipeline example works end to end", {
   expect_equal(nrow(model$forecast_set), 1)
   expect_equal(nrow(fcst$forecast_set), 1)
   expect_true(all(c("indic", "indic_lag1") %in% model$regressor_names))
+})
+
+test_that("plot.bridge renders forecast and fit views", {
+  fixture <- make_daily_week_fixture(
+    n_weeks = 12,
+    h = 1,
+    indicator_values = make_method_comparison_indicator(n = 91)$value
+  )
+
+  model <- bridge(
+    target = fixture$target,
+    indic = fixture$indic,
+    indic_predict = "auto.arima",
+    indic_aggregators = "mean",
+    indic_lags = 1,
+    target_lags = 1,
+    h = 1
+  )
+
+  plot_file <- tempfile(fileext = ".pdf")
+  grDevices::pdf(plot_file)
+  on.exit(grDevices::dev.off(), add = TRUE)
+
+  expect_invisible(plot(model))
+  expect_invisible(plot(model, type = "fit"))
 })

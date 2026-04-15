@@ -1,4 +1,4 @@
-test_that("bridge keeps indicators that already extend beyond the forecast horizon", {
+test_that("bridge keeps indicators beyond the forecast horizon", {
   indic <- make_monthly_indicator()
   target <- make_quarter_target(indic, n_quarters = 6)
 
@@ -14,10 +14,10 @@ test_that("bridge keeps indicators that already extend beyond the forecast horiz
   expect_equal(nrow(model$forecast_set), 1)
 })
 
-test_that("bridge supports multiple indicators with per-series aggregation choices", {
+test_that("bridge supports multiple indicators with mixed aggregation", {
   indic <- make_multi_indicator()
   target <- make_quarter_target(
-    monthly_indicator = data.frame(
+    monthly_indicator = dplyr::tibble(
       time = seq(as.Date("2020-01-01"), by = "month", length.out = 24),
       value = 10 + seq_len(24) + rep(c(0, 2, -1, 3), length.out = 24)
     ),
@@ -72,11 +72,11 @@ test_that("too few high-frequency observations within a target period fail", {
 })
 
 test_that("invalid or lower-frequency indicators are rejected", {
-  indic <- data.frame(
+  indic <- dplyr::tibble(
     time = seq(as.Date("2020-01-01"), by = "quarter", length.out = 4),
     value = c(1, 2, 3, 4)
   )
-  target <- data.frame(
+  target <- dplyr::tibble(
     time = seq(as.Date("2020-01-01"), by = "month", length.out = 12),
     value = seq_len(12)
   )
@@ -87,7 +87,78 @@ test_that("invalid or lower-frequency indicators are rejected", {
   )
 })
 
-test_that("forecast.bridge uses stored future regressors and accepts custom xreg", {
+test_that("direct alignment must be used for all indicators", {
+  indic <- make_multi_indicator()
+  target <- make_quarter_target(
+    monthly_indicator = dplyr::tibble(
+      time = seq(as.Date("2020-01-01"), by = "month", length.out = 24),
+      value = 10 + seq_len(24)
+    ),
+    n_quarters = 6
+  )
+
+  expect_error(
+    bridge(
+      target = target,
+      indic = indic,
+      indic_predict = c("direct", "last"),
+      h = 1
+    ),
+    "must be used for all indicators"
+  )
+})
+
+test_that("parametric starting values must have the exact required length", {
+  indic <- make_monthly_indicator()
+  target <- make_quarter_target(indic, n_quarters = 6)
+
+  expect_error(
+    bridge(
+      target = target,
+      indic = indic,
+      indic_predict = "last",
+      indic_aggregators = "beta",
+      solver_options = list(start_values = 0.1),
+      h = 1
+    ),
+    "must contain exactly 2 values"
+  )
+
+  expect_error(
+    bridge(
+      target = target,
+      indic = dplyr::tibble(
+        id = rep(c("a", "b"), each = nrow(indic)),
+        time = rep(indic$time, times = 2),
+        value = c(indic$value, indic$value + 5)
+      ),
+      indic_predict = c("last", "last"),
+      indic_aggregators = c("expalmon", "legendre"),
+      solver_options = list(start_values = list(a = c(0, 0))),
+      h = 1
+    ),
+    "must provide exactly 2 parametric indicator start vectors"
+  )
+})
+
+test_that("deprecated solver option `start` is rejected", {
+  indic <- make_monthly_indicator()
+  target <- make_quarter_target(indic, n_quarters = 6)
+
+  expect_error(
+    bridge(
+      target = target,
+      indic = indic,
+      indic_predict = "last",
+      indic_aggregators = "expalmon",
+      solver_options = list(start = c(0, 0)),
+      h = 1
+    ),
+    "Invalid `solver_options`: start"
+  )
+})
+
+test_that("forecast.bridge uses stored regressors and accepts xreg", {
   indic <- make_monthly_indicator()
   target <- make_quarter_target(indic, n_quarters = 6)
 
@@ -96,14 +167,20 @@ test_that("forecast.bridge uses stored future regressors and accepts custom xreg
     indic = indic,
     indic_predict = "last",
     indic_lags = 1,
+    se = TRUE,
+    bootstrap = list(N = 8, block_length = 2),
     h = 2
   )
 
   default_forecast <- forecast(model)
+  expect_s3_class(default_forecast, "bridge_forecast")
   expect_s3_class(default_forecast, "forecast")
   expect_equal(nrow(default_forecast$forecast_set), 2)
+  expect_equal(length(default_forecast$se), 2)
+  expect_gt(default_forecast$bootstrap$valid_N, 0L)
+  expect_lte(default_forecast$bootstrap$valid_N, 8L)
 
-  custom_xreg <- data.frame(
+  custom_xreg <- dplyr::tibble(
     id = rep(c("indic", "indic_lag1"), each = 2),
     time = rep(model$forecast_set$time, times = 2),
     value = c(model$forecast_set$indic + 1, model$forecast_set$indic_lag1 + 1)
@@ -128,10 +205,31 @@ test_that("summary.bridge prints model information", {
   output <- capture.output(summary(model))
   expect_true(any(grepl("Bridge model summary", output)))
   expect_true(any(grepl("Target series:", output)))
+  expect_true(any(grepl("Indicator summary:", output)))
+})
+
+test_that("se = FALSE leaves bootstrap inactive", {
+  indic <- make_monthly_indicator()
+  target <- make_quarter_target(indic, n_quarters = 6)
+
+  model <- bridge(
+    target = target,
+    indic = indic,
+    indic_predict = "last",
+    se = FALSE,
+    bootstrap = list(N = 10, block_length = 2),
+    h = 1
+  )
+  fc <- forecast(model)
+
+  expect_false(model$bootstrap$enabled)
+  expect_true(all(is.na(fc$se)))
+  expect_true(all(is.na(fc$lower)))
+  expect_true(all(is.na(fc$upper)))
 })
 
 test_that("bridge validates duplicate timestamps and missing values", {
-  duplicate_target <- data.frame(
+  duplicate_target <- dplyr::tibble(
     time = as.Date(c("2020-01-01", "2020-01-01", "2020-04-01")),
     value = c(1, 2, 3)
   )
@@ -152,167 +250,237 @@ test_that("bridge validates duplicate timestamps and missing values", {
   )
 })
 
-test_that("bridge preprocessing recovers known coefficients from a deterministic multi-frequency simulation", {
-  simulated <- make_exact_multifrequency_simulation()
+test_that(
+  paste(
+    "bridge preprocessing recovers known coefficients from a",
+    "deterministic multi-frequency simulation"
+  ),
+  {
+    simulated <- make_exact_multifrequency_simulation()
 
-  target_tbl <- bridgr:::as_bridge_tbl(simulated$target, "target", "target") |>
-    dplyr::mutate(id = "target")
-  indic_tbl <- bridgr:::as_bridge_tbl(simulated$indic, "indic", "indic")
+    target_tbl <- bridgr:::as_bridge_tbl(
+      simulated$target,
+      "target",
+      "target"
+    ) |>
+      dplyr::mutate(id = "target")
+    indic_tbl <- bridgr:::as_bridge_tbl(simulated$indic, "indic", "indic")
 
-  config <- bridgr:::validate_bridge_inputs(
-    target_tbl = target_tbl,
-    indic_tbl = indic_tbl,
-    indic_predict = c("last", "last", "last"),
-    indic_aggregators = c("mean", "mean", "mean"),
-    indic_lags = 0,
-    target_lags = 0,
-    h = 1,
-    frequency_conversions = NULL
-  )
+    config <- bridgr:::validate_bridge_inputs(
+      target_tbl = target_tbl,
+      indic_tbl = indic_tbl,
+      indic_predict = c("last", "last", "last"),
+      indic_aggregators = c("mean", "mean", "mean"),
+      indic_lags = 0,
+      target_lags = 0,
+      h = 1,
+      frequency_conversions = NULL
+    )
 
-  target_meta <- bridgr:::infer_frequency_table(target_tbl)$target
-  indic_meta <- bridgr:::infer_frequency_table(indic_tbl)$indicators
-  expect_equal(indic_meta$unit[match(c("second", "minute", "hour"), indic_meta$id)], c("second", "minute", "hour"))
+    target_meta <- bridgr:::infer_frequency_table(target_tbl)$target
+    indic_meta <- bridgr:::infer_frequency_table(indic_tbl)$indicators
+    expect_equal(
+      indic_meta$unit[match(c("second", "minute", "hour"), indic_meta$id)],
+      c("second", "minute", "hour")
+    )
 
-  aligned <- bridgr:::align_bridge_inputs(target_tbl, indic_tbl, target_meta, indic_meta)
-  future_target_times <- bridgr:::target_future_times(max(aligned$target$time), target_meta, 1)
-  indicator_results <- bridgr:::build_indicator_features(
-    indic_tbl = aligned$indic,
-    indic_meta = indic_meta,
-    target_tbl = aligned$target,
-    target_meta = target_meta,
-    target_anchor = aligned$target_anchor,
-    future_target_times = future_target_times,
-    indic_predict = c("last", "last", "last"),
-    indic_aggregators = config$indic_aggregators,
-    frequency_conversions = config$frequency_conversions
-  )
-
-  estimation_long <- dplyr::bind_rows(
-    aligned$target |> dplyr::select(id, time, values),
-    indicator_results$aggregated
-  ) |>
-    dplyr::filter(time %in% aligned$target$time)
-  estimation_set <- suppressMessages(tsbox::ts_wide(estimation_long)) |>
-    stats::na.omit()
-
-  fit <- stats::lm(target ~ second + minute + hour, data = estimation_set)
-  estimated <- stats::coef(fit)[c("(Intercept)", "second", "minute", "hour")]
-  expect_equal(
-    unname(estimated),
-    unname(simulated$coefficients[c("intercept", "second", "minute", "hour")]),
-    tolerance = 5e-2
-  )
-})
-
-test_that("bridge preprocessing recovers known coefficients for day-week-month data", {
-  simulated <- make_day_week_month_simulation()
-
-  target_tbl <- bridgr:::as_bridge_tbl(simulated$target, "target", "target") |>
-    dplyr::mutate(id = "target")
-  indic_tbl <- bridgr:::as_bridge_tbl(simulated$indic, "indic", "indic")
-
-  config <- bridgr:::validate_bridge_inputs(
-    target_tbl = target_tbl,
-    indic_tbl = indic_tbl,
-    indic_predict = c("last", "last", "last"),
-    indic_aggregators = c("mean", "mean", "mean"),
-    indic_lags = 0,
-    target_lags = 0,
-    h = 1,
-    frequency_conversions = NULL
-  )
-
-  target_meta <- bridgr:::infer_frequency_table(target_tbl)$target
-  indic_meta <- bridgr:::infer_frequency_table(indic_tbl)$indicators
-  expect_equal(indic_meta$unit[match(c("day", "week", "month"), indic_meta$id)], c("day", "week", "month"))
-
-  aligned <- bridgr:::align_bridge_inputs(target_tbl, indic_tbl, target_meta, indic_meta)
-  future_target_times <- bridgr:::target_future_times(max(aligned$target$time), target_meta, 1)
-  expect_warning(
+    aligned <- bridgr:::align_bridge_inputs(
+      target_tbl,
+      indic_tbl,
+      target_meta,
+      indic_meta
+    )
+    future_target_times <- bridgr:::target_future_times(
+      max(aligned$target$time),
+      target_meta,
+      1
+    )
+    all_target_times <- c(unique(aligned$target$time), future_target_times)
     indicator_results <- bridgr:::build_indicator_features(
       indic_tbl = aligned$indic,
       indic_meta = indic_meta,
       target_tbl = aligned$target,
       target_meta = target_meta,
       target_anchor = aligned$target_anchor,
+      all_target_times = all_target_times,
       future_target_times = future_target_times,
       indic_predict = c("last", "last", "last"),
       indic_aggregators = config$indic_aggregators,
       frequency_conversions = config$frequency_conversions
-    ),
-    "Using the most recent observations"
-  )
+    )
 
-  estimation_long <- dplyr::bind_rows(
-    aligned$target |> dplyr::select(id, time, values),
-    indicator_results$aggregated
-  ) |>
-    dplyr::filter(time %in% aligned$target$time)
-  estimation_set <- suppressMessages(tsbox::ts_wide(estimation_long)) |>
-    stats::na.omit()
+    estimation_long <- dplyr::bind_rows(
+      aligned$target |> dplyr::select(id, time, values),
+      indicator_results$aggregated
+    ) |>
+      dplyr::filter(time %in% aligned$target$time)
+    estimation_set <- suppressMessages(tsbox::ts_wide(estimation_long)) |>
+      stats::na.omit()
 
-  fit <- stats::lm(target ~ day + week + month, data = estimation_set)
-  estimated <- stats::coef(fit)[c("(Intercept)", "day", "week", "month")]
-  expect_equal(
-    unname(estimated),
-    unname(simulated$coefficients[c("intercept", "day", "week", "month")]),
-    tolerance = 7e-2
-  )
-})
+    fit <- stats::lm(target ~ second + minute + hour, data = estimation_set)
+    estimated <- stats::coef(fit)[c("(Intercept)", "second", "minute", "hour")]
+    expect_equal(
+      unname(estimated),
+      unname(
+        simulated$coefficients[c("intercept", "second", "minute", "hour")]
+      ),
+      tolerance = 5e-2
+    )
+  }
+)
 
-test_that("bridge preprocessing recovers known coefficients for month-quarter-year data", {
-  simulated <- make_month_quarter_year_simulation()
+test_that(
+  "bridge preprocessing recovers known coefficients for day-week-month data",
+  {
+    simulated <- make_day_week_month_simulation()
 
-  target_tbl <- bridgr:::as_bridge_tbl(simulated$target, "target", "target") |>
-    dplyr::mutate(id = "target")
-  indic_tbl <- bridgr:::as_bridge_tbl(simulated$indic, "indic", "indic")
+    target_tbl <- bridgr:::as_bridge_tbl(
+      simulated$target,
+      "target",
+      "target"
+    ) |>
+      dplyr::mutate(id = "target")
+    indic_tbl <- bridgr:::as_bridge_tbl(simulated$indic, "indic", "indic")
 
-  config <- bridgr:::validate_bridge_inputs(
-    target_tbl = target_tbl,
-    indic_tbl = indic_tbl,
-    indic_predict = c("last", "last", "last"),
-    indic_aggregators = c("mean", "mean", "mean"),
-    indic_lags = 0,
-    target_lags = 0,
-    h = 1,
-    frequency_conversions = NULL
-  )
+    config <- bridgr:::validate_bridge_inputs(
+      target_tbl = target_tbl,
+      indic_tbl = indic_tbl,
+      indic_predict = c("last", "last", "last"),
+      indic_aggregators = c("mean", "mean", "mean"),
+      indic_lags = 0,
+      target_lags = 0,
+      h = 1,
+      frequency_conversions = NULL
+    )
 
-  target_meta <- bridgr:::infer_frequency_table(target_tbl)$target
-  indic_meta <- bridgr:::infer_frequency_table(indic_tbl)$indicators
-  expect_equal(indic_meta$unit[match(c("month", "quarter", "year"), indic_meta$id)], c("month", "quarter", "year"))
+    target_meta <- bridgr:::infer_frequency_table(target_tbl)$target
+    indic_meta <- bridgr:::infer_frequency_table(indic_tbl)$indicators
+    expect_equal(
+      indic_meta$unit[match(c("day", "week", "month"), indic_meta$id)],
+      c("day", "week", "month")
+    )
 
-  aligned <- bridgr:::align_bridge_inputs(target_tbl, indic_tbl, target_meta, indic_meta)
-  future_target_times <- bridgr:::target_future_times(max(aligned$target$time), target_meta, 1)
-  indicator_results <- bridgr:::build_indicator_features(
-    indic_tbl = aligned$indic,
-    indic_meta = indic_meta,
-    target_tbl = aligned$target,
-    target_meta = target_meta,
-    target_anchor = aligned$target_anchor,
-    future_target_times = future_target_times,
-    indic_predict = c("last", "last", "last"),
-    indic_aggregators = config$indic_aggregators,
-    frequency_conversions = config$frequency_conversions
-  )
+    aligned <- bridgr:::align_bridge_inputs(
+      target_tbl,
+      indic_tbl,
+      target_meta,
+      indic_meta
+    )
+    future_target_times <- bridgr:::target_future_times(
+      max(aligned$target$time),
+      target_meta,
+      1
+    )
+    all_target_times <- c(unique(aligned$target$time), future_target_times)
+    expect_warning(
+      indicator_results <- bridgr:::build_indicator_features(
+        indic_tbl = aligned$indic,
+        indic_meta = indic_meta,
+        target_tbl = aligned$target,
+        target_meta = target_meta,
+        target_anchor = aligned$target_anchor,
+        all_target_times = all_target_times,
+        future_target_times = future_target_times,
+        indic_predict = c("last", "last", "last"),
+        indic_aggregators = config$indic_aggregators,
+        frequency_conversions = config$frequency_conversions
+      ),
+      "Using the most recent observations"
+    )
 
-  estimation_long <- dplyr::bind_rows(
-    aligned$target |> dplyr::select(id, time, values),
-    indicator_results$aggregated
-  ) |>
-    dplyr::filter(time %in% aligned$target$time)
-  estimation_set <- suppressMessages(tsbox::ts_wide(estimation_long)) |>
-    stats::na.omit()
+    estimation_long <- dplyr::bind_rows(
+      aligned$target |> dplyr::select(id, time, values),
+      indicator_results$aggregated
+    ) |>
+      dplyr::filter(time %in% aligned$target$time)
+    estimation_set <- suppressMessages(tsbox::ts_wide(estimation_long)) |>
+      stats::na.omit()
 
-  fit <- stats::lm(target ~ month + quarter + year, data = estimation_set)
-  estimated <- stats::coef(fit)[c("(Intercept)", "month", "quarter", "year")]
-  expect_equal(
-    unname(estimated),
-    unname(simulated$coefficients[c("intercept", "month", "quarter", "year")]),
-    tolerance = 7e-2
-  )
-})
+    fit <- stats::lm(target ~ day + week + month, data = estimation_set)
+    estimated <- stats::coef(fit)[c("(Intercept)", "day", "week", "month")]
+    expect_equal(
+      unname(estimated),
+      unname(simulated$coefficients[c("intercept", "day", "week", "month")]),
+      tolerance = 7e-2
+    )
+  }
+)
+
+test_that(
+  "bridge preprocessing recovers month-quarter-year coefficients",
+  {
+    simulated <- make_month_quarter_year_simulation()
+
+    target_tbl <- bridgr:::as_bridge_tbl(
+      simulated$target,
+      "target",
+      "target"
+    ) |>
+      dplyr::mutate(id = "target")
+    indic_tbl <- bridgr:::as_bridge_tbl(simulated$indic, "indic", "indic")
+
+    config <- bridgr:::validate_bridge_inputs(
+      target_tbl = target_tbl,
+      indic_tbl = indic_tbl,
+      indic_predict = c("last", "last", "last"),
+      indic_aggregators = c("mean", "mean", "mean"),
+      indic_lags = 0,
+      target_lags = 0,
+      h = 1,
+      frequency_conversions = NULL
+    )
+
+    target_meta <- bridgr:::infer_frequency_table(target_tbl)$target
+    indic_meta <- bridgr:::infer_frequency_table(indic_tbl)$indicators
+    expect_equal(
+      indic_meta$unit[match(c("month", "quarter", "year"), indic_meta$id)],
+      c("month", "quarter", "year")
+    )
+
+    aligned <- bridgr:::align_bridge_inputs(
+      target_tbl,
+      indic_tbl,
+      target_meta,
+      indic_meta
+    )
+    future_target_times <- bridgr:::target_future_times(
+      max(aligned$target$time),
+      target_meta,
+      1
+    )
+    all_target_times <- c(unique(aligned$target$time), future_target_times)
+    indicator_results <- bridgr:::build_indicator_features(
+      indic_tbl = aligned$indic,
+      indic_meta = indic_meta,
+      target_tbl = aligned$target,
+      target_meta = target_meta,
+      target_anchor = aligned$target_anchor,
+      all_target_times = all_target_times,
+      future_target_times = future_target_times,
+      indic_predict = c("last", "last", "last"),
+      indic_aggregators = config$indic_aggregators,
+      frequency_conversions = config$frequency_conversions
+    )
+
+    estimation_long <- dplyr::bind_rows(
+      aligned$target |> dplyr::select(id, time, values),
+      indicator_results$aggregated
+    ) |>
+      dplyr::filter(time %in% aligned$target$time)
+    estimation_set <- suppressMessages(tsbox::ts_wide(estimation_long)) |>
+      stats::na.omit()
+
+    fit <- stats::lm(target ~ month + quarter + year, data = estimation_set)
+    estimated <- stats::coef(fit)[c("(Intercept)", "month", "quarter", "year")]
+    expect_equal(
+      unname(estimated),
+      unname(
+        simulated$coefficients[c("intercept", "month", "quarter", "year")]
+      ),
+      tolerance = 7e-2
+    )
+  }
+)
 
 test_that("single-indicator expalmon recovers deterministic weights", {
   fixture <- make_expalmon_single_fixture()
@@ -327,12 +495,16 @@ test_that("single-indicator expalmon recovers deterministic weights", {
   )
 
   indicator_id <- model$indic_name[[1]]
-  expect_equal(model$expalmon_weights[[indicator_id]], fixture$true_weights, tolerance = 0.08)
+  expect_equal(
+    model$expalmon_weights[[indicator_id]],
+    fixture$true_weights,
+    tolerance = 0.08
+  )
   expect_equal(model$expalmon_optimization$convergence, 0)
   expect_equal(sort(names(model$expalmon_parameters)), indicator_id)
 })
 
-test_that("joint expalmon optimization improves the final bridge fit over separate optimization", {
+test_that("joint expalmon optimization improves the fit", {
   fixture <- make_expalmon_joint_fixture(n_periods = 12)
 
   model <- bridge(
@@ -365,7 +537,12 @@ test_that("joint expalmon optimization improves the final bridge fit over separa
         )
         sum(stats::residuals(stats::lm(fixture$target$value ~ aggregated))^2)
       }
-      stats::optim(c(0, 0), objective, method = "BFGS", control = list(maxit = 100))$par
+      stats::optim(
+        c(0, 0),
+        objective,
+        method = "BFGS",
+        control = list(maxit = 100)
+      )$par
     }
   )
   names(separate_weights) <- c("x1", "x2")
@@ -378,7 +555,10 @@ test_that("joint expalmon optimization improves the final bridge fit over separa
         seq_len(nrow(fixture$target)),
         function(i) {
           idx <- ((i - 1) * 7 + 1):(i * 7)
-          sum(bridgr:::exp_almon(separate_weights$x1, 7) * subset(fixture$indic, id == "x1")$value[idx])
+          sum(
+            bridgr:::exp_almon(separate_weights$x1, 7) *
+              subset(fixture$indic, id == "x1")$value[idx]
+          )
         },
         FUN.VALUE = numeric(1)
       )
@@ -390,7 +570,10 @@ test_that("joint expalmon optimization improves the final bridge fit over separa
         seq_len(nrow(fixture$target)),
         function(i) {
           idx <- ((i - 1) * 7 + 1):(i * 7)
-          sum(bridgr:::exp_almon(separate_weights$x2, 7) * subset(fixture$indic, id == "x2")$value[idx])
+          sum(
+            bridgr:::exp_almon(separate_weights$x2, 7) *
+              subset(fixture$indic, id == "x2")$value[idx]
+          )
         },
         FUN.VALUE = numeric(1)
       )
@@ -420,7 +603,10 @@ test_that("joint expalmon optimization improves the final bridge fit over separa
 })
 
 test_that("joint expalmon optimization works alongside fixed aggregators", {
-  fixture <- make_expalmon_joint_fixture(n_periods = 12, include_mean_indicator = TRUE)
+  fixture <- make_expalmon_joint_fixture(
+    n_periods = 12,
+    include_mean_indicator = TRUE
+  )
 
   model <- bridge(
     target = fixture$target,
@@ -439,10 +625,15 @@ test_that("joint expalmon optimization works alongside fixed aggregators", {
   )
 })
 
-test_that("auto.arima recovers the first-step indicator dynamics and propagates forecasts", {
+test_that("auto.arima recovers indicator dynamics", {
   phi <- 0.7
   indic <- make_seeded_ar1_indicator(n = 240, phi = phi, seed = 123)
-  target <- make_quarter_target(indic, n_quarters = 80, intercept = 0.5, slope = 1.1)
+  target <- make_quarter_target(
+    indic,
+    n_quarters = 80,
+    intercept = 0.5,
+    slope = 1.1
+  )
 
   model <- bridge(
     target = target,
@@ -455,9 +646,19 @@ test_that("auto.arima recovers the first-step indicator dynamics and propagates 
 
   expect_s3_class(model$indic_models$indic, "Arima")
   expect_true("ar1" %in% names(stats::coef(model$indic_models$indic)))
-  expect_equal(unname(stats::coef(model$indic_models$indic)[["ar1"]]), phi, tolerance = 0.12)
+  expect_equal(
+    unname(stats::coef(model$indic_models$indic)[["ar1"]]),
+    phi,
+    tolerance = 0.12
+  )
 
-  manual_monthly_forecast <- as.numeric(forecast::forecast(model$indic_models$indic, h = 3)$mean)
+  manual_monthly_forecast <- as.numeric(
+    forecast::forecast(model$indic_models$indic, h = 3)$mean
+  )
   expected_quarter_mean <- mean(manual_monthly_forecast)
-  expect_equal(model$forecast_set$indic[[1]], expected_quarter_mean, tolerance = 1e-8)
+  expect_equal(
+    model$forecast_set$indic[[1]],
+    expected_quarter_mean,
+    tolerance = 1e-8
+  )
 })

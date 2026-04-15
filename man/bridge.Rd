@@ -13,6 +13,8 @@ bridge(
   target_lags = 0,
   h = 1,
   frequency_conversions = NULL,
+  se = FALSE,
+  bootstrap = NULL,
   solver_options = NULL,
   ...
 )
@@ -23,12 +25,27 @@ bridge(
 \item{indic}{One or more indicator series in a \code{\link[tsbox:ts_boxable]{tsbox::ts_boxable()}} format.}
 
 \item{indic_predict}{A character vector of indicator forecasting methods.
-Length must be \code{1} or equal to the number of indicator series.}
+Length must be \code{1} or equal to the number of indicator series. Setting
+\code{indic_predict = "direct"} switches to direct MIDAS-style alignment: the
+indicators are not forecasted, and the most recent complete
+high-frequency blocks are assigned backward to the target periods. Direct
+alignment must be used for all indicators at once. When \code{h > 1}, the latest
+complete block is assigned to the farthest requested forecast horizon and
+earlier complete blocks are assigned backward from there. For
+\code{indic_predict = "mean"}, missing high-frequency observations are filled
+with the mean of the latest available \code{obs_per_target} high-frequency
+observations, and that same mean is extended across the forecast horizon.}
 
 \item{indic_aggregators}{A character vector of aggregation methods or a list
 of numeric weights. Length must be \code{1} or equal to the number of indicator
 series. Numeric weights must sum to one and have the appropriate length for
-the inferred target-period block size.}
+the inferred target-period block size. \code{"unrestricted"} keeps one separate
+coefficient per high-frequency observation within the target period. The
+parametric aggregators use two coefficients each: \code{"expalmon"} uses
+\verb{(linear, quadratic)}, \code{"beta"} uses \verb{(left_shape, right_shape)} as the
+normalized beta shape parameters, and \code{"legendre"} uses
+\verb{(first_order, second_order)} as coefficients on the first two shifted
+orthonormal Legendre basis functions.}
 
 \item{indic_lags}{A non-negative integer giving the number of target-period
 lags to add for each aggregated indicator.}
@@ -42,10 +59,33 @@ the target equation.}
 regular frequency ladder. Supported names are \code{spm}, \code{mph}, \code{hpd}, \code{dpw},
 \code{wpm}, \code{mpq}, and \code{qpy}.}
 
-\item{solver_options}{A list of optional controls for joint \code{expalmon}
-optimization. Supported entries are \code{method}, \code{maxiter}, \code{n_starts},
-\code{seed}, and \code{trace}. These controls are ignored unless at least one
-indicator uses \code{indic_aggregators = "expalmon"}.}
+\item{se}{Logical flag indicating whether conditional bootstrap standard
+errors and forecast intervals should be computed. When \code{FALSE}, \code{bootstrap}
+is ignored.}
+
+\item{bootstrap}{A list of bootstrap controls. Currently only
+\code{list(type = "block", N = 100, block_length = NULL)} is supported.
+\code{type} must be \code{"block"}, \code{N} is the number of bootstrap replications, and
+\code{block_length} is the target-frequency block length. When \code{block_length} is
+\code{NULL}, \code{bridge()} uses \code{ceiling(n^(1/3))} based on the final target-period
+estimation sample size. The bootstrap is conditional on the aligned
+low-frequency design matrix and therefore does not re-estimate indicator
+forecasts or aggregation weights.}
+
+\item{solver_options}{A list of optional controls for joint parametric-weight
+optimization. Supported entries are:
+\code{method} for the optimizer (\code{"L-BFGS-B"}, \code{"BFGS"}, \code{"Nelder-Mead"}, or
+\code{"nlminb"}), \code{maxiter} for the iteration budget per optimization run,
+\code{n_starts} for the number of multi-start attempts, \code{seed} for reproducible
+random restarts, \code{trace} for optimizer verbosity, and \code{start_values} for
+user-supplied initial parameter values. \code{start_values} can be either a
+numeric vector or a named list. For a numeric vector, values are concatenated
+in indicator order across the parametric aggregators. Within each indicator,
+the parameter order is \verb{(linear, quadratic)} for \code{"expalmon"},
+\verb{(left_shape, right_shape)} for \code{"beta"}, and \verb{(first_order, second_order)}
+for \code{"legendre"}. Named-list \code{start_values} must provide exactly the
+required number of values for each parametric indicator. These controls are
+ignored unless at least one indicator uses a parametric aggregator.}
 
 \item{...}{Reserved for future extensions.}
 }
@@ -63,11 +103,20 @@ aggregating them within each target period.
 }
 \details{
 Supported indicator forecasting methods are \code{"mean"}, \code{"last"},
-\code{"auto.arima"}, and \code{"ets"}. Supported aggregation methods are \code{"mean"},
-\code{"last"}, \code{"sum"}, \code{"expalmon"}, or a numeric weight vector supplied inside
-a \code{list()}. When one or more indicators use \code{"expalmon"}, the corresponding
-aggregation weights are estimated jointly against the final bridge-model
-objective rather than one indicator at a time.
+\code{"auto.arima"}, \code{"ets"}, and \code{"direct"}. Supported aggregation methods are
+\code{"mean"}, \code{"last"}, \code{"sum"}, \code{"unrestricted"}, \code{"expalmon"}, \code{"beta"},
+\code{"legendre"}, or a numeric weight vector supplied inside a \code{list()}.
+\code{"unrestricted"} expands each high-frequency observation within a target
+period into its own bridge regressor, which corresponds to a U-MIDAS style
+specification when the frequency gap is small. When one or more indicators
+use a parametric aggregator, the corresponding aggregation weights are
+estimated jointly against the final bridge-model objective rather than one
+indicator at a time.
+
+Unrestricted mixed-frequency regressions can become parameter-heavy quickly.
+When \code{indic_aggregators = "unrestricted"}, \code{bridge()} warns if the final
+estimation sample contains fewer than 10 observations per predictor in the
+bridge regression.
 
 The package assumes a regular frequency ladder
 \code{second -> minute -> hour -> day -> week -> month -> quarter -> year}.
@@ -86,7 +135,9 @@ Users can override any subset of these values with
 \code{frequency_conversions}. If a target period contains more high-frequency
 observations than implied by the current mapping, \code{bridge()} keeps the most
 recent observations and emits a summarized warning. If a target period
-contains fewer observations than required, the call fails.
+contains fewer observations than required, the call fails. Month-, quarter-,
+and year-based input dates are standardized to period starts when needed
+for frequency recognition.
 }
 \examples{
 gdp_growth <- suppressMessages(tsbox::ts_na_omit(tsbox::ts_pc(gdp)))
@@ -119,11 +170,19 @@ Baffigi, A., Golinelli, R., & Parigi, G. (2004). Bridge models to forecast
 the euro area GDP. \emph{International Journal of Forecasting}, 20(3), 447-460.
 \doi{10.1016/S0169-2070(03)00067-0}
 
-Burri, M. (2023). Do daily lead texts help nowcasting GDP growth? IRENE
-Working Papers 23-02.
-\url{https://www5.unine.ch/RePEc/ftp/irn/pdfs/WP23-02.pdf}
+Ghysels, E., Sinko, A., & Valkanov, R. (2007). MIDAS regressions: Further
+results and new directions. \emph{Econometric Reviews}, 26(1), 53-90.
+\doi{10.1080/07474930600972467}
+
+Andreou, E., Ghysels, E., & Kourtellos, A. (2010). Regression models with
+mixed sampling frequencies. \emph{Journal of Econometrics}, 158(2), 246-261.
+\doi{10.1016/j.jeconom.2010.01.004}
 
 Schumacher, C. (2016). A comparison of MIDAS and bridge equations.
 \emph{International Journal of Forecasting}, 32(2), 257-270.
 \doi{10.1016/j.ijforecast.2015.07.004}
+
+Burri, M. (2026). Nowcasting Swiss GDP Growth From Public Lead Texts:
+Simple Methods Are Sufficient. \emph{Oxford Bulletin of Economics and
+Statistics}, 1-25. \doi{10.1111/obes.70073}
 }

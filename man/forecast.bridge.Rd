@@ -2,22 +2,36 @@
 % Please edit documentation in R/forecast.R
 \name{forecast.bridge}
 \alias{forecast.bridge}
+\alias{print.bridge_forecast}
 \title{Forecast a Bridge Model}
 \usage{
-\method{forecast}{bridge}(object, xreg = NULL, ...)
+\method{forecast}{bridge}(object, xreg = NULL, level = c(80, 95), ...)
+
+\method{print}{bridge_forecast}(x, ...)
 }
 \arguments{
 \item{object}{A \code{"bridge"} object returned by \code{\link[=bridge]{bridge()}}.}
 
 \item{xreg}{Optional future regressors in a \code{\link[tsbox:ts_boxable]{tsbox::ts_boxable()}} format.
-When omitted, the forecast set stored inside \code{object} is used.}
+When omitted, the forecast set stored inside \code{object} is used. When
+supplied, \code{xreg} must contain the same regressor names used when fitting the
+bridge equation.}
 
-\item{...}{Passed to \code{\link[forecast:reexports]{forecast::forecast()}}.}
+\item{level}{Confidence levels used for bootstrap forecast intervals when the
+model was estimated with \code{se = TRUE}. When uncertainty is unavailable,
+\code{forecast()} still returns the \code{se}, \code{lower}, and \code{upper} components, filled
+with \code{NA}.}
+
+\item{...}{Unused.}
+
+\item{x}{A \code{"bridge_forecast"} object returned by \code{\link[=forecast.bridge]{forecast.bridge()}}.}
 }
 \value{
-An object of class \code{"forecast"} with an additional
-\code{forecast_set} component containing the target-period regressors used for the
-forecast.
+An object of class \code{"bridge_forecast"} and \code{"forecast"} containing
+point forecasts, conditional bootstrap uncertainty summaries, the
+target-period regressors used for forecasting, and bootstrap metadata.
+
+\code{x}, invisibly.
 }
 \description{
 Forecast the target variable from a fitted \code{\link[=bridge]{bridge()}} model.

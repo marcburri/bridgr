@@ -43,13 +43,15 @@ A collection of datasets containing economic indicators for Switzerland.
 }
 \item \code{fcurve}:
 \itemize{
-\item Source: \href{https://github.com/dankaufmann/f-curve}{Burri and Kaufmann GitHub}
+\item Source:
+\href{https://github.com/dankaufmann/f-curve}{Burri and Kaufmann GitHub}
 \item Timeframe: January 2004 - December 2022
 \item Frequency: Daily
 \item Format: A tibble with daily observations and 2 variables:
 \itemize{
 \item \code{time}: Date, the date of the observation.
-\item \code{values}: Numeric, the value of the F-curve (inverted for compatibility).
+\item \code{values}: Numeric, the value of the F-curve
+(inverted for compatibility).
 }
 }
 \item \code{gdp}:
