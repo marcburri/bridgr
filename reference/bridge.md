@@ -17,6 +17,8 @@ bridge(
   target_lags = 0,
   h = 1,
   frequency_conversions = NULL,
+  se = FALSE,
+  bootstrap = NULL,
   solver_options = NULL,
   ...
 )
@@ -39,14 +41,30 @@ bridge(
 - indic_predict:
 
   A character vector of indicator forecasting methods. Length must be
-  `1` or equal to the number of indicator series.
+  `1` or equal to the number of indicator series. Setting
+  `indic_predict = "direct"` switches to direct MIDAS-style alignment:
+  the indicators are not forecasted, and the most recent complete
+  high-frequency blocks are assigned backward to the target periods.
+  Direct alignment must be used for all indicators at once. When
+  `h > 1`, the latest complete block is assigned to the farthest
+  requested forecast horizon and earlier complete blocks are assigned
+  backward from there. For `indic_predict = "mean"`, missing
+  high-frequency observations are filled with the mean of the latest
+  available `obs_per_target` high-frequency observations, and that same
+  mean is extended across the forecast horizon.
 
 - indic_aggregators:
 
   A character vector of aggregation methods or a list of numeric
   weights. Length must be `1` or equal to the number of indicator
   series. Numeric weights must sum to one and have the appropriate
-  length for the inferred target-period block size.
+  length for the inferred target-period block size. `"unrestricted"`
+  keeps one separate coefficient per high-frequency observation within
+  the target period. The parametric aggregators use two coefficients
+  each: `"expalmon"` uses `(linear, quadratic)`, `"beta"` uses
+  `(left_shape, right_shape)` as the normalized beta shape parameters,
+  and `"legendre"` uses `(first_order, second_order)` as coefficients on
+  the first two shifted orthonormal Legendre basis functions.
 
 - indic_lags:
 
@@ -68,12 +86,40 @@ bridge(
   Supported names are `spm`, `mph`, `hpd`, `dpw`, `wpm`, `mpq`, and
   `qpy`.
 
+- se:
+
+  Logical flag indicating whether conditional bootstrap standard errors
+  and forecast intervals should be computed. When `FALSE`, `bootstrap`
+  is ignored.
+
+- bootstrap:
+
+  A list of bootstrap controls. Currently only
+  `list(type = "block", N = 100, block_length = NULL)` is supported.
+  `type` must be `"block"`, `N` is the number of bootstrap replications,
+  and `block_length` is the target-frequency block length. When
+  `block_length` is `NULL`, `bridge()` uses `ceiling(n^(1/3))` based on
+  the final target-period estimation sample size. The bootstrap is
+  conditional on the aligned low-frequency design matrix and therefore
+  does not re-estimate indicator forecasts or aggregation weights.
+
 - solver_options:
 
-  A list of optional controls for joint `expalmon` optimization.
-  Supported entries are `method`, `maxiter`, `n_starts`, `seed`, and
-  `trace`. These controls are ignored unless at least one indicator uses
-  `indic_aggregators = "expalmon"`.
+  A list of optional controls for joint parametric-weight optimization.
+  Supported entries are: `method` for the optimizer (`"L-BFGS-B"`,
+  `"BFGS"`, `"Nelder-Mead"`, or `"nlminb"`), `maxiter` for the iteration
+  budget per optimization run, `n_starts` for the number of multi-start
+  attempts, `seed` for reproducible random restarts, `trace` for
+  optimizer verbosity, and `start_values` for user-supplied initial
+  parameter values. `start_values` can be either a numeric vector or a
+  named list. For a numeric vector, values are concatenated in indicator
+  order across the parametric aggregators. Within each indicator, the
+  parameter order is `(linear, quadratic)` for `"expalmon"`,
+  `(left_shape, right_shape)` for `"beta"`, and
+  `(first_order, second_order)` for `"legendre"`. Named-list
+  `start_values` must provide exactly the required number of values for
+  each parametric indicator. These controls are ignored unless at least
+  one indicator uses a parametric aggregator.
 
 - ...:
 
@@ -91,12 +137,21 @@ and
 ## Details
 
 Supported indicator forecasting methods are `"mean"`, `"last"`,
-`"auto.arima"`, and `"ets"`. Supported aggregation methods are `"mean"`,
-`"last"`, `"sum"`, `"expalmon"`, or a numeric weight vector supplied
-inside a [`list()`](https://rdrr.io/r/base/list.html). When one or more
-indicators use `"expalmon"`, the corresponding aggregation weights are
+`"auto.arima"`, `"ets"`, and `"direct"`. Supported aggregation methods
+are `"mean"`, `"last"`, `"sum"`, `"unrestricted"`, `"expalmon"`,
+`"beta"`, `"legendre"`, or a numeric weight vector supplied inside a
+[`list()`](https://rdrr.io/r/base/list.html). `"unrestricted"` expands
+each high-frequency observation within a target period into its own
+bridge regressor, which corresponds to a U-MIDAS style specification
+when the frequency gap is small. When one or more indicators use a
+parametric aggregator, the corresponding aggregation weights are
 estimated jointly against the final bridge-model objective rather than
 one indicator at a time.
+
+Unrestricted mixed-frequency regressions can become parameter-heavy
+quickly. When `indic_aggregators = "unrestricted"`, `bridge()` warns if
+the final estimation sample contains fewer than 10 observations per
+predictor in the bridge regression.
 
 The package assumes a regular frequency ladder
 `second -> minute -> hour -> day -> week -> month -> quarter -> year`.
@@ -121,6 +176,8 @@ Users can override any subset of these values with
 observations than implied by the current mapping, `bridge()` keeps the
 most recent observations and emits a summarized warning. If a target
 period contains fewer observations than required, the call fails.
+Month-, quarter-, and year-based input dates are standardized to period
+starts when needed for frequency recognition.
 
 ## References
 
@@ -129,13 +186,23 @@ forecast the euro area GDP. *International Journal of Forecasting*,
 20(3), 447-460.
 [doi:10.1016/S0169-2070(03)00067-0](https://doi.org/10.1016/S0169-2070%2803%2900067-0)
 
-Burri, M. (2023). Do daily lead texts help nowcasting GDP growth? IRENE
-Working Papers 23-02.
-<https://www5.unine.ch/RePEc/ftp/irn/pdfs/WP23-02.pdf>
+Ghysels, E., Sinko, A., & Valkanov, R. (2007). MIDAS regressions:
+Further results and new directions. *Econometric Reviews*, 26(1), 53-90.
+[doi:10.1080/07474930600972467](https://doi.org/10.1080/07474930600972467)
+
+Andreou, E., Ghysels, E., & Kourtellos, A. (2010). Regression models
+with mixed sampling frequencies. *Journal of Econometrics*, 158(2),
+246-261.
+[doi:10.1016/j.jeconom.2010.01.004](https://doi.org/10.1016/j.jeconom.2010.01.004)
 
 Schumacher, C. (2016). A comparison of MIDAS and bridge equations.
 *International Journal of Forecasting*, 32(2), 257-270.
 [doi:10.1016/j.ijforecast.2015.07.004](https://doi.org/10.1016/j.ijforecast.2015.07.004)
+
+Burri, M. (2026). Nowcasting Swiss GDP Growth From Public Lead Texts:
+Simple Methods Are Sufficient. *Oxford Bulletin of Economics and
+Statistics*, 1-25.
+[doi:10.1111/obes.70073](https://doi.org/10.1111/obes.70073)
 
 ## Examples
 
@@ -166,51 +233,49 @@ expalmon_model <- bridge(
 #> [value]: 'values' 
 
 forecast(model)
-#>    Point Forecast      Lo 80    Hi 80      Lo 95    Hi 95
-#> 75      0.9724040  0.0112021 1.933606 -0.4976274 2.442435
-#> 76      0.6984187 -0.2906595 1.687497 -0.8142460 2.211083
+#> Bridge forecast
+#> -----------------------------------
+#> Target series: gdp_growth
+#> Forecast horizon: 2
+#> Target model: fc_model
+#> Uncertainty: point forecast only
+#> -----------------------------------
+#> # A tibble: 2 × 7
+#>   time        mean    se lower_80 upper_80 lower_95 upper_95
+#>   <date>     <dbl> <dbl>    <dbl>    <dbl>    <dbl>    <dbl>
+#> 1 2023-01-01 0.972    NA       NA       NA       NA       NA
+#> 2 2023-04-01 0.698    NA       NA       NA       NA       NA
 summary(expalmon_model)
 #> Bridge model summary
 #> -----------------------------------
 #> Target series: gdp_growth
 #> Target frequency: quarter (step 1)
 #> Forecast horizon: 1
-#> Formula: gdp_growth ~ baro
+#> Target model: lm
+#> Estimation rows: 75
+#> Regressors: baro
 #> -----------------------------------
-#> Main model:
+#> Target equation coefficients:
+#> # A tibble: 2 × 3
+#>   term        estimate bootstrap_se
+#>   <chr>          <dbl>        <dbl>
+#> 1 (Intercept)  -9.37             NA
+#> 2 baro          0.0982           NA
 #> -----------------------------------
-#> Series: estimation_xts[, target_name] 
-#> Regression with ARIMA(0,0,0) errors 
-#> 
-#> Coefficients:
-#>       intercept    baro
-#>         -9.3713  0.0982
-#> s.e.     1.0730  0.0106
-#> 
-#> sigma^2 = 0.8333:  log likelihood = -98.57
-#> AIC=203.14   AICc=203.48   BIC=210.09
+#> Indicator summary:
+#> # A tibble: 1 × 5
+#>   indicator frequency      predict    aggregation indicator_model
+#>   <chr>     <chr>          <chr>      <chr>       <chr>          
+#> 1 baro      month (step 1) auto.arima expalmon    fc_model       
 #> -----------------------------------
-#> Indicator models:
+#> Estimated parametric aggregation:
+#> baro weights: 0.006, 0.994, 0
+#> baro parameters: -4.914, -10
 #> -----------------------------------
-#> Series: baro
-#> Frequency: month (step 1)
-#> Forecast method: auto.arima
-#> Series: xts_series 
-#> ARIMA(1,0,2) with non-zero mean 
-#> 
-#> Coefficients:
-#>          ar1     ma1     ma2      mean
-#>       0.6688  0.5305  0.3316  100.8580
-#> s.e.  0.0653  0.0799  0.0753    1.5774
-#> 
-#> sigma^2 = 18.46:  log likelihood = -646.14
-#> AIC=1302.28   AICc=1302.55   BIC=1319.36
-#> Aggregation: expalmon
-#> Estimated expalmon weights: 0.006, 0.994, 0
-#> Estimated expalmon parameters: -4.914, -10
+#> Uncertainty:
+#> Method: none
 #> -----------------------------------
-#> Joint expalmon optimization:
-#> -----------------------------------
+#> Joint parametric aggregation optimization:
 #> Method: L-BFGS-B
 #> Objective value: 60.8316
 #> Convergence code: 0

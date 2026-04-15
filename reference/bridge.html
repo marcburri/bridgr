@@ -69,6 +69,8 @@ aggregating them within each target period.</p>
 <span>  target_lags <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  h <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  frequency_conversions <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  se <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  bootstrap <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  solver_options <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -88,14 +90,29 @@ aggregating them within each target period.</p>
 
 <dt id="arg-indic-predict">indic_predict<a class="anchor" aria-label="anchor" href="#arg-indic-predict"></a></dt>
 <dd><p>A character vector of indicator forecasting methods.
-Length must be <code>1</code> or equal to the number of indicator series.</p></dd>
+Length must be <code>1</code> or equal to the number of indicator series. Setting
+<code>indic_predict = "direct"</code> switches to direct MIDAS-style alignment: the
+indicators are not forecasted, and the most recent complete
+high-frequency blocks are assigned backward to the target periods. Direct
+alignment must be used for all indicators at once. When <code>h &gt; 1</code>, the latest
+complete block is assigned to the farthest requested forecast horizon and
+earlier complete blocks are assigned backward from there. For
+<code>indic_predict = "mean"</code>, missing high-frequency observations are filled
+with the mean of the latest available <code>obs_per_target</code> high-frequency
+observations, and that same mean is extended across the forecast horizon.</p></dd>
 
 
 <dt id="arg-indic-aggregators">indic_aggregators<a class="anchor" aria-label="anchor" href="#arg-indic-aggregators"></a></dt>
 <dd><p>A character vector of aggregation methods or a list
 of numeric weights. Length must be <code>1</code> or equal to the number of indicator
 series. Numeric weights must sum to one and have the appropriate length for
-the inferred target-period block size.</p></dd>
+the inferred target-period block size. <code>"unrestricted"</code> keeps one separate
+coefficient per high-frequency observation within the target period. The
+parametric aggregators use two coefficients each: <code>"expalmon"</code> uses
+<code>(linear, quadratic)</code>, <code>"beta"</code> uses <code>(left_shape, right_shape)</code> as the
+normalized beta shape parameters, and <code>"legendre"</code> uses
+<code>(first_order, second_order)</code> as coefficients on the first two shifted
+orthonormal Legendre basis functions.</p></dd>
 
 
 <dt id="arg-indic-lags">indic_lags<a class="anchor" aria-label="anchor" href="#arg-indic-lags"></a></dt>
@@ -118,11 +135,38 @@ regular frequency ladder. Supported names are <code>spm</code>, <code>mph</code>
 <code>wpm</code>, <code>mpq</code>, and <code>qpy</code>.</p></dd>
 
 
+<dt id="arg-se">se<a class="anchor" aria-label="anchor" href="#arg-se"></a></dt>
+<dd><p>Logical flag indicating whether conditional bootstrap standard
+errors and forecast intervals should be computed. When <code>FALSE</code>, <code>bootstrap</code>
+is ignored.</p></dd>
+
+
+<dt id="arg-bootstrap">bootstrap<a class="anchor" aria-label="anchor" href="#arg-bootstrap"></a></dt>
+<dd><p>A list of bootstrap controls. Currently only
+<code>list(type = "block", N = 100, block_length = NULL)</code> is supported.
+<code>type</code> must be <code>"block"</code>, <code>N</code> is the number of bootstrap replications, and
+<code>block_length</code> is the target-frequency block length. When <code>block_length</code> is
+<code>NULL</code>, <code>bridge()</code> uses <code>ceiling(n^(1/3))</code> based on the final target-period
+estimation sample size. The bootstrap is conditional on the aligned
+low-frequency design matrix and therefore does not re-estimate indicator
+forecasts or aggregation weights.</p></dd>
+
+
 <dt id="arg-solver-options">solver_options<a class="anchor" aria-label="anchor" href="#arg-solver-options"></a></dt>
-<dd><p>A list of optional controls for joint <code>expalmon</code>
-optimization. Supported entries are <code>method</code>, <code>maxiter</code>, <code>n_starts</code>,
-<code>seed</code>, and <code>trace</code>. These controls are ignored unless at least one
-indicator uses <code>indic_aggregators = "expalmon"</code>.</p></dd>
+<dd><p>A list of optional controls for joint parametric-weight
+optimization. Supported entries are:
+<code>method</code> for the optimizer (<code>"L-BFGS-B"</code>, <code>"BFGS"</code>, <code>"Nelder-Mead"</code>, or
+<code>"nlminb"</code>), <code>maxiter</code> for the iteration budget per optimization run,
+<code>n_starts</code> for the number of multi-start attempts, <code>seed</code> for reproducible
+random restarts, <code>trace</code> for optimizer verbosity, and <code>start_values</code> for
+user-supplied initial parameter values. <code>start_values</code> can be either a
+numeric vector or a named list. For a numeric vector, values are concatenated
+in indicator order across the parametric aggregators. Within each indicator,
+the parameter order is <code>(linear, quadratic)</code> for <code>"expalmon"</code>,
+<code>(left_shape, right_shape)</code> for <code>"beta"</code>, and <code>(first_order, second_order)</code>
+for <code>"legendre"</code>. Named-list <code>start_values</code> must provide exactly the
+required number of values for each parametric indicator. These controls are
+ignored unless at least one indicator uses a parametric aggregator.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
@@ -139,11 +183,19 @@ fitted target model, fitted indicator models, and metadata required by
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>Supported indicator forecasting methods are <code>"mean"</code>, <code>"last"</code>,
-<code>"auto.arima"</code>, and <code>"ets"</code>. Supported aggregation methods are <code>"mean"</code>,
-<code>"last"</code>, <code>"sum"</code>, <code>"expalmon"</code>, or a numeric weight vector supplied inside
-a <code><a href="https://rdrr.io/r/base/list.html" class="external-link">list()</a></code>. When one or more indicators use <code>"expalmon"</code>, the corresponding
-aggregation weights are estimated jointly against the final bridge-model
-objective rather than one indicator at a time.</p>
+<code>"auto.arima"</code>, <code>"ets"</code>, and <code>"direct"</code>. Supported aggregation methods are
+<code>"mean"</code>, <code>"last"</code>, <code>"sum"</code>, <code>"unrestricted"</code>, <code>"expalmon"</code>, <code>"beta"</code>,
+<code>"legendre"</code>, or a numeric weight vector supplied inside a <code><a href="https://rdrr.io/r/base/list.html" class="external-link">list()</a></code>.
+<code>"unrestricted"</code> expands each high-frequency observation within a target
+period into its own bridge regressor, which corresponds to a U-MIDAS style
+specification when the frequency gap is small. When one or more indicators
+use a parametric aggregator, the corresponding aggregation weights are
+estimated jointly against the final bridge-model objective rather than one
+indicator at a time.</p>
+<p>Unrestricted mixed-frequency regressions can become parameter-heavy quickly.
+When <code>indic_aggregators = "unrestricted"</code>, <code>bridge()</code> warns if the final
+estimation sample contains fewer than 10 observations per predictor in the
+bridge regression.</p>
 <p>The package assumes a regular frequency ladder
 <code>second -&gt; minute -&gt; hour -&gt; day -&gt; week -&gt; month -&gt; quarter -&gt; year</code>.
 The default number of lower-level observations per higher-level unit is:</p><ul><li><p><code>spm = 60</code></p></li>
@@ -157,19 +209,27 @@ The default number of lower-level observations per higher-level unit is:</p><ul>
 <code>frequency_conversions</code>. If a target period contains more high-frequency
 observations than implied by the current mapping, <code>bridge()</code> keeps the most
 recent observations and emits a summarized warning. If a target period
-contains fewer observations than required, the call fails.</p>
+contains fewer observations than required, the call fails. Month-, quarter-,
+and year-based input dates are standardized to period starts when needed
+for frequency recognition.</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
     <p>Baffigi, A., Golinelli, R., &amp; Parigi, G. (2004). Bridge models to forecast
 the euro area GDP. <em>International Journal of Forecasting</em>, 20(3), 447-460.
 <a href="https://doi.org/10.1016/S0169-2070%2803%2900067-0" class="external-link">doi:10.1016/S0169-2070(03)00067-0</a></p>
-<p>Burri, M. (2023). Do daily lead texts help nowcasting GDP growth? IRENE
-Working Papers 23-02.
-<a href="https://www5.unine.ch/RePEc/ftp/irn/pdfs/WP23-02.pdf" class="external-link">https://www5.unine.ch/RePEc/ftp/irn/pdfs/WP23-02.pdf</a></p>
+<p>Ghysels, E., Sinko, A., &amp; Valkanov, R. (2007). MIDAS regressions: Further
+results and new directions. <em>Econometric Reviews</em>, 26(1), 53-90.
+<a href="https://doi.org/10.1080/07474930600972467" class="external-link">doi:10.1080/07474930600972467</a></p>
+<p>Andreou, E., Ghysels, E., &amp; Kourtellos, A. (2010). Regression models with
+mixed sampling frequencies. <em>Journal of Econometrics</em>, 158(2), 246-261.
+<a href="https://doi.org/10.1016/j.jeconom.2010.01.004" class="external-link">doi:10.1016/j.jeconom.2010.01.004</a></p>
 <p>Schumacher, C. (2016). A comparison of MIDAS and bridge equations.
 <em>International Journal of Forecasting</em>, 32(2), 257-270.
 <a href="https://doi.org/10.1016/j.ijforecast.2015.07.004" class="external-link">doi:10.1016/j.ijforecast.2015.07.004</a></p>
+<p>Burri, M. (2026). Nowcasting Swiss GDP Growth From Public Lead Texts:
+Simple Methods Are Sufficient. <em>Oxford Bulletin of Economics and
+Statistics</em>, 1-25. <a href="https://doi.org/10.1111/obes.70073" class="external-link">doi:10.1111/obes.70073</a></p>
     </div>
 
     <div class="section level2">
@@ -200,51 +260,49 @@ Working Papers 23-02.
 <span class="r-msg co"><span class="r-pr">#&gt;</span> [value]: 'values' </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://generics.r-lib.org/reference/forecast.html" class="external-link">forecast</a></span><span class="op">(</span><span class="va">model</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    Point Forecast      Lo 80    Hi 80      Lo 95    Hi 95</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 75      0.9724040  0.0112021 1.933606 -0.4976274 2.442435</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 76      0.6984187 -0.2906595 1.687497 -0.8142460 2.211083</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Bridge forecast</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> -----------------------------------</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Target series: gdp_growth</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Forecast horizon: 2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Target model: fc_model</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Uncertainty: point forecast only</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> -----------------------------------</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 2 × 7</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   time        mean    se lower_80 upper_80 lower_95 upper_95</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;date&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> 2023-01-01 0.972    <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> 2023-04-01 0.698    <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">expalmon_model</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Bridge model summary</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> -----------------------------------</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Target series: gdp_growth</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Target frequency: quarter (step 1)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Forecast horizon: 1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Formula: gdp_growth ~ baro</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Target model: lm</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Estimation rows: 75</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Regressors: baro</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> -----------------------------------</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Main model:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Target equation coefficients:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 2 × 3</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   term        estimate bootstrap_se</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> (Intercept)  -<span style="color: #BB0000;">9.37</span>             <span style="color: #BB0000;">NA</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> baro          0.098<span style="text-decoration: underline;">2</span>           <span style="color: #BB0000;">NA</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> -----------------------------------</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Series: estimation_xts[, target_name] </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Regression with ARIMA(0,0,0) errors </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Coefficients:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       intercept    baro</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         -9.3713  0.0982</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> s.e.     1.0730  0.0106</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> sigma^2 = 0.8333:  log likelihood = -98.57</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> AIC=203.14   AICc=203.48   BIC=210.09</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Indicator summary:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 5</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   indicator frequency      predict    aggregation indicator_model</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> baro      month (step 1) auto.arima expalmon    fc_model       </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> -----------------------------------</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Indicator models:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Estimated parametric aggregation:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> baro weights: 0.006, 0.994, 0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> baro parameters: -4.914, -10</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> -----------------------------------</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Series: baro</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Frequency: month (step 1)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Forecast method: auto.arima</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Series: xts_series </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ARIMA(1,0,2) with non-zero mean </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Coefficients:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>          ar1     ma1     ma2      mean</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       0.6688  0.5305  0.3316  100.8580</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> s.e.  0.0653  0.0799  0.0753    1.5774</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> sigma^2 = 18.46:  log likelihood = -646.14</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> AIC=1302.28   AICc=1302.55   BIC=1319.36</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Aggregation: expalmon</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Estimated expalmon weights: 0.006, 0.994, 0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Estimated expalmon parameters: -4.914, -10</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Uncertainty:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Method: none</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> -----------------------------------</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Joint expalmon optimization:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> -----------------------------------</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Joint parametric aggregation optimization:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Method: L-BFGS-B</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Objective value: 60.8316</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Convergence code: 0</span>
