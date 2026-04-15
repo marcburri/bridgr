@@ -217,6 +217,54 @@ test_that(
   }
 )
 
+test_that(
+  "aggregation method `unrestricted` estimates distinct monthly slots",
+  {
+  n_quarters <- 40
+  quarter_index <- rep(seq_len(n_quarters), each = 3)
+  slot <- rep(1:3, times = n_quarters)
+  monthly_time <- seq(
+    as.Date("2010-01-01"),
+    by = "month",
+    length.out = n_quarters * 3
+  )
+  indic <- dplyr::tibble(
+    time = monthly_time,
+    value = 15 + quarter_index * 0.35 +
+      ifelse(slot == 1, 0.8 * sin(quarter_index / 2), 0) +
+      ifelse(slot == 2, -0.6 * cos(quarter_index / 3), 0) +
+      ifelse(slot == 3, 0.7 * sin(quarter_index / 4 + 0.3), 0)
+  )
+  target <- dplyr::tibble(
+    time = monthly_time[seq(1, length(monthly_time), by = 3)],
+    value = 0.5 +
+      vapply(
+        seq_len(n_quarters),
+        function(i) {
+          block <- indic$value[((i - 1) * 3 + 1):(i * 3)]
+          0.2 * block[[1]] + 0.6 * block[[2]] + 0.2 * block[[3]]
+        },
+        numeric(1)
+      ) +
+      rep(c(0.1, -0.05, 0.08, -0.02), length.out = n_quarters)
+  )
+
+  model <- bridge(
+    target = target,
+    indic = indic,
+    indic_predict = "last",
+    indic_aggregators = "unrestricted",
+    h = 1
+  )
+
+  prefix <- model$indic_name[[1]]
+  estimates <- stats::coef(model$model)[paste0(prefix, "_hf", 1:3)]
+
+  expect_false(anyNA(estimates))
+  expect_equal(unname(estimates), c(0.2, 0.6, 0.2), tolerance = 0.05)
+  }
+)
+
 test_that("aggregation method `expalmon` uses its estimated weights", {
   fixture <- make_daily_week_fixture(
     n_weeks = 12,
