@@ -308,25 +308,37 @@ of free parameters small.</p>
 <p>The fitted object stores both the estimated weight profile and the
 underlying parametric coefficients.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">indicator_id</span> <span class="op">&lt;-</span> <span class="va">expalmon_model</span><span class="op">$</span><span class="va">indic_name</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
+<span></span>
+<span><span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span></span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
 <span>    model <span class="op">=</span> <span class="st">"expalmon"</span>,</span>
-<span>    month <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_along</a></span><span class="op">(</span><span class="va">expalmon_model</span><span class="op">$</span><span class="va">parametric_weights</span><span class="op">$</span><span class="va">indic</span><span class="op">)</span>,</span>
-<span>    weight <span class="op">=</span> <span class="va">expalmon_model</span><span class="op">$</span><span class="va">parametric_weights</span><span class="op">$</span><span class="va">indic</span></span>
+<span>    month <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_along</a></span><span class="op">(</span><span class="va">expalmon_model</span><span class="op">$</span><span class="va">parametric_weights</span><span class="op">[[</span><span class="va">indicator_id</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>,</span>
+<span>    weight <span class="op">=</span> <span class="va">expalmon_model</span><span class="op">$</span><span class="va">parametric_weights</span><span class="op">[[</span><span class="va">indicator_id</span><span class="op">]</span><span class="op">]</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
 <span>    model <span class="op">=</span> <span class="st">"beta"</span>,</span>
-<span>    month <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_along</a></span><span class="op">(</span><span class="va">beta_model</span><span class="op">$</span><span class="va">parametric_weights</span><span class="op">$</span><span class="va">indic</span><span class="op">)</span>,</span>
-<span>    weight <span class="op">=</span> <span class="va">beta_model</span><span class="op">$</span><span class="va">parametric_weights</span><span class="op">$</span><span class="va">indic</span></span>
+<span>    month <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_along</a></span><span class="op">(</span><span class="va">beta_model</span><span class="op">$</span><span class="va">parametric_weights</span><span class="op">[[</span><span class="va">indicator_id</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>,</span>
+<span>    weight <span class="op">=</span> <span class="va">beta_model</span><span class="op">$</span><span class="va">parametric_weights</span><span class="op">[[</span><span class="va">indicator_id</span><span class="op">]</span><span class="op">]</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
 <span>    model <span class="op">=</span> <span class="st">"legendre"</span>,</span>
-<span>    month <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_along</a></span><span class="op">(</span><span class="va">legendre_model</span><span class="op">$</span><span class="va">parametric_weights</span><span class="op">$</span><span class="va">indic</span><span class="op">)</span>,</span>
-<span>    weight <span class="op">=</span> <span class="va">legendre_model</span><span class="op">$</span><span class="va">parametric_weights</span><span class="op">$</span><span class="va">indic</span></span>
+<span>    month <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_along</a></span><span class="op">(</span><span class="va">legendre_model</span><span class="op">$</span><span class="va">parametric_weights</span><span class="op">[[</span><span class="va">indicator_id</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>,</span>
+<span>    weight <span class="op">=</span> <span class="va">legendre_model</span><span class="op">$</span><span class="va">parametric_weights</span><span class="op">[[</span><span class="va">indicator_id</span><span class="op">]</span><span class="op">]</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 0 × 2</span></span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 2 variables: model &lt;chr&gt;, month &lt;int&gt;</span></span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 9 × 3</span></span></span>
+<span><span class="co">#&gt;   model    month    weight</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> expalmon     1 1.99 <span style="color: #949494;">e</span><span style="color: #BB0000;">- 1</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> expalmon     2 5.97 <span style="color: #949494;">e</span><span style="color: #BB0000;">- 1</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> expalmon     3 2.05 <span style="color: #949494;">e</span><span style="color: #BB0000;">- 1</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> beta         1 8.88 <span style="color: #949494;">e</span><span style="color: #BB0000;">-16</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> beta         2 1.000<span style="color: #949494;">e</span>+ 0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> beta         3 8.88 <span style="color: #949494;">e</span><span style="color: #BB0000;">-16</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">7</span> legendre     1 1.99 <span style="color: #949494;">e</span><span style="color: #BB0000;">- 1</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">8</span> legendre     2 5.97 <span style="color: #949494;">e</span><span style="color: #BB0000;">- 1</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">9</span> legendre     3 2.05 <span style="color: #949494;">e</span><span style="color: #BB0000;">- 1</span></span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="forecast-comparison">Forecast Comparison<a class="anchor" aria-label="anchor" href="#forecast-comparison"></a>

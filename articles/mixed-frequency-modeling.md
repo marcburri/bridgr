@@ -224,25 +224,37 @@ The fitted object stores both the estimated weight profile and the
 underlying parametric coefficients.
 
 ``` r
+indicator_id <- expalmon_model$indic_name[[1]]
+
 dplyr::bind_rows(
   dplyr::tibble(
     model = "expalmon",
-    month = seq_along(expalmon_model$parametric_weights$indic),
-    weight = expalmon_model$parametric_weights$indic
+    month = seq_along(expalmon_model$parametric_weights[[indicator_id]]),
+    weight = expalmon_model$parametric_weights[[indicator_id]]
   ),
   dplyr::tibble(
     model = "beta",
-    month = seq_along(beta_model$parametric_weights$indic),
-    weight = beta_model$parametric_weights$indic
+    month = seq_along(beta_model$parametric_weights[[indicator_id]]),
+    weight = beta_model$parametric_weights[[indicator_id]]
   ),
   dplyr::tibble(
     model = "legendre",
-    month = seq_along(legendre_model$parametric_weights$indic),
-    weight = legendre_model$parametric_weights$indic
+    month = seq_along(legendre_model$parametric_weights[[indicator_id]]),
+    weight = legendre_model$parametric_weights[[indicator_id]]
   )
 )
-#> # A tibble: 0 × 2
-#> # ℹ 2 variables: model <chr>, month <int>
+#> # A tibble: 9 × 3
+#>   model    month    weight
+#>   <chr>    <int>     <dbl>
+#> 1 expalmon     1 1.99 e- 1
+#> 2 expalmon     2 5.97 e- 1
+#> 3 expalmon     3 2.05 e- 1
+#> 4 beta         1 8.88 e-16
+#> 5 beta         2 1.000e+ 0
+#> 6 beta         3 8.88 e-16
+#> 7 legendre     1 1.99 e- 1
+#> 8 legendre     2 5.97 e- 1
+#> 9 legendre     3 2.05 e- 1
 ```
 
 ## Forecast Comparison

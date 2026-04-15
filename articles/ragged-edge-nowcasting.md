@@ -94,14 +94,6 @@ models <- lapply(
     )
   }
 )
-#> [value]: 'values' 
-#> [value]: 'values' 
-#> [value]: 'values' 
-#> [value]: 'values' 
-#> [value]: 'values' 
-#> [value]: 'values' 
-#> [value]: 'values' 
-#> [value]: 'values'
 names(models) <- predict_methods
 
 dplyr::bind_rows(
@@ -175,8 +167,6 @@ direct_model <- bridge(
   indic_aggregators = "unrestricted",
   h = 1
 )
-#> [value]: 'values' 
-#> [value]: 'values'
 
 forecast(direct_model)
 #> Bridge forecast

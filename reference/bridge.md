@@ -218,8 +218,6 @@ model <- bridge(
   target_lags = 1,
   h = 2
 )
-#> [value]: 'values' 
-#> [value]: 'values' 
 
 expalmon_model <- bridge(
   target = gdp_growth,
@@ -229,8 +227,6 @@ expalmon_model <- bridge(
   solver_options = list(seed = 123, n_starts = 3),
   h = 1
 )
-#> [value]: 'values' 
-#> [value]: 'values' 
 
 forecast(model)
 #> Bridge forecast

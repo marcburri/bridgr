@@ -67,8 +67,6 @@ bridge_model <- bridge(
   target_lags = 1,
   h = 2
 )
-#> [value]: 'values' 
-#> [value]: 'values'
 
 forecast(bridge_model)
 #> Bridge forecast
@@ -166,8 +164,6 @@ direct_model <- bridge(
   indic_aggregators = "unrestricted",
   h = 1
 )
-#> [value]: 'values' 
-#> [value]: 'values'
 
 forecast(direct_model)
 #> Bridge forecast

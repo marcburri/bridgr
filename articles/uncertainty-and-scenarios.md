@@ -30,8 +30,6 @@ boot_model <- bridge(
   se = TRUE,
   bootstrap = list(type = "block", N = 20, block_length = NULL)
 )
-#> [value]: 'values' 
-#> [value]: 'values'
 ```
 
 The current implementation uses a conditional block bootstrap on the
@@ -194,8 +192,6 @@ point_model <- bridge(
   se = FALSE,
   bootstrap = list(type = "block", N = 20)
 )
-#> [value]: 'values' 
-#> [value]: 'values'
 
 forecast(point_model)
 #> Bridge forecast
