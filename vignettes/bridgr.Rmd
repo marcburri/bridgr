@@ -144,12 +144,12 @@ summary(boot_model)
 plot(boot_model, type = "forecast")
 ```
 
-The current uncertainty implementation is a conditional block bootstrap on the
-final target-frequency estimation sample. It does not re-estimate indicator
-forecast models or parametric aggregation weights inside each bootstrap draw.
-When `se = TRUE`, `plot(..., type = "forecast")` automatically adds the
-bootstrap forecast interval on top of the historical target path and forecast
-mean.
+The current uncertainty implementation uses a conditional block bootstrap on
+the final target-frequency estimation sample. It does not re-estimate
+indicator forecast models or parametric aggregation weights inside each
+bootstrap draw. The stored forecast draws do add simulated future target
+shocks, so `forecast()` and `plot(..., type = "forecast")` return predictive
+intervals on top of the historical target path and forecast mean.
 
 # Where to Go Next
 

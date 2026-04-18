@@ -18,13 +18,15 @@ library(bridgr)
 
 # Overview
 
-`bridgr` can return point forecasts only, or it can also compute conditional
-bootstrap uncertainty for the fitted target equation.
+`bridgr` can return point forecasts only, or it can also compute bootstrap
+uncertainty for the fitted target equation and predictive intervals for
+forecasts.
 
 The relevant estimation arguments are:
 
 - `se = FALSE`: point forecasts only.
-- `se = TRUE`: compute conditional bootstrap uncertainty.
+- `se = TRUE`: compute bootstrap coefficient uncertainty and predictive
+  forecast intervals.
 - `bootstrap = list(type = "block", N = 100, block_length = NULL)`: control
   the bootstrap.
 
@@ -50,7 +52,8 @@ boot_model <- bridge(
 
 The current implementation uses a conditional block bootstrap on the final
 target-frequency estimation sample. It does not re-estimate indicator forecast
-models or parametric aggregation weights inside each bootstrap draw.
+models or parametric aggregation weights inside each bootstrap draw, but it
+does add simulated future target shocks to the stored forecast draws.
 
 # Forecast Output
 
@@ -71,7 +74,7 @@ fc
 fc$bootstrap
 ```
 
-The intervals are empirical bootstrap intervals based on the stored bootstrap
+The intervals are empirical predictive intervals based on the stored bootstrap
 forecast draws.
 
 # Summary Output
@@ -115,8 +118,8 @@ dplyr::tibble(
 
 When a model contains stored bootstrap draws, `forecast(..., xreg = ...)`
 reuses the bootstrap refits and evaluates them on the scenario regressor path.
-That keeps the uncertainty handling consistent between the baseline forecast
-and scenario forecasts.
+That keeps the predictive uncertainty handling consistent between the baseline
+forecast and scenario forecasts.
 
 # Point Forecasts Only
 
@@ -143,6 +146,6 @@ forecast(point_model)
 # Interpretation
 
 These intervals are conditional on the aligned target-frequency design matrix.
-That means they are most naturally interpreted as uncertainty for the final
-target equation given the regressor path, rather than full end-to-end
-uncertainty for the whole mixed-frequency system.
+That means they are predictive intervals for the final target equation given
+the regressor path, rather than full end-to-end uncertainty for the whole
+mixed-frequency system.
