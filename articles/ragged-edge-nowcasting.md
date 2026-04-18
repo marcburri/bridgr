@@ -173,14 +173,10 @@ forecast(direct_model)
 #> -----------------------------------
 #> Target series: gdp_nowcast
 #> Forecast horizon: 1
-#> Target model: lm
-#> Indicator handling: direct alignment
 #> Uncertainty: point forecast only
 #> -----------------------------------
-#> # A tibble: 1 × 7
-#>   time         mean    se lower_80 upper_80 lower_95 upper_95
-#>   <date>      <dbl> <dbl>    <dbl>    <dbl>    <dbl>    <dbl>
-#> 1 2022-10-01 -0.366    NA       NA       NA       NA       NA
+#>   time       mean  
+#> 1 2022-10-01 -0.150
 ```
 
 This is especially useful when you want to avoid a separate indicator

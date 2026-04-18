@@ -262,14 +262,10 @@ a direct MIDAS-style setup.</p>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Target series: gdp_nowcast</span></span>
 <span><span class="co">#&gt; Forecast horizon: 1</span></span>
-<span><span class="co">#&gt; Target model: lm</span></span>
-<span><span class="co">#&gt; Indicator handling: direct alignment</span></span>
 <span><span class="co">#&gt; Uncertainty: point forecast only</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 7</span></span></span>
-<span><span class="co">#&gt;   time         mean    se lower_80 upper_80 lower_95 upper_95</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;date&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 2022-10-01 -<span style="color: #BB0000;">0.366</span>    <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span></span></span></code></pre></div>
+<span><span class="co">#&gt;   time       mean  </span></span>
+<span><span class="co">#&gt; 1 2022-10-01 -0.150</span></span></code></pre></div>
 <p>This is especially useful when you want to avoid a separate indicator
 forecasting step and prefer to work only with observed high-frequency
 data.</p>

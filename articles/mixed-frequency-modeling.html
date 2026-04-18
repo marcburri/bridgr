@@ -167,53 +167,37 @@ coefficients.</p>
 <span><span class="co">#&gt; Bridge model summary</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Target series: quarter_target</span></span>
-<span><span class="co">#&gt; Target frequency: quarter (step 1)</span></span>
+<span><span class="co">#&gt; Target frequency: quarter</span></span>
 <span><span class="co">#&gt; Forecast horizon: 1</span></span>
-<span><span class="co">#&gt; Target model: lm</span></span>
 <span><span class="co">#&gt; Estimation rows: 40</span></span>
 <span><span class="co">#&gt; Regressors: monthly_indicator</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Target equation coefficients:</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 3</span></span></span>
-<span><span class="co">#&gt;   term              estimate bootstrap_se</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> (Intercept)          0.516           <span style="color: #BB0000;">NA</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> monthly_indicator    0.999           <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt;                   Estimate</span></span>
+<span><span class="co">#&gt; (Intercept)          0.516</span></span>
+<span><span class="co">#&gt; monthly_indicator    0.999</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Indicator summary:</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
-<span><span class="co">#&gt;   indicator         frequency      predict aggregation indicator_model</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> monthly_indicator month (step 1) last    mean        deterministic  </span></span>
-<span><span class="co">#&gt; -----------------------------------</span></span>
-<span><span class="co">#&gt; Uncertainty:</span></span>
-<span><span class="co">#&gt; Method: none</span></span>
+<span><span class="co">#&gt;                   Frequency Predict Aggregation</span></span>
+<span><span class="co">#&gt; monthly_indicator month     last    mean       </span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">last_model</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Bridge model summary</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Target series: quarter_target</span></span>
-<span><span class="co">#&gt; Target frequency: quarter (step 1)</span></span>
+<span><span class="co">#&gt; Target frequency: quarter</span></span>
 <span><span class="co">#&gt; Forecast horizon: 1</span></span>
-<span><span class="co">#&gt; Target model: lm</span></span>
 <span><span class="co">#&gt; Estimation rows: 40</span></span>
 <span><span class="co">#&gt; Regressors: monthly_indicator</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Target equation coefficients:</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 3</span></span></span>
-<span><span class="co">#&gt;   term              estimate bootstrap_se</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> (Intercept)          0.590           <span style="color: #BB0000;">NA</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> monthly_indicator    0.993           <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt;                   Estimate</span></span>
+<span><span class="co">#&gt; (Intercept)          0.590</span></span>
+<span><span class="co">#&gt; monthly_indicator    0.993</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Indicator summary:</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
-<span><span class="co">#&gt;   indicator         frequency      predict aggregation indicator_model</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> monthly_indicator month (step 1) last    last        deterministic  </span></span>
-<span><span class="co">#&gt; -----------------------------------</span></span>
-<span><span class="co">#&gt; Uncertainty:</span></span>
-<span><span class="co">#&gt; Method: none</span></span>
+<span><span class="co">#&gt;                   Frequency Predict Aggregation</span></span>
+<span><span class="co">#&gt; monthly_indicator month     last    last       </span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span></code></pre></div>
 <p>These are classic bridge-model choices. They are easy to interpret
 and often work well when you want a transparent rule for within-period
@@ -235,29 +219,21 @@ aggregation.</p>
 <span><span class="co">#&gt; Bridge model summary</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Target series: quarter_target</span></span>
-<span><span class="co">#&gt; Target frequency: quarter (step 1)</span></span>
+<span><span class="co">#&gt; Target frequency: quarter</span></span>
 <span><span class="co">#&gt; Forecast horizon: 1</span></span>
-<span><span class="co">#&gt; Target model: lm</span></span>
 <span><span class="co">#&gt; Estimation rows: 40</span></span>
 <span><span class="co">#&gt; Regressors: monthly_indicator_hf1, monthly_indicator_hf2, monthly_indicator_hf3</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Target equation coefficients:</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 3</span></span></span>
-<span><span class="co">#&gt;   term                  estimate bootstrap_se</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> (Intercept)              0.541           <span style="color: #BB0000;">NA</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> monthly_indicator_hf1    0.198           <span style="color: #BB0000;">NA</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> monthly_indicator_hf2    0.596           <span style="color: #BB0000;">NA</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> monthly_indicator_hf3    0.205           <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt;                       Estimate</span></span>
+<span><span class="co">#&gt; (Intercept)              0.541</span></span>
+<span><span class="co">#&gt; monthly_indicator_hf1    0.198</span></span>
+<span><span class="co">#&gt; monthly_indicator_hf2    0.596</span></span>
+<span><span class="co">#&gt; monthly_indicator_hf3    0.205</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Indicator summary:</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
-<span><span class="co">#&gt;   indicator         frequency      predict aggregation  indicator_model</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> monthly_indicator month (step 1) last    unrestricted deterministic  </span></span>
-<span><span class="co">#&gt; -----------------------------------</span></span>
-<span><span class="co">#&gt; Uncertainty:</span></span>
-<span><span class="co">#&gt; Method: none</span></span>
+<span><span class="co">#&gt;                   Frequency Predict Aggregation </span></span>
+<span><span class="co">#&gt; monthly_indicator month     last    unrestricted</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span></code></pre></div>
 <p><code>"unrestricted"</code> estimates one coefficient for each
 within-quarter monthly observation. In a monthly-on-quarterly example

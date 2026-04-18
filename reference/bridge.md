@@ -64,7 +64,9 @@ bridge(
   each: `"expalmon"` uses `(linear, quadratic)`, `"beta"` uses
   `(left_shape, right_shape)` as the normalized beta shape parameters,
   and `"legendre"` uses `(first_order, second_order)` as coefficients on
-  the first two shifted orthonormal Legendre basis functions.
+  the first two shifted orthonormal Legendre basis functions. When
+  `indic_predict = "direct"`, `indic_aggregators` is ignored and direct
+  blocks are averaged within each target period.
 
 - indic_lags:
 
@@ -236,47 +238,36 @@ forecast(model)
 #> -----------------------------------
 #> Target series: gdp_growth
 #> Forecast horizon: 2
-#> Target model: fc_model
 #> Uncertainty: point forecast only
 #> -----------------------------------
-#> # A tibble: 2 × 7
-#>   time        mean    se lower_80 upper_80 lower_95 upper_95
-#>   <date>     <dbl> <dbl>    <dbl>    <dbl>    <dbl>    <dbl>
-#> 1 2023-01-01 0.972    NA       NA       NA       NA       NA
-#> 2 2023-04-01 0.698    NA       NA       NA       NA       NA
+#>   time       mean 
+#> 1 2023-01-01 0.972
+#> 2 2023-04-01 0.698
 summary(expalmon_model)
 #> Bridge model summary
 #> -----------------------------------
 #> Target series: gdp_growth
-#> Target frequency: quarter (step 1)
+#> Target frequency: quarter
 #> Forecast horizon: 1
-#> Target model: lm
 #> Estimation rows: 75
 #> Regressors: baro
 #> -----------------------------------
 #> Target equation coefficients:
-#> # A tibble: 2 × 3
-#>   term        estimate bootstrap_se
-#>   <chr>          <dbl>        <dbl>
-#> 1 (Intercept)  -9.37             NA
-#> 2 baro          0.0982           NA
+#>             Estimate
+#> (Intercept)   -9.371
+#> baro           0.098
 #> -----------------------------------
 #> Indicator summary:
-#> # A tibble: 1 × 5
-#>   indicator frequency      predict    aggregation indicator_model
-#>   <chr>     <chr>          <chr>      <chr>       <chr>          
-#> 1 baro      month (step 1) auto.arima expalmon    fc_model       
+#>      Frequency Predict    Aggregation
+#> baro month     auto.arima expalmon   
 #> -----------------------------------
 #> Estimated parametric aggregation:
-#> baro weights: 0.006, 0.994, 0
-#> baro parameters: -4.914, -10
-#> -----------------------------------
-#> Uncertainty:
-#> Method: none
+#> baro weights: 0.006, 0.994, 0.000
+#> baro parameters: -4.914, -10.000
 #> -----------------------------------
 #> Joint parametric aggregation optimization:
 #> Method: L-BFGS-B
-#> Objective value: 60.8316
+#> Objective value: 60.832
 #> Convergence code: 0
 #> Best start: 1 / 3
 #> Message: CONVERGENCE: REL_REDUCTION_OF_F <= FACTR*EPSMCH

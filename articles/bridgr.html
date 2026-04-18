@@ -157,14 +157,11 @@ fitting the target equation.</p>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Target series: gdp_growth</span></span>
 <span><span class="co">#&gt; Forecast horizon: 2</span></span>
-<span><span class="co">#&gt; Target model: fc_model</span></span>
 <span><span class="co">#&gt; Uncertainty: point forecast only</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 7</span></span></span>
-<span><span class="co">#&gt;   time        mean    se lower_80 upper_80 lower_95 upper_95</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;date&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 2023-01-01 0.972    <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> 2023-04-01 0.698    <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span></span></span></code></pre></div>
+<span><span class="co">#&gt;   time       mean </span></span>
+<span><span class="co">#&gt; 1 2023-01-01 0.972</span></span>
+<span><span class="co">#&gt; 2 2023-04-01 0.698</span></span></code></pre></div>
 <p>The default mean aggregator is the classic bridge-model setup: each
 monthly block is completed first, then averaged to the quarterly
 frequency before the target equation is estimated.</p>
@@ -201,29 +198,21 @@ when they are relevant.</p>
 <span><span class="co">#&gt; Bridge model summary</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Target series: gdp_growth</span></span>
-<span><span class="co">#&gt; Target frequency: quarter (step 1)</span></span>
+<span><span class="co">#&gt; Target frequency: quarter</span></span>
 <span><span class="co">#&gt; Forecast horizon: 2</span></span>
-<span><span class="co">#&gt; Target model: fc_model</span></span>
 <span><span class="co">#&gt; Estimation rows: 74</span></span>
 <span><span class="co">#&gt; Regressors: baro, baro_lag1</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Target equation coefficients:</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 3</span></span></span>
-<span><span class="co">#&gt;   term      estimate bootstrap_se</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> ar1         0.243            <span style="color: #BB0000;">NA</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> intercept  -<span style="color: #BB0000;">6.49</span>             <span style="color: #BB0000;">NA</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> baro        0.161            <span style="color: #BB0000;">NA</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> baro_lag1  -<span style="color: #BB0000;">0.091</span><span style="color: #BB0000; text-decoration: underline;">7</span>           <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt;           Estimate</span></span>
+<span><span class="co">#&gt; ar1          0.243</span></span>
+<span><span class="co">#&gt; intercept   -6.493</span></span>
+<span><span class="co">#&gt; baro         0.161</span></span>
+<span><span class="co">#&gt; baro_lag1   -0.092</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Indicator summary:</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
-<span><span class="co">#&gt;   indicator frequency      predict    aggregation indicator_model</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> baro      month (step 1) auto.arima mean        fc_model       </span></span>
-<span><span class="co">#&gt; -----------------------------------</span></span>
-<span><span class="co">#&gt; Uncertainty:</span></span>
-<span><span class="co">#&gt; Method: none</span></span>
+<span><span class="co">#&gt;      Frequency Predict    Aggregation</span></span>
+<span><span class="co">#&gt; baro month     auto.arima mean       </span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span></code></pre></div>
 </div>
 <div class="section level2">
@@ -258,14 +247,10 @@ backward to target periods instead of being forecast forward first.</p>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Target series: gdp_growth</span></span>
 <span><span class="co">#&gt; Forecast horizon: 1</span></span>
-<span><span class="co">#&gt; Target model: lm</span></span>
-<span><span class="co">#&gt; Indicator handling: direct alignment</span></span>
 <span><span class="co">#&gt; Uncertainty: point forecast only</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 7</span></span></span>
-<span><span class="co">#&gt;   time        mean    se lower_80 upper_80 lower_95 upper_95</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;date&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 2023-01-01 0.522    <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span></span></span></code></pre></div>
+<span><span class="co">#&gt;   time       mean </span></span>
+<span><span class="co">#&gt; 1 2023-01-01 0.483</span></span></code></pre></div>
 <p>This is particularly useful at the ragged edge when you want to work
 only with observed high-frequency information and avoid a separate
 indicator forecasting step.</p>
@@ -293,41 +278,33 @@ want uncertainty output, request it at estimation time with
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Target series: gdp_growth</span></span>
 <span><span class="co">#&gt; Forecast horizon: 4</span></span>
-<span><span class="co">#&gt; Target model: fc_model</span></span>
 <span><span class="co">#&gt; Uncertainty: predictive intervals from conditional block bootstrap</span></span>
 <span><span class="co">#&gt; Bootstrap draws: 40 / 40</span></span>
 <span><span class="co">#&gt; Block length: 5</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 7</span></span></span>
-<span><span class="co">#&gt;   time        mean    se lower_80 upper_80 lower_95 upper_95</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;date&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 2023-01-01 0.116 0.938   -<span style="color: #BB0000;">1.19</span>      1.10    -<span style="color: #BB0000;">1.79</span>     2.59</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> 2023-04-01 0.428 0.920   -<span style="color: #BB0000;">0.920</span>     1.50    -<span style="color: #BB0000;">2.23</span>     1.83</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> 2023-07-01 0.487 0.994   -<span style="color: #BB0000;">0.631</span>     2.21    -<span style="color: #BB0000;">1.32</span>     3.02</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> 2023-10-01 0.509 1.10    -<span style="color: #BB0000;">0.504</span>     2.04    -<span style="color: #BB0000;">2.70</span>     2.80</span></span>
+<span><span class="co">#&gt;   time       mean  se    lower_80 upper_80 lower_95 upper_95</span></span>
+<span><span class="co">#&gt; 1 2023-01-01 0.116 0.938 -1.191   1.104    -1.790   2.586   </span></span>
+<span><span class="co">#&gt; 2 2023-04-01 0.428 0.920 -0.920   1.496    -2.233   1.834   </span></span>
+<span><span class="co">#&gt; 3 2023-07-01 0.487 0.994 -0.631   2.207    -1.324   3.017   </span></span>
+<span><span class="co">#&gt; 4 2023-10-01 0.509 1.104 -0.504   2.036    -2.696   2.799</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">boot_model</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Bridge model summary</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Target series: gdp_growth</span></span>
-<span><span class="co">#&gt; Target frequency: quarter (step 1)</span></span>
+<span><span class="co">#&gt; Target frequency: quarter</span></span>
 <span><span class="co">#&gt; Forecast horizon: 4</span></span>
-<span><span class="co">#&gt; Target model: fc_model</span></span>
 <span><span class="co">#&gt; Estimation rows: 75</span></span>
 <span><span class="co">#&gt; Regressors: baro</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Target equation coefficients:</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 3 × 3</span></span></span>
-<span><span class="co">#&gt;   term      estimate bootstrap_se</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> ar1        -<span style="color: #BB0000;">0.135</span>        0.203 </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> intercept  -<span style="color: #BB0000;">9.06</span>         3.63  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> baro        0.095<span style="text-decoration: underline;">0</span>       0.035<span style="text-decoration: underline;">9</span></span></span>
+<span><span class="co">#&gt;           Estimate Bootstrap SE</span></span>
+<span><span class="co">#&gt; ar1         -0.135        0.203</span></span>
+<span><span class="co">#&gt; intercept   -9.060        3.626</span></span>
+<span><span class="co">#&gt; baro         0.095        0.036</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Indicator summary:</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
-<span><span class="co">#&gt;   indicator frequency      predict    aggregation indicator_model</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> baro      month (step 1) auto.arima mean        fc_model       </span></span>
+<span><span class="co">#&gt;      Frequency Predict    Aggregation</span></span>
+<span><span class="co">#&gt; baro month     auto.arima mean       </span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Uncertainty:</span></span>
 <span><span class="co">#&gt; Method: conditional block bootstrap with predictive forecast draws</span></span>

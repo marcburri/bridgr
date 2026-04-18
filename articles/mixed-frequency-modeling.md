@@ -78,53 +78,37 @@ summary(mean_model)
 #> Bridge model summary
 #> -----------------------------------
 #> Target series: quarter_target
-#> Target frequency: quarter (step 1)
+#> Target frequency: quarter
 #> Forecast horizon: 1
-#> Target model: lm
 #> Estimation rows: 40
 #> Regressors: monthly_indicator
 #> -----------------------------------
 #> Target equation coefficients:
-#> # A tibble: 2 × 3
-#>   term              estimate bootstrap_se
-#>   <chr>                <dbl>        <dbl>
-#> 1 (Intercept)          0.516           NA
-#> 2 monthly_indicator    0.999           NA
+#>                   Estimate
+#> (Intercept)          0.516
+#> monthly_indicator    0.999
 #> -----------------------------------
 #> Indicator summary:
-#> # A tibble: 1 × 5
-#>   indicator         frequency      predict aggregation indicator_model
-#>   <chr>             <chr>          <chr>   <chr>       <chr>          
-#> 1 monthly_indicator month (step 1) last    mean        deterministic  
-#> -----------------------------------
-#> Uncertainty:
-#> Method: none
+#>                   Frequency Predict Aggregation
+#> monthly_indicator month     last    mean       
 #> -----------------------------------
 summary(last_model)
 #> Bridge model summary
 #> -----------------------------------
 #> Target series: quarter_target
-#> Target frequency: quarter (step 1)
+#> Target frequency: quarter
 #> Forecast horizon: 1
-#> Target model: lm
 #> Estimation rows: 40
 #> Regressors: monthly_indicator
 #> -----------------------------------
 #> Target equation coefficients:
-#> # A tibble: 2 × 3
-#>   term              estimate bootstrap_se
-#>   <chr>                <dbl>        <dbl>
-#> 1 (Intercept)          0.590           NA
-#> 2 monthly_indicator    0.993           NA
+#>                   Estimate
+#> (Intercept)          0.590
+#> monthly_indicator    0.993
 #> -----------------------------------
 #> Indicator summary:
-#> # A tibble: 1 × 5
-#>   indicator         frequency      predict aggregation indicator_model
-#>   <chr>             <chr>          <chr>   <chr>       <chr>          
-#> 1 monthly_indicator month (step 1) last    last        deterministic  
-#> -----------------------------------
-#> Uncertainty:
-#> Method: none
+#>                   Frequency Predict Aggregation
+#> monthly_indicator month     last    last       
 #> -----------------------------------
 ```
 
@@ -147,29 +131,21 @@ summary(unrestricted_model)
 #> Bridge model summary
 #> -----------------------------------
 #> Target series: quarter_target
-#> Target frequency: quarter (step 1)
+#> Target frequency: quarter
 #> Forecast horizon: 1
-#> Target model: lm
 #> Estimation rows: 40
 #> Regressors: monthly_indicator_hf1, monthly_indicator_hf2, monthly_indicator_hf3
 #> -----------------------------------
 #> Target equation coefficients:
-#> # A tibble: 4 × 3
-#>   term                  estimate bootstrap_se
-#>   <chr>                    <dbl>        <dbl>
-#> 1 (Intercept)              0.541           NA
-#> 2 monthly_indicator_hf1    0.198           NA
-#> 3 monthly_indicator_hf2    0.596           NA
-#> 4 monthly_indicator_hf3    0.205           NA
+#>                       Estimate
+#> (Intercept)              0.541
+#> monthly_indicator_hf1    0.198
+#> monthly_indicator_hf2    0.596
+#> monthly_indicator_hf3    0.205
 #> -----------------------------------
 #> Indicator summary:
-#> # A tibble: 1 × 5
-#>   indicator         frequency      predict aggregation  indicator_model
-#>   <chr>             <chr>          <chr>   <chr>        <chr>          
-#> 1 monthly_indicator month (step 1) last    unrestricted deterministic  
-#> -----------------------------------
-#> Uncertainty:
-#> Method: none
+#>                   Frequency Predict Aggregation 
+#> monthly_indicator month     last    unrestricted
 #> -----------------------------------
 ```
 

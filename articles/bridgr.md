@@ -73,14 +73,11 @@ forecast(bridge_model)
 #> -----------------------------------
 #> Target series: gdp_growth
 #> Forecast horizon: 2
-#> Target model: fc_model
 #> Uncertainty: point forecast only
 #> -----------------------------------
-#> # A tibble: 2 × 7
-#>   time        mean    se lower_80 upper_80 lower_95 upper_95
-#>   <date>     <dbl> <dbl>    <dbl>    <dbl>    <dbl>    <dbl>
-#> 1 2023-01-01 0.972    NA       NA       NA       NA       NA
-#> 2 2023-04-01 0.698    NA       NA       NA       NA       NA
+#>   time       mean 
+#> 1 2023-01-01 0.972
+#> 2 2023-04-01 0.698
 ```
 
 The default mean aggregator is the classic bridge-model setup: each
@@ -123,29 +120,21 @@ summary(bridge_model)
 #> Bridge model summary
 #> -----------------------------------
 #> Target series: gdp_growth
-#> Target frequency: quarter (step 1)
+#> Target frequency: quarter
 #> Forecast horizon: 2
-#> Target model: fc_model
 #> Estimation rows: 74
 #> Regressors: baro, baro_lag1
 #> -----------------------------------
 #> Target equation coefficients:
-#> # A tibble: 4 × 3
-#>   term      estimate bootstrap_se
-#>   <chr>        <dbl>        <dbl>
-#> 1 ar1         0.243            NA
-#> 2 intercept  -6.49             NA
-#> 3 baro        0.161            NA
-#> 4 baro_lag1  -0.0917           NA
+#>           Estimate
+#> ar1          0.243
+#> intercept   -6.493
+#> baro         0.161
+#> baro_lag1   -0.092
 #> -----------------------------------
 #> Indicator summary:
-#> # A tibble: 1 × 5
-#>   indicator frequency      predict    aggregation indicator_model
-#>   <chr>     <chr>          <chr>      <chr>       <chr>          
-#> 1 baro      month (step 1) auto.arima mean        fc_model       
-#> -----------------------------------
-#> Uncertainty:
-#> Method: none
+#>      Frequency Predict    Aggregation
+#> baro month     auto.arima mean       
 #> -----------------------------------
 ```
 
@@ -182,14 +171,10 @@ forecast(direct_model)
 #> -----------------------------------
 #> Target series: gdp_growth
 #> Forecast horizon: 1
-#> Target model: lm
-#> Indicator handling: direct alignment
 #> Uncertainty: point forecast only
 #> -----------------------------------
-#> # A tibble: 1 × 7
-#>   time        mean    se lower_80 upper_80 lower_95 upper_95
-#>   <date>     <dbl> <dbl>    <dbl>    <dbl>    <dbl>    <dbl>
-#> 1 2023-01-01 0.522    NA       NA       NA       NA       NA
+#>   time       mean 
+#> 1 2023-01-01 0.483
 ```
 
 This is particularly useful at the ragged edge when you want to work
@@ -219,41 +204,33 @@ forecast(boot_model)
 #> -----------------------------------
 #> Target series: gdp_growth
 #> Forecast horizon: 4
-#> Target model: fc_model
 #> Uncertainty: predictive intervals from conditional block bootstrap
 #> Bootstrap draws: 40 / 40
 #> Block length: 5
 #> -----------------------------------
-#> # A tibble: 4 × 7
-#>   time        mean    se lower_80 upper_80 lower_95 upper_95
-#>   <date>     <dbl> <dbl>    <dbl>    <dbl>    <dbl>    <dbl>
-#> 1 2023-01-01 0.116 0.938   -1.19      1.10    -1.79     2.59
-#> 2 2023-04-01 0.428 0.920   -0.920     1.50    -2.23     1.83
-#> 3 2023-07-01 0.487 0.994   -0.631     2.21    -1.32     3.02
-#> 4 2023-10-01 0.509 1.10    -0.504     2.04    -2.70     2.80
+#>   time       mean  se    lower_80 upper_80 lower_95 upper_95
+#> 1 2023-01-01 0.116 0.938 -1.191   1.104    -1.790   2.586   
+#> 2 2023-04-01 0.428 0.920 -0.920   1.496    -2.233   1.834   
+#> 3 2023-07-01 0.487 0.994 -0.631   2.207    -1.324   3.017   
+#> 4 2023-10-01 0.509 1.104 -0.504   2.036    -2.696   2.799
 summary(boot_model)
 #> Bridge model summary
 #> -----------------------------------
 #> Target series: gdp_growth
-#> Target frequency: quarter (step 1)
+#> Target frequency: quarter
 #> Forecast horizon: 4
-#> Target model: fc_model
 #> Estimation rows: 75
 #> Regressors: baro
 #> -----------------------------------
 #> Target equation coefficients:
-#> # A tibble: 3 × 3
-#>   term      estimate bootstrap_se
-#>   <chr>        <dbl>        <dbl>
-#> 1 ar1        -0.135        0.203 
-#> 2 intercept  -9.06         3.63  
-#> 3 baro        0.0950       0.0359
+#>           Estimate Bootstrap SE
+#> ar1         -0.135        0.203
+#> intercept   -9.060        3.626
+#> baro         0.095        0.036
 #> -----------------------------------
 #> Indicator summary:
-#> # A tibble: 1 × 5
-#>   indicator frequency      predict    aggregation indicator_model
-#>   <chr>     <chr>          <chr>      <chr>       <chr>          
-#> 1 baro      month (step 1) auto.arima mean        fc_model       
+#>      Frequency Predict    Aggregation
+#> baro month     auto.arima mean       
 #> -----------------------------------
 #> Uncertainty:
 #> Method: conditional block bootstrap with predictive forecast draws
