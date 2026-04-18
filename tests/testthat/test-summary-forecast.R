@@ -58,7 +58,7 @@ test_that("summary.bridge reports parametric optimization details", {
     output,
     fixed = TRUE
   )))
-  expect_true(any(grepl("Message: optimizer note", output, fixed = TRUE)))
+  expect_false(any(grepl("Message: optimizer note", output, fixed = TRUE)))
 })
 
 test_that("summary.bridge omits aggregation details for direct alignment", {

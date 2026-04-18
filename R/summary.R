@@ -181,10 +181,6 @@ summary.bridge <- function(object, ...) {
       "\n",
       sep = ""
     )
-    if (!is.null(object$parametric_optimization$message) &&
-      nzchar(object$parametric_optimization$message)) {
-      cat("Message: ", object$parametric_optimization$message, "\n", sep = "")
-    }
   }
   cat("-----------------------------------\n")
 

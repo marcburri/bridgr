@@ -56,10 +56,7 @@ devtools::install_github("marcburri/bridgr")
 This is a basic example with the default mean aggregation:
 
 ``` r
-library(bridgr)
-#> Registered S3 method overwritten by 'quantmod':
-#>   method            from
-#>   as.zoo.data.frame zoo
+suppressPackageStartupMessages(library(bridgr))
 
 gdp <- suppressMessages(tsbox::ts_na_omit(tsbox::ts_pc(bridgr::gdp)))
 
@@ -148,6 +145,5 @@ summary(expalmon_model)
 #> Objective value: 60.832
 #> Convergence code: 0
 #> Best start: 1 / 3
-#> Message: CONVERGENCE: REL_REDUCTION_OF_F <= FACTR*EPSMCH
 #> -----------------------------------
 ```

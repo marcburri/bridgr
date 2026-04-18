@@ -53,7 +53,7 @@ devtools::install_github("marcburri/bridgr")
 This is a basic example with the default mean aggregation:
 
 ```{r example}
-library(bridgr)
+suppressPackageStartupMessages(library(bridgr))
 
 gdp <- suppressMessages(tsbox::ts_na_omit(tsbox::ts_pc(bridgr::gdp)))
 
