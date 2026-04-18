@@ -4,18 +4,51 @@
 #' used in the `reviser` package.
 #'
 #' @param base_size Base text size for the plot theme.
-#' @param legend.position Legend position passed to [ggplot2::theme()].
-#' @param legend.direction Legend direction passed to [ggplot2::theme()].
-#' @param ... Additional arguments passed to the ggplot2 scale functions.
+#' @param legend_position Legend position passed to [ggplot2::theme()].
+#' @param legend_direction Legend direction passed to [ggplot2::theme()].
+#' @param ... Additional arguments. In `theme_bridgr()`, `legend.position` and
+#'   `legend.direction` are accepted for backward compatibility. In the scale
+#'   helpers, `...` is forwarded to the ggplot2 scale constructors.
 #'
 #' @return A ggplot2 theme, color palette, or scale.
 #' @name theme_bridgr
 #' @export
 theme_bridgr <- function(
   base_size = 12,
-  legend.position = "bottom",
-  legend.direction = "horizontal"
+  legend_position = "bottom",
+  legend_direction = "horizontal",
+  ...
 ) {
+  legacy_args <- list(...)
+  if (length(legacy_args) > 0) {
+    legacy_names <- names(legacy_args)
+    if (is.null(legacy_names) || any(!nzchar(legacy_names))) {
+      rlang::abort("Arguments passed to `...` must be named.")
+    }
+
+    invalid_names <- setdiff(
+      legacy_names,
+      c("legend.position", "legend.direction")
+    )
+    if (length(invalid_names) > 0) {
+      rlang::abort(
+        paste0(
+          "Unused argument",
+          if (length(invalid_names) == 1) "" else "s",
+          ": ",
+          paste(invalid_names, collapse = ", ")
+        )
+      )
+    }
+
+    if ("legend.position" %in% legacy_names) {
+      legend_position <- legacy_args[["legend.position"]]
+    }
+    if ("legend.direction" %in% legacy_names) {
+      legend_direction <- legacy_args[["legend.direction"]]
+    }
+  }
+
   half_line <- base_size / 2
   ggplot2::theme_minimal(base_size = base_size) +
     ggplot2::theme(
@@ -53,8 +86,8 @@ theme_bridgr <- function(
         color = "grey10",
         size = ggplot2::rel(0.9)
       ),
-      legend.position = legend.position,
-      legend.direction = legend.direction
+      legend.position = legend_position,
+      legend.direction = legend_direction
     )
 }
 

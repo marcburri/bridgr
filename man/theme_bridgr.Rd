@@ -9,8 +9,9 @@
 \usage{
 theme_bridgr(
   base_size = 12,
-  legend.position = "bottom",
-  legend.direction = "horizontal"
+  legend_position = "bottom",
+  legend_direction = "horizontal",
+  ...
 )
 
 colors_bridgr()
@@ -22,11 +23,13 @@ scale_fill_bridgr(...)
 \arguments{
 \item{base_size}{Base text size for the plot theme.}
 
-\item{legend.position}{Legend position passed to \code{\link[ggplot2:theme]{ggplot2::theme()}}.}
+\item{legend_position}{Legend position passed to \code{\link[ggplot2:theme]{ggplot2::theme()}}.}
 
-\item{legend.direction}{Legend direction passed to \code{\link[ggplot2:theme]{ggplot2::theme()}}.}
+\item{legend_direction}{Legend direction passed to \code{\link[ggplot2:theme]{ggplot2::theme()}}.}
 
-\item{...}{Additional arguments passed to the ggplot2 scale functions.}
+\item{...}{Additional arguments. In \code{theme_bridgr()}, \code{legend.position} and
+\code{legend.direction} are accepted for backward compatibility. In the scale
+helpers, \code{...} is forwarded to the ggplot2 scale constructors.}
 }
 \value{
 A ggplot2 theme, color palette, or scale.

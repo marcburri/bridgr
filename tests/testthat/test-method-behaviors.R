@@ -551,9 +551,20 @@ test_that("plot.bridge renders forecast and fit views", {
   forecast_plot <- plot(interval_model)
   fit_plot <- plot(model, type = "fit")
   forecast_build <- ggplot2::ggplot_build(forecast_plot)
+  expected_start <- as.numeric(fixture$target$time[[11]])
 
   expect_s3_class(forecast_plot, "ggplot")
   expect_s3_class(fit_plot, "ggplot")
-  expect_equal(min(forecast_build$data[[1]]$x), as.numeric(fixture$target$time[[11]]))
+  expect_equal(min(forecast_build$data[[1]]$x), expected_start)
   expect_equal(nrow(forecast_build$data[[1]]), 50)
+})
+
+test_that("theme_bridgr accepts legacy dotted legend arguments", {
+  legacy_theme <- theme_bridgr(
+    legend.position = "top",
+    legend.direction = "vertical"
+  )
+
+  expect_equal(legacy_theme$legend.position, "top")
+  expect_equal(legacy_theme$legend.direction, "vertical")
 })
