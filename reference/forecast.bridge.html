@@ -80,8 +80,8 @@ bridge equation.</p></dd>
 
 
 <dt id="arg-level">level<a class="anchor" aria-label="anchor" href="#arg-level"></a></dt>
-<dd><p>Confidence levels used for bootstrap forecast intervals when the
-model was estimated with <code>se = TRUE</code>. When uncertainty is unavailable,
+<dd><p>Confidence levels used for bootstrap predictive intervals when
+the model was estimated with <code>se = TRUE</code>. When uncertainty is unavailable,
 <code><a href="https://generics.r-lib.org/reference/forecast.html" class="external-link">forecast()</a></code> still returns the <code>se</code>, <code>lower</code>, and <code>upper</code> components, filled
 with <code>NA</code>.</p></dd>
 
@@ -97,7 +97,7 @@ with <code>NA</code>.</p></dd>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>An object of class <code>"bridge_forecast"</code> and <code>"forecast"</code> containing
-point forecasts, conditional bootstrap uncertainty summaries, the
+point forecasts, bootstrap predictive uncertainty summaries, the
 target-period regressors used for forecasting, and bootstrap metadata.</p>
 <p><code>x</code>, invisibly.</p>
     </div>

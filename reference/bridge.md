@@ -88,9 +88,9 @@ bridge(
 
 - se:
 
-  Logical flag indicating whether conditional bootstrap standard errors
-  and forecast intervals should be computed. When `FALSE`, `bootstrap`
-  is ignored.
+  Logical flag indicating whether bootstrap coefficient standard errors
+  and predictive forecast intervals should be computed. When `FALSE`,
+  `bootstrap` is ignored.
 
 - bootstrap:
 
@@ -101,7 +101,10 @@ bridge(
   `block_length` is `NULL`, `bridge()` uses `ceiling(n^(1/3))` based on
   the final target-period estimation sample size. The bootstrap is
   conditional on the aligned low-frequency design matrix and therefore
-  does not re-estimate indicator forecasts or aggregation weights.
+  does not re-estimate indicator forecasts or aggregation weights, but
+  the stored forecast draws include simulated future target shocks so
+  [`forecast()`](https://generics.r-lib.org/reference/forecast.html)
+  returns predictive intervals.
 
 - solver_options:
 

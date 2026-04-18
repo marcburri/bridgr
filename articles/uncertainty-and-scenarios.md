@@ -3,12 +3,14 @@
 ## Overview
 
 `bridgr` can return point forecasts only, or it can also compute
-conditional bootstrap uncertainty for the fitted target equation.
+bootstrap uncertainty for the fitted target equation and predictive
+intervals for forecasts.
 
 The relevant estimation arguments are:
 
 - `se = FALSE`: point forecasts only.
-- `se = TRUE`: compute conditional bootstrap uncertainty.
+- `se = TRUE`: compute bootstrap coefficient uncertainty and predictive
+  forecast intervals.
 - `bootstrap = list(type = "block", N = 100, block_length = NULL)`:
   control the bootstrap.
 
@@ -35,7 +37,8 @@ boot_model <- bridge(
 The current implementation uses a conditional block bootstrap on the
 final target-frequency estimation sample. It does not re-estimate
 indicator forecast models or parametric aggregation weights inside each
-bootstrap draw.
+bootstrap draw, but it does add simulated future target shocks to the
+stored forecast draws.
 
 ## Forecast Output
 
@@ -59,15 +62,15 @@ fc
 #> Target series: gdp_growth
 #> Forecast horizon: 2
 #> Target model: fc_model
-#> Uncertainty: conditional block bootstrap
+#> Uncertainty: predictive intervals from conditional block bootstrap
 #> Bootstrap draws: 20 / 20
 #> Block length: 5
 #> -----------------------------------
 #> # A tibble: 2 × 7
 #>   time        mean    se lower_80 upper_80 lower_95 upper_95
 #>   <date>     <dbl> <dbl>    <dbl>    <dbl>    <dbl>    <dbl>
-#> 1 2023-01-01 0.972 0.325    0.339    1.24     0.302    1.25 
-#> 2 2023-04-01 0.698 0.151    0.474    0.873    0.402    0.881
+#> 1 2023-01-01 0.972 0.947   -0.499     2.44   -0.524     2.77
+#> 2 2023-04-01 0.698 0.571   -0.190     1.38   -0.529     1.58
 fc$bootstrap
 #> $enabled
 #> [1] TRUE
@@ -88,7 +91,7 @@ fc$bootstrap
 #> [1] TRUE
 ```
 
-The intervals are empirical bootstrap intervals based on the stored
+The intervals are empirical predictive intervals based on the stored
 bootstrap forecast draws.
 
 ## Summary Output
@@ -111,10 +114,10 @@ summary(boot_model)
 #> # A tibble: 4 × 3
 #>   term      estimate bootstrap_se
 #>   <chr>        <dbl>        <dbl>
-#> 1 ar1         0.243        0.108 
-#> 2 intercept  -6.49         1.56  
-#> 3 baro        0.161        0.0456
-#> 4 baro_lag1  -0.0917       0.0409
+#> 1 ar1         0.243        0.162 
+#> 2 intercept  -6.49         1.73  
+#> 3 baro        0.161        0.0452
+#> 4 baro_lag1  -0.0917       0.0381
 #> -----------------------------------
 #> Indicator summary:
 #> # A tibble: 1 × 5
@@ -123,7 +126,7 @@ summary(boot_model)
 #> 1 baro      month (step 1) auto.arima mean        fc_model       
 #> -----------------------------------
 #> Uncertainty:
-#> Method: conditional block bootstrap
+#> Method: conditional block bootstrap with predictive forecast draws
 #> Bootstrap draws: 20 / 20
 #> Block length: 5
 #> -----------------------------------
@@ -170,8 +173,9 @@ dplyr::tibble(
 
 When a model contains stored bootstrap draws,
 `forecast(..., xreg = ...)` reuses the bootstrap refits and evaluates
-them on the scenario regressor path. That keeps the uncertainty handling
-consistent between the baseline forecast and scenario forecasts.
+them on the scenario regressor path. That keeps the predictive
+uncertainty handling consistent between the baseline forecast and
+scenario forecasts.
 
 ## Point Forecasts Only
 
@@ -210,6 +214,6 @@ forecast(point_model)
 ## Interpretation
 
 These intervals are conditional on the aligned target-frequency design
-matrix. That means they are most naturally interpreted as uncertainty
-for the final target equation given the regressor path, rather than full
-end-to-end uncertainty for the whole mixed-frequency system.
+matrix. That means they are predictive intervals for the final target
+equation given the regressor path, rather than full end-to-end
+uncertainty for the whole mixed-frequency system.

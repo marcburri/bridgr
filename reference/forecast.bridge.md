@@ -31,8 +31,8 @@ print(x, ...)
 
 - level:
 
-  Confidence levels used for bootstrap forecast intervals when the model
-  was estimated with `se = TRUE`. When uncertainty is unavailable,
+  Confidence levels used for bootstrap predictive intervals when the
+  model was estimated with `se = TRUE`. When uncertainty is unavailable,
   [`forecast()`](https://generics.r-lib.org/reference/forecast.html)
   still returns the `se`, `lower`, and `upper` components, filled with
   `NA`.
@@ -48,7 +48,7 @@ print(x, ...)
 ## Value
 
 An object of class `"bridge_forecast"` and `"forecast"` containing point
-forecasts, conditional bootstrap uncertainty summaries, the
-target-period regressors used for forecasting, and bootstrap metadata.
+forecasts, bootstrap predictive uncertainty summaries, the target-period
+regressors used for forecasting, and bootstrap metadata.
 
 `x`, invisibly.

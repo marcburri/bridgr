@@ -90,15 +90,15 @@
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
 <p><code>bridgr</code> can return point forecasts only, or it can also
-compute conditional bootstrap uncertainty for the fitted target
-equation.</p>
+compute bootstrap uncertainty for the fitted target equation and
+predictive intervals for forecasts.</p>
 <p>The relevant estimation arguments are:</p>
 <ul>
 <li>
 <code>se = FALSE</code>: point forecasts only.</li>
 <li>
-<code>se = TRUE</code>: compute conditional bootstrap
-uncertainty.</li>
+<code>se = TRUE</code>: compute bootstrap coefficient uncertainty
+and predictive forecast intervals.</li>
 <li>
 <code>bootstrap = list(type = "block", N = 100, block_length = NULL)</code>:
 control the bootstrap.</li>
@@ -126,7 +126,8 @@ type.</p>
 <p>The current implementation uses a conditional block bootstrap on the
 final target-frequency estimation sample. It does not re-estimate
 indicator forecast models or parametric aggregation weights inside each
-bootstrap draw.</p>
+bootstrap draw, but it does add simulated future target shocks to the
+stored forecast draws.</p>
 </div>
 <div class="section level2">
 <h2 id="forecast-output">Forecast Output<a class="anchor" aria-label="anchor" href="#forecast-output"></a>
@@ -150,15 +151,15 @@ bootstrap draw.</p>
 <span><span class="co">#&gt; Target series: gdp_growth</span></span>
 <span><span class="co">#&gt; Forecast horizon: 2</span></span>
 <span><span class="co">#&gt; Target model: fc_model</span></span>
-<span><span class="co">#&gt; Uncertainty: conditional block bootstrap</span></span>
+<span><span class="co">#&gt; Uncertainty: predictive intervals from conditional block bootstrap</span></span>
 <span><span class="co">#&gt; Bootstrap draws: 20 / 20</span></span>
 <span><span class="co">#&gt; Block length: 5</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 7</span></span></span>
 <span><span class="co">#&gt;   time        mean    se lower_80 upper_80 lower_95 upper_95</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;date&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 2023-01-01 0.972 0.325    0.339    1.24     0.302    1.25 </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> 2023-04-01 0.698 0.151    0.474    0.873    0.402    0.881</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 2023-01-01 0.972 0.947   -<span style="color: #BB0000;">0.499</span>     2.44   -<span style="color: #BB0000;">0.524</span>     2.77</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> 2023-04-01 0.698 0.571   -<span style="color: #BB0000;">0.190</span>     1.38   -<span style="color: #BB0000;">0.529</span>     1.58</span></span>
 <span><span class="va">fc</span><span class="op">$</span><span class="va">bootstrap</span></span>
 <span><span class="co">#&gt; $enabled</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span>
@@ -177,7 +178,7 @@ bootstrap draw.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $conditional</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
-<p>The intervals are empirical bootstrap intervals based on the stored
+<p>The intervals are empirical predictive intervals based on the stored
 bootstrap forecast draws.</p>
 </div>
 <div class="section level2">
@@ -199,10 +200,10 @@ bootstrap forecast draws.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 3</span></span></span>
 <span><span class="co">#&gt;   term      estimate bootstrap_se</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> ar1         0.243        0.108 </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> intercept  -<span style="color: #BB0000;">6.49</span>         1.56  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> baro        0.161        0.045<span style="text-decoration: underline;">6</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> baro_lag1  -<span style="color: #BB0000;">0.091</span><span style="color: #BB0000; text-decoration: underline;">7</span>       0.040<span style="text-decoration: underline;">9</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> ar1         0.243        0.162 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> intercept  -<span style="color: #BB0000;">6.49</span>         1.73  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> baro        0.161        0.045<span style="text-decoration: underline;">2</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> baro_lag1  -<span style="color: #BB0000;">0.091</span><span style="color: #BB0000; text-decoration: underline;">7</span>       0.038<span style="text-decoration: underline;">1</span></span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Indicator summary:</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
@@ -211,7 +212,7 @@ bootstrap forecast draws.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> baro      month (step 1) auto.arima mean        fc_model       </span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Uncertainty:</span></span>
-<span><span class="co">#&gt; Method: conditional block bootstrap</span></span>
+<span><span class="co">#&gt; Method: conditional block bootstrap with predictive forecast draws</span></span>
 <span><span class="co">#&gt; Bootstrap draws: 20 / 20</span></span>
 <span><span class="co">#&gt; Block length: 5</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span></code></pre></div>
@@ -253,7 +254,7 @@ equation.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> 2023-04-01    0.698     1.05</span></span></code></pre></div>
 <p>When a model contains stored bootstrap draws,
 <code>forecast(..., xreg = ...)</code> reuses the bootstrap refits and
-evaluates them on the scenario regressor path. That keeps the
+evaluates them on the scenario regressor path. That keeps the predictive
 uncertainty handling consistent between the baseline forecast and
 scenario forecasts.</p>
 </div>
@@ -294,10 +295,9 @@ and <code><a href="https://generics.r-lib.org/reference/forecast.html" class="ex
 <h2 id="interpretation">Interpretation<a class="anchor" aria-label="anchor" href="#interpretation"></a>
 </h2>
 <p>These intervals are conditional on the aligned target-frequency
-design matrix. That means they are most naturally interpreted as
-uncertainty for the final target equation given the regressor path,
-rather than full end-to-end uncertainty for the whole mixed-frequency
-system.</p>
+design matrix. That means they are predictive intervals for the final
+target equation given the regressor path, rather than full end-to-end
+uncertainty for the whole mixed-frequency system.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
