@@ -270,6 +270,5 @@ summary(expalmon_model)
 #> Objective value: 60.832
 #> Convergence code: 0
 #> Best start: 1 / 3
-#> Message: CONVERGENCE: REL_REDUCTION_OF_F <= FACTR*EPSMCH
 #> -----------------------------------
 ```
