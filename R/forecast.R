@@ -97,15 +97,14 @@ forecast.bridge <- function(
 #' @rdname forecast.bridge
 #' @export
 print.bridge_forecast <- function(x, ...) {
+  format_number <- function(x) {
+    formatC(x, format = "f", digits = 3)
+  }
+
   cat("Bridge forecast\n")
   cat("-----------------------------------\n")
   cat("Target series: ", x$target_name, "\n", sep = "")
   cat("Forecast horizon: ", length(x$mean), "\n", sep = "")
-  cat("Target model: ", x$model_class, "\n", sep = "")
-
-  if (isTRUE(x$direct)) {
-    cat("Indicator handling: direct alignment\n")
-  }
 
   if (isTRUE(x$bootstrap$enabled)) {
     cat(
@@ -128,19 +127,30 @@ print.bridge_forecast <- function(x, ...) {
   }
   cat("-----------------------------------\n")
 
-  output <- dplyr::tibble(
+  output <- data.frame(
     time = x$time,
     mean = as.numeric(x$mean),
-    se = as.numeric(x$se)
+    check.names = FALSE
   )
 
-  for (level_index in seq_along(x$level)) {
-    output[[paste0("lower_", x$level[[level_index]])]] <-
-      x$lower[, level_index]
-    output[[paste0("upper_", x$level[[level_index]])]] <-
-      x$upper[, level_index]
+  if (isTRUE(x$bootstrap$enabled)) {
+    output$se <- as.numeric(x$se)
+
+    for (level_index in seq_along(x$level)) {
+      output[[paste0("lower_", x$level[[level_index]])]] <-
+        x$lower[, level_index]
+      output[[paste0("upper_", x$level[[level_index]])]] <-
+        x$upper[, level_index]
+    }
   }
 
-  print(output)
+  numeric_columns <- vapply(output, is.numeric, logical(1))
+  output[numeric_columns] <- lapply(output[numeric_columns], format_number)
+
+  print(
+    noquote(format(output, justify = "left")),
+    quote = FALSE,
+    right = FALSE
+  )
   invisible(x)
 }

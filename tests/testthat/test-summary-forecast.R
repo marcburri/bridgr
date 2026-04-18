@@ -17,7 +17,12 @@ test_that("summary.bridge reports deterministic custom weights", {
   expect_true(any(grepl("Indicator summary:", output, fixed = TRUE)))
   expect_true(any(grepl("custom_weights", output, fixed = TRUE)))
   expect_true(any(grepl("0.2, 0.3, 0.5|0.200, 0.300, 0.500", output)))
-  expect_true(any(grepl("Method: none", output, fixed = TRUE)))
+  expect_false(any(grepl("# A tibble", output, fixed = TRUE)))
+  expect_false(any(grepl("Target model:", output, fixed = TRUE)))
+  expect_false(any(grepl("Indicator model", output, fixed = TRUE)))
+  expect_false(any(grepl("step", output, fixed = TRUE)))
+  expect_false(any(grepl("bootstrap_se", output, fixed = TRUE)))
+  expect_false(any(grepl("Uncertainty:", output, fixed = TRUE)))
 })
 
 test_that("summary.bridge reports parametric optimization details", {
@@ -54,6 +59,27 @@ test_that("summary.bridge reports parametric optimization details", {
     fixed = TRUE
   )))
   expect_true(any(grepl("Message: optimizer note", output, fixed = TRUE)))
+})
+
+test_that("summary.bridge omits aggregation details for direct alignment", {
+  indic <- make_monthly_indicator(n = 36)
+  target <- make_quarter_target(indic, n_quarters = 12)
+
+  model <- bridge(
+    target = target,
+    indic = indic,
+    indic_predict = "direct",
+    indic_aggregators = "sum",
+    h = 1
+  )
+
+  output <- capture.output(summary(model))
+  parametric_label <- "Estimated parametric aggregation:"
+
+  expect_true(any(grepl("Aggregation", output, fixed = TRUE)))
+  expect_true(any(grepl("sum", output, fixed = TRUE)))
+  expect_false(any(grepl("Custom aggregation weights:", output, fixed = TRUE)))
+  expect_false(any(grepl(parametric_label, output, fixed = TRUE)))
 })
 
 test_that("forecast.bridge accepts custom xreg for ARIMA bridge models", {
@@ -118,11 +144,38 @@ test_that("forecast.bridge prints a standardized forecast table", {
   output <- capture.output(print(forecast(model)))
 
   expect_true(any(grepl("Bridge forecast", output, fixed = TRUE)))
+  expect_false(any(grepl("# A tibble", output, fixed = TRUE)))
+  expect_false(any(grepl("Target model:", output, fixed = TRUE)))
   expect_true(any(grepl(
     "Uncertainty: predictive intervals from conditional block bootstrap",
     output,
     fixed = TRUE
   )))
+})
+
+test_that("forecast.bridge omits uncertainty columns when se is FALSE", {
+  indic <- make_monthly_indicator(n = 36)
+  target <- make_quarter_target(indic, n_quarters = 12)
+
+  model <- bridge(
+    target = target,
+    indic = indic,
+    indic_predict = "last",
+    target_lags = 1,
+    se = FALSE,
+    h = 1
+  )
+
+  output <- capture.output(print(forecast(model)))
+  point_only_label <- "Uncertainty: point forecast only"
+
+  expect_true(any(grepl("Bridge forecast", output, fixed = TRUE)))
+  expect_false(any(grepl("# A tibble", output, fixed = TRUE)))
+  expect_false(any(grepl("Target model:", output, fixed = TRUE)))
+  expect_true(any(grepl(point_only_label, output, fixed = TRUE)))
+  expect_false(any(grepl("\\bse\\b", output)))
+  expect_false(any(grepl("lower_80", output, fixed = TRUE)))
+  expect_false(any(grepl("upper_95", output, fixed = TRUE)))
 })
 
 test_that("forecast.bridge errors when custom xreg omits required regressors", {

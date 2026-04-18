@@ -58,7 +58,7 @@ test_that("mean extension uses the latest available high-frequency block", {
 })
 
 test_that(
-  "direct bridge alignment works with numeric and unrestricted aggregation",
+  "direct bridge alignment ignores supplied aggregation settings",
   {
   indic_a <- dplyr::tibble(
     id = "a",
@@ -77,19 +77,18 @@ test_that(
   )
   weights <- c(0.2, 0.3, 0.5)
 
-  model <- suppressWarnings(bridge(
+  model <- bridge(
     target = target,
     indic = indic,
     indic_predict = c("direct", "direct"),
     indic_aggregators = list(weights, "unrestricted"),
     h = 1
-  ))
+  )
 
   expect_lt(nrow(model$estimation_set), nrow(target))
-  expect_equal(model$forecast_set$a[[1]], sum(weights * c(14, 15, 16)))
-  expect_equal(model$forecast_set$b_hf1[[1]], 114)
-  expect_equal(model$forecast_set$b_hf2[[1]], 115)
-  expect_equal(model$forecast_set$b_hf3[[1]], 116)
+  expect_equal(model$forecast_set$a[[1]], mean(c(14, 15, 16)))
+  expect_equal(model$forecast_set$b[[1]], mean(c(114, 115, 116)))
+  expect_false(any(grepl("^b_hf", names(model$forecast_set))))
   }
 )
 

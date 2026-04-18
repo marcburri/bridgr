@@ -63,7 +63,7 @@ bridge_model <- bridge(
   indic_predict = "auto.arima",
   indic_aggregators = "mean",
   indic_lags = 2,
-  target_lags = 1,
+  target_lags = 0,
   h = 2
 )
 

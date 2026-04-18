@@ -45,7 +45,9 @@ parametric aggregators use two coefficients each: \code{"expalmon"} uses
 \verb{(linear, quadratic)}, \code{"beta"} uses \verb{(left_shape, right_shape)} as the
 normalized beta shape parameters, and \code{"legendre"} uses
 \verb{(first_order, second_order)} as coefficients on the first two shifted
-orthonormal Legendre basis functions.}
+orthonormal Legendre basis functions. When \code{indic_predict = "direct"},
+\code{indic_aggregators} is ignored and direct blocks are averaged within each
+target period.}
 
 \item{indic_lags}{A non-negative integer giving the number of target-period
 lags to add for each aggregated indicator.}

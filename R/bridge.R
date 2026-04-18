@@ -63,7 +63,9 @@
 #' `(linear, quadratic)`, `"beta"` uses `(left_shape, right_shape)` as the
 #' normalized beta shape parameters, and `"legendre"` uses
 #' `(first_order, second_order)` as coefficients on the first two shifted
-#' orthonormal Legendre basis functions.
+#' orthonormal Legendre basis functions. When `indic_predict = "direct"`,
+#' `indic_aggregators` is ignored and direct blocks are averaged within each
+#' target period.
 #' @param indic_lags A non-negative integer giving the number of target-period
 #' lags to add for each aggregated indicator.
 #' @param target_lags A non-negative integer giving the autoregressive order in
@@ -350,6 +352,7 @@ bridge <- function(
       target_frequency = target_meta,
       indicator_frequencies = indic_meta,
       indic_predict = config$indic_predict,
+      indic_aggregators_requested = config$indic_aggregators_requested,
       indic_aggregators = config$indic_aggregators,
       indic_lags = indic_lags,
       target_lags = target_lags,
@@ -486,6 +489,7 @@ validate_bridge_inputs <- function(
     n_series = n_indicators,
     call = call
   )
+  indic_aggregators_requested <- indic_aggregators
 
   direct_used <- identical(unique(indic_predict), "direct")
   if (any(indic_predict == "direct") && !direct_used) {
@@ -499,6 +503,10 @@ validate_bridge_inputs <- function(
       call = call
     )
   }
+  if (direct_used) {
+    indic_aggregators <- rep(list("mean"), n_indicators)
+  }
+
   parametric_specs <- lapply(
     seq_len(n_indicators),
     function(i) {
@@ -527,6 +535,7 @@ validate_bridge_inputs <- function(
 
   list(
     indic_predict = indic_predict,
+    indic_aggregators_requested = indic_aggregators_requested,
     indic_aggregators = indic_aggregators,
     frequency_conversions = frequency_conversions,
     se = isTRUE(se),

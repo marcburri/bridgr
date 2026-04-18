@@ -69,7 +69,7 @@ bridge_model <- bridge(
   indic_predict = "auto.arima",
   indic_aggregators = "mean",
   indic_lags = 2,
-  target_lags = 1,
+  target_lags = 0,
   h = 2
 )
 
@@ -78,43 +78,31 @@ forecast(bridge_model)
 #> -----------------------------------
 #> Target series: gdp
 #> Forecast horizon: 2
-#> Target model: forecast_ARIMA
 #> Uncertainty: point forecast only
 #> -----------------------------------
-#> # A tibble: 2 × 7
-#>   time        mean    se lower_80 upper_80 lower_95 upper_95
-#>   <date>     <dbl> <dbl>    <dbl>    <dbl>    <dbl>    <dbl>
-#> 1 2023-01-01 0.831    NA       NA       NA       NA       NA
-#> 2 2023-04-01 0.536    NA       NA       NA       NA       NA
+#>   time       mean 
+#> 1 2023-01-01 0.741
+#> 2 2023-04-01 0.472
 
 summary(bridge_model)
 #> Bridge model summary
 #> -----------------------------------
 #> Target series: gdp
-#> Target frequency: quarter (step 1)
+#> Target frequency: quarter
 #> Forecast horizon: 2
-#> Target model: forecast_ARIMA
 #> Estimation rows: 73
 #> Regressors: baro, baro_lag1, baro_lag2
 #> -----------------------------------
 #> Target equation coefficients:
-#> # A tibble: 5 × 3
-#>   term      estimate bootstrap_se
-#>   <chr>        <dbl>        <dbl>
-#> 1 ar1         0.174            NA
-#> 2 intercept  -7.42             NA
-#> 3 baro        0.157            NA
-#> 4 baro_lag1  -0.0957           NA
-#> 5 baro_lag2   0.0172           NA
+#>             Estimate
+#> (Intercept)   -7.426
+#> baro           0.151
+#> baro_lag1     -0.095
+#> baro_lag2      0.023
 #> -----------------------------------
 #> Indicator summary:
-#> # A tibble: 1 × 5
-#>   indicator frequency      predict    aggregation indicator_model
-#>   <chr>     <chr>          <chr>      <chr>       <chr>          
-#> 1 baro      month (step 1) auto.arima mean        forecast_ARIMA 
-#> -----------------------------------
-#> Uncertainty:
-#> Method: none
+#>      Frequency Predict    Aggregation
+#> baro month     auto.arima mean       
 #> -----------------------------------
 ```
 
@@ -137,35 +125,27 @@ summary(expalmon_model)
 #> Bridge model summary
 #> -----------------------------------
 #> Target series: gdp
-#> Target frequency: quarter (step 1)
+#> Target frequency: quarter
 #> Forecast horizon: 1
-#> Target model: lm
 #> Estimation rows: 75
 #> Regressors: baro
 #> -----------------------------------
 #> Target equation coefficients:
-#> # A tibble: 2 × 3
-#>   term        estimate bootstrap_se
-#>   <chr>          <dbl>        <dbl>
-#> 1 (Intercept)  -9.37             NA
-#> 2 baro          0.0982           NA
+#>             Estimate
+#> (Intercept)   -9.371
+#> baro           0.098
 #> -----------------------------------
 #> Indicator summary:
-#> # A tibble: 1 × 5
-#>   indicator frequency      predict    aggregation indicator_model
-#>   <chr>     <chr>          <chr>      <chr>       <chr>          
-#> 1 baro      month (step 1) auto.arima expalmon    forecast_ARIMA 
+#>      Frequency Predict    Aggregation
+#> baro month     auto.arima expalmon   
 #> -----------------------------------
 #> Estimated parametric aggregation:
-#> baro weights: 0.006, 0.994, 0
-#> baro parameters: -4.914, -10
-#> -----------------------------------
-#> Uncertainty:
-#> Method: none
+#> baro weights: 0.006, 0.994, 0.000
+#> baro parameters: -4.914, -10.000
 #> -----------------------------------
 #> Joint parametric aggregation optimization:
 #> Method: L-BFGS-B
-#> Objective value: 60.8316
+#> Objective value: 60.832
 #> Convergence code: 0
 #> Best start: 1 / 3
 #> Message: CONVERGENCE: REL_REDUCTION_OF_F <= FACTR*EPSMCH

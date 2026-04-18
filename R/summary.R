@@ -7,16 +7,23 @@
 #' @method summary bridge
 #' @export
 summary.bridge <- function(object, ...) {
+  format_number <- function(x) {
+    formatC(x, format = "f", digits = 3)
+  }
+
   coefficient_estimates <- stats::coef(object$model)
-  coefficient_table <- dplyr::tibble(
-    term = names(coefficient_estimates),
-    estimate = as.numeric(coefficient_estimates),
-    bootstrap_se = if (isTRUE(object$bootstrap$enabled)) {
-      as.numeric(object$bootstrap$coefficient_se[names(coefficient_estimates)])
-    } else {
-      NA_real_
-    }
+  uncertainty_enabled <- isTRUE(object$bootstrap$enabled)
+  coefficient_table <- data.frame(
+    Estimate = format_number(as.numeric(coefficient_estimates)),
+    check.names = FALSE
   )
+  rownames(coefficient_table) <- names(coefficient_estimates)
+
+  if (uncertainty_enabled) {
+    coefficient_table$`Bootstrap SE` <- format_number(
+      as.numeric(object$bootstrap$coefficient_se[names(coefficient_estimates)])
+    )
+  }
 
   indicator_summary <- lapply(
     seq_along(object$indic_name),
@@ -27,46 +34,34 @@ summary.bridge <- function(object, ...) {
         ,
         drop = FALSE
       ]
-      indicator_model <- object$indic_models[[indicator_id]]
-      aggregator <- object$indic_aggregators[[index]]
 
-      dplyr::tibble(
-        indicator = indicator_id,
-        frequency = paste0(
-          indicator_meta$unit[[1]],
-          " (step ",
-          indicator_meta$step[[1]],
-          ")"
-        ),
-        predict = object$indic_predict[[index]],
-        aggregation = if (is.character(aggregator)) {
-          aggregator
+      data.frame(
+        Frequency = indicator_meta$unit[[1]],
+        Predict = object$indic_predict[[index]],
+        Aggregation = if (is.character(
+          object$indic_aggregators_requested[[index]]
+        )) {
+          object$indic_aggregators_requested[[index]]
         } else {
           "custom_weights"
         },
-        indicator_model = if (is.null(indicator_model)) {
-          "deterministic"
-        } else {
-          class(indicator_model)[[1]]
-        }
+        check.names = FALSE,
+        row.names = indicator_id
       )
     }
-  ) |>
-    dplyr::bind_rows()
+  )
+  indicator_summary <- do.call(rbind, indicator_summary)
+  indicator_summary <- indicator_summary[
+    ,
+    c("Frequency", "Predict", "Aggregation"),
+    drop = FALSE
+  ]
 
   cat("Bridge model summary\n")
   cat("-----------------------------------\n")
   cat("Target series: ", object$target_name, "\n", sep = "")
-  cat(
-    "Target frequency: ",
-    object$target_frequency$unit[[1]],
-    " (step ",
-    object$target_frequency$step[[1]],
-    ")\n",
-    sep = ""
-  )
+  cat("Target frequency: ", object$target_frequency$unit[[1]], "\n", sep = "")
   cat("Forecast horizon: ", object$h, "\n", sep = "")
-  cat("Target model: ", class(object$model)[[1]], "\n", sep = "")
   cat("Estimation rows: ", nrow(object$estimation_set), "\n", sep = "")
   cat(
     "Regressors: ",
@@ -75,15 +70,20 @@ summary.bridge <- function(object, ...) {
     sep = ""
   )
 
-  if (identical(unique(object$indic_predict), "direct")) {
-    cat("Indicator handling: direct alignment\n")
-  }
   cat("-----------------------------------\n")
   cat("Target equation coefficients:\n")
-  print(coefficient_table)
+  print(
+    noquote(format(coefficient_table, justify = "right")),
+    quote = FALSE,
+    right = TRUE
+  )
   cat("-----------------------------------\n")
   cat("Indicator summary:\n")
-  print(indicator_summary)
+  print(
+    noquote(format(indicator_summary, justify = "left")),
+    quote = FALSE,
+    right = FALSE
+  )
 
   has_custom_weights <- any(vapply(
     object$indic_aggregators,
@@ -99,7 +99,7 @@ summary.bridge <- function(object, ...) {
         cat(
           object$indic_name[[index]],
           ": ",
-          paste(round(aggregator, 3), collapse = ", "),
+          paste(format_number(aggregator), collapse = ", "),
           "\n",
           sep = ""
         )
@@ -116,7 +116,7 @@ summary.bridge <- function(object, ...) {
         indicator_id,
         " weights: ",
         paste(
-          round(object$parametric_weights[[indicator_id]], 3),
+          format_number(object$parametric_weights[[indicator_id]]),
           collapse = ", "
         ),
         "\n",
@@ -127,7 +127,7 @@ summary.bridge <- function(object, ...) {
           indicator_id,
           " parameters: ",
           paste(
-            round(object$parametric_parameters[[indicator_id]], 3),
+            format_number(object$parametric_parameters[[indicator_id]]),
             collapse = ", "
           ),
           "\n",
@@ -137,9 +137,9 @@ summary.bridge <- function(object, ...) {
     }
   }
 
-  cat("-----------------------------------\n")
-  cat("Uncertainty:\n")
-  if (isTRUE(object$bootstrap$enabled)) {
+  if (uncertainty_enabled) {
+    cat("-----------------------------------\n")
+    cat("Uncertainty:\n")
     cat(
       "Method: conditional ",
       object$bootstrap$type,
@@ -155,8 +155,6 @@ summary.bridge <- function(object, ...) {
       sep = ""
     )
     cat("Block length: ", object$bootstrap$block_length, "\n", sep = "")
-  } else {
-    cat("Method: none\n")
   }
 
   if (!is.null(object$parametric_optimization)) {
@@ -165,7 +163,7 @@ summary.bridge <- function(object, ...) {
     cat("Method: ", object$parametric_optimization$method, "\n", sep = "")
     cat(
       "Objective value: ",
-      round(object$parametric_optimization$value, 4),
+      format_number(object$parametric_optimization$value),
       "\n",
       sep = ""
     )

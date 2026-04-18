@@ -231,7 +231,7 @@ test_that("bridge stores default bootstrap metadata for direct forecasts", {
   )
   expect_equal(fc$bootstrap$block_length, model$bootstrap$block_length)
   expect_equal(length(fc$se), nrow(fc$forecast_set))
-  expect_true(any(grepl(
+  expect_false(any(grepl(
     "Indicator handling: direct alignment",
     capture.output(print(fc)),
     fixed = TRUE
