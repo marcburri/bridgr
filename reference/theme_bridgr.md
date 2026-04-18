@@ -8,8 +8,9 @@ used in the `reviser` package.
 ``` r
 theme_bridgr(
   base_size = 12,
-  legend.position = "bottom",
-  legend.direction = "horizontal"
+  legend_position = "bottom",
+  legend_direction = "horizontal",
+  ...
 )
 
 colors_bridgr()
@@ -25,19 +26,21 @@ scale_fill_bridgr(...)
 
   Base text size for the plot theme.
 
-- legend.position:
+- legend_position:
 
   Legend position passed to
   [`ggplot2::theme()`](https://ggplot2.tidyverse.org/reference/theme.html).
 
-- legend.direction:
+- legend_direction:
 
   Legend direction passed to
   [`ggplot2::theme()`](https://ggplot2.tidyverse.org/reference/theme.html).
 
 - ...:
 
-  Additional arguments passed to the ggplot2 scale functions.
+  Additional arguments. In `theme_bridgr()`, `legend.position` and
+  `legend.direction` are accepted for backward compatibility. In the
+  scale helpers, `...` is forwarded to the ggplot2 scale constructors.
 
 ## Value
 

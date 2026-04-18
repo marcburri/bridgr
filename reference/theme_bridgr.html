@@ -62,8 +62,9 @@ used in the <code>reviser</code> package.</p>
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">theme_bridgr</span><span class="op">(</span></span>
 <span>  base_size <span class="op">=</span> <span class="fl">12</span>,</span>
-<span>  legend.position <span class="op">=</span> <span class="st">"bottom"</span>,</span>
-<span>  legend.direction <span class="op">=</span> <span class="st">"horizontal"</span></span>
+<span>  legend_position <span class="op">=</span> <span class="st">"bottom"</span>,</span>
+<span>  legend_direction <span class="op">=</span> <span class="st">"horizontal"</span>,</span>
+<span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">colors_bridgr</span><span class="op">(</span><span class="op">)</span></span>
@@ -81,16 +82,18 @@ used in the <code>reviser</code> package.</p>
 <dd><p>Base text size for the plot theme.</p></dd>
 
 
-<dt id="arg-legend-position">legend.position<a class="anchor" aria-label="anchor" href="#arg-legend-position"></a></dt>
+<dt id="arg-legend-position">legend_position<a class="anchor" aria-label="anchor" href="#arg-legend-position"></a></dt>
 <dd><p>Legend position passed to <code><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">ggplot2::theme()</a></code>.</p></dd>
 
 
-<dt id="arg-legend-direction">legend.direction<a class="anchor" aria-label="anchor" href="#arg-legend-direction"></a></dt>
+<dt id="arg-legend-direction">legend_direction<a class="anchor" aria-label="anchor" href="#arg-legend-direction"></a></dt>
 <dd><p>Legend direction passed to <code><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">ggplot2::theme()</a></code>.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>Additional arguments passed to the ggplot2 scale functions.</p></dd>
+<dd><p>Additional arguments. In <code>theme_bridgr()</code>, <code>legend.position</code> and
+<code>legend.direction</code> are accepted for backward compatibility. In the scale
+helpers, <code>...</code> is forwarded to the ggplot2 scale constructors.</p></dd>
 
 </dl></div>
     <div class="section level2">
