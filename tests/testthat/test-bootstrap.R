@@ -64,6 +64,39 @@ test_that("bootstrap intervals are computed from the draw distribution", {
   expect_true(all(is.na(empty_intervals$upper)))
 })
 
+test_that("predictive_target_model_draw adds forecast shocks", {
+  estimation_set <- dplyr::tibble(
+    y = c(3, 5, 7, 9, 11, 13),
+    x = c(1, 2, 3, 4, 5, 6)
+  )
+  model <- stats::lm(y ~ x, data = estimation_set)
+  forecast_set <- dplyr::tibble(x = c(7, 8))
+
+  testthat::local_mocked_bindings(
+    rnorm = function(n, mean = 0, sd = 1) {
+      mean + rep(0.5, n)
+    },
+    .package = "stats"
+  )
+
+  draw <- bridgr:::predictive_target_model_draw(
+    model = model,
+    forecast_set = forecast_set,
+    target_name = "y",
+    regressor_names = "x"
+  )
+
+  expect_equal(
+    draw,
+    bridgr:::forecast_target_model_mean(
+      model = model,
+      forecast_set = forecast_set,
+      target_name = "y",
+      regressor_names = "x"
+    ) + 0.5
+  )
+})
+
 test_that(
   "bootstrap_target_equation keeps valid resamples and warns on losses",
   {
@@ -90,6 +123,12 @@ test_that(
       }
       stats::lm(formula = formula, data = estimation_set)
     },
+    predictive_target_model_draw = function(model,
+                                            forecast_set,
+                                            target_name,
+                                            regressor_names) {
+      rep(draw_counter, nrow(forecast_set))
+    },
     .package = "bridgr"
   )
 
@@ -113,6 +152,10 @@ test_that(
   expect_equal(result$block_length, 2L)
   expect_equal(dim(result$coefficient_draws), c(2, 2))
   expect_equal(dim(result$forecast_draws), c(2, 2))
+  expect_equal(
+    result$forecast_draws,
+    matrix(c(1, 1, 3, 3), nrow = 2, byrow = TRUE)
+  )
   expect_length(result$models, 2)
   }
 )

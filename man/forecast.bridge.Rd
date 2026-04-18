@@ -17,8 +17,8 @@ When omitted, the forecast set stored inside \code{object} is used. When
 supplied, \code{xreg} must contain the same regressor names used when fitting the
 bridge equation.}
 
-\item{level}{Confidence levels used for bootstrap forecast intervals when the
-model was estimated with \code{se = TRUE}. When uncertainty is unavailable,
+\item{level}{Confidence levels used for bootstrap predictive intervals when
+the model was estimated with \code{se = TRUE}. When uncertainty is unavailable,
 \code{forecast()} still returns the \code{se}, \code{lower}, and \code{upper} components, filled
 with \code{NA}.}
 
@@ -28,7 +28,7 @@ with \code{NA}.}
 }
 \value{
 An object of class \code{"bridge_forecast"} and \code{"forecast"} containing
-point forecasts, conditional bootstrap uncertainty summaries, the
+point forecasts, bootstrap predictive uncertainty summaries, the
 target-period regressors used for forecasting, and bootstrap metadata.
 
 \code{x}, invisibly.

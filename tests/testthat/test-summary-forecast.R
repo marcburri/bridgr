@@ -92,11 +92,12 @@ test_that("forecast.bridge accepts custom xreg for ARIMA bridge models", {
     1e-6
   )
   expect_equal(
-    scenario_forecast$forecast_set[, model$regressor_names, drop = FALSE],
-    dplyr::tibble(
-      indic = model$forecast_set$indic + 10,
-      indic_lag1 = model$forecast_set$indic_lag1 + 10
-    )
+    as.numeric(scenario_forecast$forecast_set$indic),
+    as.numeric(model$forecast_set$indic + 10)
+  )
+  expect_equal(
+    as.numeric(scenario_forecast$forecast_set$indic_lag1),
+    as.numeric(model$forecast_set$indic_lag1 + 10)
   )
 })
 
@@ -117,7 +118,11 @@ test_that("forecast.bridge prints a standardized forecast table", {
   output <- capture.output(print(forecast(model)))
 
   expect_true(any(grepl("Bridge forecast", output, fixed = TRUE)))
-  expect_true(any(grepl("Uncertainty: conditional block bootstrap", output)))
+  expect_true(any(grepl(
+    "Uncertainty: predictive intervals from conditional block bootstrap",
+    output,
+    fixed = TRUE
+  )))
 })
 
 test_that("forecast.bridge errors when custom xreg omits required regressors", {

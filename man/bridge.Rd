@@ -59,9 +59,9 @@ the target equation.}
 regular frequency ladder. Supported names are \code{spm}, \code{mph}, \code{hpd}, \code{dpw},
 \code{wpm}, \code{mpq}, and \code{qpy}.}
 
-\item{se}{Logical flag indicating whether conditional bootstrap standard
-errors and forecast intervals should be computed. When \code{FALSE}, \code{bootstrap}
-is ignored.}
+\item{se}{Logical flag indicating whether bootstrap coefficient standard
+errors and predictive forecast intervals should be computed. When \code{FALSE},
+\code{bootstrap} is ignored.}
 
 \item{bootstrap}{A list of bootstrap controls. Currently only
 \code{list(type = "block", N = 100, block_length = NULL)} is supported.
@@ -70,7 +70,8 @@ is ignored.}
 \code{NULL}, \code{bridge()} uses \code{ceiling(n^(1/3))} based on the final target-period
 estimation sample size. The bootstrap is conditional on the aligned
 low-frequency design matrix and therefore does not re-estimate indicator
-forecasts or aggregation weights.}
+forecasts or aggregation weights, but the stored forecast draws include
+simulated future target shocks so \code{forecast()} returns predictive intervals.}
 
 \item{solver_options}{A list of optional controls for joint parametric-weight
 optimization. Supported entries are:

@@ -917,6 +917,45 @@ forecast_target_model_mean <- function(
 
 #' @keywords internal
 #' @noRd
+predictive_target_model_draw <- function(
+  model,
+  forecast_set,
+  target_name,
+  regressor_names
+) {
+  if (inherits(model, "lm")) {
+    forecast_mean <- forecast_target_model_mean(
+      model = model,
+      forecast_set = forecast_set,
+      target_name = target_name,
+      regressor_names = regressor_names
+    )
+    sigma <- suppressWarnings(try(
+      as.numeric(summary(model)$sigma),
+      silent = TRUE
+    ))
+    if (inherits(sigma, "try-error") || !is.finite(sigma)) {
+      sigma <- 0
+    }
+    return(forecast_mean + stats::rnorm(length(forecast_mean), sd = sigma))
+  }
+
+  xreg_values <- if (length(regressor_names) == 0) {
+    NULL
+  } else {
+    as.matrix(forecast_set[, regressor_names, drop = FALSE])
+  }
+
+  as.numeric(stats::simulate(
+    model,
+    nsim = nrow(forecast_set),
+    xreg = xreg_values,
+    future = TRUE
+  ))
+}
+
+#' @keywords internal
+#' @noRd
 bootstrap_forecast_draws <- function(
   models,
   forecast_set,
@@ -930,7 +969,7 @@ bootstrap_forecast_draws <- function(
   draws <- vapply(
     models,
     function(model) {
-      forecast_target_model_mean(
+      predictive_target_model_draw(
         model = model,
         forecast_set = forecast_set,
         target_name = target_name,
@@ -1016,7 +1055,7 @@ bootstrap_target_equation <- function(
     }
 
     draw_forecast <- suppressWarnings(try(
-      forecast_target_model_mean(
+      predictive_target_model_draw(
         model = draw_fit,
         forecast_set = forecast_set,
         target_name = target_name,

@@ -80,10 +80,10 @@ summary.bridge <- function(object, ...) {
   }
   cat("-----------------------------------\n")
   cat("Target equation coefficients:\n")
-  print(coefficient_table, row.names = FALSE)
+  print(coefficient_table)
   cat("-----------------------------------\n")
   cat("Indicator summary:\n")
-  print(indicator_summary, row.names = FALSE)
+  print(indicator_summary)
 
   has_custom_weights <- any(vapply(
     object$indic_aggregators,
@@ -140,7 +140,12 @@ summary.bridge <- function(object, ...) {
   cat("-----------------------------------\n")
   cat("Uncertainty:\n")
   if (isTRUE(object$bootstrap$enabled)) {
-    cat("Method: conditional ", object$bootstrap$type, " bootstrap\n", sep = "")
+    cat(
+      "Method: conditional ",
+      object$bootstrap$type,
+      " bootstrap with predictive forecast draws\n",
+      sep = ""
+    )
     cat(
       "Bootstrap draws: ",
       object$bootstrap$valid_N,

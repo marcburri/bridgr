@@ -7,14 +7,14 @@
 #' When omitted, the forecast set stored inside `object` is used. When
 #' supplied, `xreg` must contain the same regressor names used when fitting the
 #' bridge equation.
-#' @param level Confidence levels used for bootstrap forecast intervals when the
-#' model was estimated with `se = TRUE`. When uncertainty is unavailable,
+#' @param level Confidence levels used for bootstrap predictive intervals when
+#' the model was estimated with `se = TRUE`. When uncertainty is unavailable,
 #' `forecast()` still returns the `se`, `lower`, and `upper` components, filled
 #' with `NA`.
 #' @param ... Reserved for future extensions.
 #'
 #' @return An object of class `"bridge_forecast"` and `"forecast"` containing
-#' point forecasts, conditional bootstrap uncertainty summaries, the
+#' point forecasts, bootstrap predictive uncertainty summaries, the
 #' target-period regressors used for forecasting, and bootstrap metadata.
 #' @method forecast bridge
 #' @export
@@ -108,7 +108,12 @@ print.bridge_forecast <- function(x, ...) {
   }
 
   if (isTRUE(x$bootstrap$enabled)) {
-    cat("Uncertainty: conditional ", x$bootstrap$type, " bootstrap\n", sep = "")
+    cat(
+      "Uncertainty: predictive intervals from conditional ",
+      x$bootstrap$type,
+      " bootstrap\n",
+      sep = ""
+    )
     cat(
       "Bootstrap draws: ",
       x$bootstrap$valid_N,
@@ -136,6 +141,6 @@ print.bridge_forecast <- function(x, ...) {
       x$upper[, level_index]
   }
 
-  print(output, row.names = FALSE)
+  print(output)
   invisible(x)
 }

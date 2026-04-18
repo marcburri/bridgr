@@ -72,9 +72,9 @@
 #' @param frequency_conversions A named numeric vector used to customize the
 #' regular frequency ladder. Supported names are `spm`, `mph`, `hpd`, `dpw`,
 #' `wpm`, `mpq`, and `qpy`.
-#' @param se Logical flag indicating whether conditional bootstrap standard
-#' errors and forecast intervals should be computed. When `FALSE`, `bootstrap`
-#' is ignored.
+#' @param se Logical flag indicating whether bootstrap coefficient standard
+#' errors and predictive forecast intervals should be computed. When `FALSE`,
+#' `bootstrap` is ignored.
 #' @param bootstrap A list of bootstrap controls. Currently only
 #' `list(type = "block", N = 100, block_length = NULL)` is supported.
 #' `type` must be `"block"`, `N` is the number of bootstrap replications, and
@@ -82,7 +82,8 @@
 #' `NULL`, `bridge()` uses `ceiling(n^(1/3))` based on the final target-period
 #' estimation sample size. The bootstrap is conditional on the aligned
 #' low-frequency design matrix and therefore does not re-estimate indicator
-#' forecasts or aggregation weights.
+#' forecasts or aggregation weights, but the stored forecast draws include
+#' simulated future target shocks so `forecast()` returns predictive intervals.
 #' @param solver_options A list of optional controls for joint parametric-weight
 #' optimization. Supported entries are:
 #' `method` for the optimizer (`"L-BFGS-B"`, `"BFGS"`, `"Nelder-Mead"`, or
