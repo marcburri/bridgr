@@ -57,6 +57,9 @@ This is a basic example with the default mean aggregation:
 
 ``` r
 library(bridgr)
+#> Registered S3 method overwritten by 'quantmod':
+#>   method            from
+#>   as.zoo.data.frame zoo
 
 gdp <- suppressMessages(tsbox::ts_na_omit(tsbox::ts_pc(bridgr::gdp)))
 
@@ -69,15 +72,13 @@ bridge_model <- bridge(
   target_lags = 1,
   h = 2
 )
-#> [value]: 'values' 
-#> [value]: 'values'
 
 forecast(bridge_model)
 #> Bridge forecast
 #> -----------------------------------
 #> Target series: gdp
 #> Forecast horizon: 2
-#> Target model: fc_model
+#> Target model: forecast_ARIMA
 #> Uncertainty: point forecast only
 #> -----------------------------------
 #> # A tibble: 2 × 7
@@ -92,7 +93,7 @@ summary(bridge_model)
 #> Target series: gdp
 #> Target frequency: quarter (step 1)
 #> Forecast horizon: 2
-#> Target model: fc_model
+#> Target model: forecast_ARIMA
 #> Estimation rows: 73
 #> Regressors: baro, baro_lag1, baro_lag2
 #> -----------------------------------
@@ -110,7 +111,7 @@ summary(bridge_model)
 #> # A tibble: 1 × 5
 #>   indicator frequency      predict    aggregation indicator_model
 #>   <chr>     <chr>          <chr>      <chr>       <chr>          
-#> 1 baro      month (step 1) auto.arima mean        fc_model       
+#> 1 baro      month (step 1) auto.arima mean        forecast_ARIMA 
 #> -----------------------------------
 #> Uncertainty:
 #> Method: none
@@ -131,8 +132,6 @@ expalmon_model <- bridge(
   solver_options = list(seed = 123, n_starts = 3),
   h = 1
 )
-#> [value]: 'values' 
-#> [value]: 'values'
 
 summary(expalmon_model)
 #> Bridge model summary
@@ -155,7 +154,7 @@ summary(expalmon_model)
 #> # A tibble: 1 × 5
 #>   indicator frequency      predict    aggregation indicator_model
 #>   <chr>     <chr>          <chr>      <chr>       <chr>          
-#> 1 baro      month (step 1) auto.arima expalmon    fc_model       
+#> 1 baro      month (step 1) auto.arima expalmon    forecast_ARIMA 
 #> -----------------------------------
 #> Estimated parametric aggregation:
 #> baro weights: 0.006, 0.994, 0
