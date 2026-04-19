@@ -149,7 +149,8 @@ equation, or Delta-HAC standard errors when parametric aggregation weights are
 estimated jointly. By default, prediction intervals are simulated from
 resampled centered target-equation residuals. If you also set
 `full_system_bootstrap = TRUE`, `bridgr` instead uses a full-system
-target-period block bootstrap controlled through `bootstrap = list(N = ...,
+target-period block bootstrap for both coefficient standard errors and
+prediction intervals, controlled through `bootstrap = list(N = ...,
 block_length = ...)`.
 
 # Where to Go Next

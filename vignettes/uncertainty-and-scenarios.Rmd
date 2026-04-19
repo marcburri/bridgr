@@ -30,9 +30,9 @@ The relevant estimation arguments are:
   predictive simulation paths. `block_length` is only used when
   `full_system_bootstrap = TRUE`.
 - `full_system_bootstrap = TRUE`: replace the default residual-resampling
-  prediction intervals with a full-system target-period block bootstrap.
-  Because this refits the full bridge workflow on every draw, it can be
-  substantially slower.
+  prediction intervals and HAC / Delta-HAC coefficient standard errors with a
+  full-system target-period block bootstrap. Because this refits the full
+  bridge workflow on every draw, it can be substantially slower.
 
 # Fitting a Model with Default Uncertainty
 
@@ -127,7 +127,8 @@ If you want to propagate uncertainty through the full bridge workflow,
 including indicator completion and aggregation, set
 `full_system_bootstrap = TRUE`. This can be substantially slower than the
 default residual-resampling intervals because each bootstrap draw re-estimates
-the full bridge pipeline.
+the full bridge pipeline. In that mode, both the reported coefficient
+standard errors and the forecast intervals are based on the bootstrap draws.
 
 ```{r full-system-bootstrap}
 full_model <- bridge(
@@ -171,8 +172,9 @@ forecast(point_model)
 # Interpretation
 
 With the default `se = TRUE`, these intervals are residual-resampling
-prediction intervals for the fitted target equation. When
-`full_system_bootstrap = TRUE`, the intervals instead come from a full-system
-block bootstrap that resamples target-period blocks from the aligned mixed-
-frequency system, refits the bridge workflow on each draw, and evaluates the
-resulting future paths.
+prediction intervals for the fitted target equation, while coefficient
+standard errors come from HAC or Delta-HAC estimation. When
+`full_system_bootstrap = TRUE`, both the coefficient standard errors and the
+forecast intervals come from a full-system block bootstrap that resamples
+target-period blocks from the aligned mixed-frequency system, refits the
+bridge workflow on each draw, and evaluates the resulting future paths.

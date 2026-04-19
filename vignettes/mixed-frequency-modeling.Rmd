@@ -24,7 +24,7 @@ lower-frequency target equation. Those choices span a continuum:
 - Bridge-style deterministic aggregation: `"mean"`, `"last"`, `"sum"`, or
   fixed numeric weights.
 - Unrestricted mixed-frequency regression: `"unrestricted"`.
-- Parametric MIDAS-style weighting: `"expalmon"`, `"beta"`, and `"legendre"`.
+- Parametric MIDAS-style weighting: `"expalmon"` and `"beta"`.
 
 This vignette uses a simple monthly-to-quarterly simulation so the differences
 between these approaches are easy to see.
@@ -146,14 +146,6 @@ beta_model <- bridge(
   h = 1
 )
 
-legendre_model <- bridge(
-  target = quarter_target,
-  indic = monthly_indicator,
-  indic_predict = "last",
-  indic_aggregators = "legendre",
-  solver_options = list(seed = 123, n_starts = 1, maxiter = 100),
-  h = 1
-)
 ```
 
 The fitted object stores both the estimated weight profile and the underlying
@@ -172,11 +164,6 @@ dplyr::bind_rows(
     model = "beta",
     month = seq_along(beta_model$parametric_weights[[indicator_id]]),
     weight = beta_model$parametric_weights[[indicator_id]]
-  ),
-  dplyr::tibble(
-    model = "legendre",
-    month = seq_along(legendre_model$parametric_weights[[indicator_id]]),
-    weight = legendre_model$parametric_weights[[indicator_id]]
   )
 )
 ```
@@ -206,10 +193,6 @@ dplyr::bind_rows(
   dplyr::tibble(
     model = "beta",
     forecast = as.numeric(forecast(beta_model)$mean)
-  ),
-  dplyr::tibble(
-    model = "legendre",
-    forecast = as.numeric(forecast(legendre_model)$mean)
   )
 )
 ```
@@ -221,7 +204,7 @@ As a rough guide:
 - Use deterministic bridge aggregation like "mean", "last", "sum" when you want a transparent and stable nowcasting rule.
 - Use `"unrestricted"` when the frequency gap is small and you want each
   within-period observation to have its own coefficient.
-- Use `"expalmon"`, `"beta"`, or `"legendre"` when you want data-driven
+- Use `"expalmon"` or `"beta"` when you want data-driven
   within-period weights but would like a more parsimonious parameterization
   than `"unrestricted"`.
 - Use `indic_predict = "direct"` when you want direct alignment based only on
