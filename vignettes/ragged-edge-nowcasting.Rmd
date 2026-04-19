@@ -35,7 +35,8 @@ The currently supported options are:
 - `"ets"`: fit an ETS model to each indicator and forecast the missing
   observations.
 - `"direct"`: do not forecast the indicator at all. Instead, align the latest
-  observed complete high-frequency blocks directly to the target periods.
+  observed complete high-frequency blocks directly to the target periods and
+  average them within each target period.
 
 # A Ragged-Edge Example
 
@@ -123,14 +124,13 @@ forward instead.
 
 `"direct"` takes a different route. The indicator is not forecasted. Instead,
 `bridgr` assigns the latest complete high-frequency blocks backward to the
-target periods. That is closest to a direct MIDAS-style setup.
+target periods and averages them within each target period.
 
 ```{r direct}
 direct_model <- bridge(
   target = gdp_nowcast,
   indic = baro_ragged,
   indic_predict = "direct",
-  indic_aggregators = "unrestricted",
   h = 1
 )
 
@@ -149,8 +149,9 @@ As a rough guide:
   high-frequency block.
 - Use `"auto.arima"` or `"ets"` when the indicator has meaningful time-series
   structure and a separate extrapolation step is sensible.
-- Use `"direct"` when you want direct MIDAS-style alignment without indicator
-  forecasting.
+- Use `"direct"` when you want direct alignment without indicator
+  forecasting and want to rely only on the latest observed complete
+  high-frequency blocks.
 
 The good part is that the downstream workflow does not change. The same
 `summary()` and `forecast()` interface works across all of these nowcasting

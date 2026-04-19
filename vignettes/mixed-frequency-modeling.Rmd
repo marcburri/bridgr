@@ -112,9 +112,9 @@ summary(unrestricted_model)
 `"unrestricted"` estimates one coefficient for each within-quarter monthly
 observation. In a monthly-on-quarterly example this means three separate
 regressors. This example keeps `indic_predict = "last"` so the comparison
-isolates the aggregation choice; combining `"unrestricted"` with
-`indic_predict = "direct"` gives a direct MIDAS-style alignment and is covered
-in the ragged-edge vignette.
+isolates the aggregation choice. The ragged-edge vignette covers
+`indic_predict = "direct"`, which skips indicator forecasting and instead
+works from the latest observed complete high-frequency blocks.
 
 # Parametric MIDAS-Style Weighting
 
@@ -218,16 +218,16 @@ dplyr::bind_rows(
 
 As a rough guide:
 
-- Use deterministic bridge aggregation when you want a transparent and stable
-  nowcasting rule.
+- Use deterministic bridge aggregation like "mean", "last", "sum" when you want a transparent and stable nowcasting rule.
 - Use `"unrestricted"` when the frequency gap is small and you want each
   within-period observation to have its own coefficient.
 - Use `"expalmon"`, `"beta"`, or `"legendre"` when you want data-driven
   within-period weights but would like a more parsimonious parameterization
   than `"unrestricted"`.
-- Use `indic_predict = "direct"` when you want direct MIDAS-style alignment
-  based only on the latest observed high-frequency blocks.
+- Use `indic_predict = "direct"` when you want direct alignment based only on
+  the latest observed complete high-frequency blocks.
 
 The key design choice in `bridgr` is that all of these specifications share
 the same estimation, forecasting, and summary workflow. You can therefore move
-between bridge and MIDAS-style models without switching to a different API.
+between classic bridge models, unrestricted mixed-frequency regressions, and
+parametric MIDAS-style models without switching to a different API.

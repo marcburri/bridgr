@@ -80,9 +80,9 @@ bridge_model$forecast_set
 # Standardized Output
 
 `summary()` and `forecast()` use a stable package-specific layout. The base
-output is the same across bridge, MIDAS-style, and direct-alignment
+output is the same across bridge, mixed-frequency, and direct-alignment
 specifications. Additional details, such as optimization summaries or
-bootstrap settings, are appended only when they are relevant.
+uncertainty settings, are appended only when they are relevant.
 
 ```{r model-summary}
 summary(bridge_model)
@@ -101,16 +101,16 @@ plot(bridge_model, type = "forecast")
 # Direct Alignment
 
 If you set `indic_predict = "direct"`, `bridgr` switches from indicator
-forecasting to direct MIDAS-style alignment. In that case, the latest complete
-high-frequency blocks are assigned backward to target periods instead of being
-forecast forward first.
+forecasting to direct alignment based only on observed complete
+high-frequency blocks. In that case, the latest complete blocks are assigned
+backward to target periods instead of being forecast forward first, and they
+are averaged within each target period.
 
 ```{r direct-model}
 direct_model <- bridge(
   target = gdp_growth,
   indic = baro,
   indic_predict = "direct",
-  indic_aggregators = "unrestricted",
   h = 1
 )
 
@@ -121,11 +121,11 @@ This is particularly useful at the ragged edge when you want to work only with
 observed high-frequency information and avoid a separate indicator forecasting
 step.
 
-# Optional Bootstrap Uncertainty
+# Optional Uncertainty
 
 By default, `bridgr` returns point forecasts only. If you want uncertainty
-output, request it at estimation time with `se = TRUE` and a bootstrap
-configuration.
+output, request it at estimation time with `se = TRUE` and, if needed,
+custom `bootstrap` controls.
 
 ```{r bootstrap-example}
 boot_model <- bridge(
@@ -136,7 +136,7 @@ boot_model <- bridge(
   target_lags = 1,
   h = 4,
   se = TRUE,
-  bootstrap = list(type = "block", N = 40, block_length = NULL)
+  bootstrap = list(N = 40, block_length = NULL)
 )
 
 forecast(boot_model)
@@ -144,12 +144,13 @@ summary(boot_model)
 plot(boot_model, type = "forecast")
 ```
 
-The current uncertainty implementation uses a conditional block bootstrap on
-the final target-frequency estimation sample. It does not re-estimate
-indicator forecast models or parametric aggregation weights inside each
-bootstrap draw. The stored forecast draws do add simulated future target
-shocks, so `forecast()` and `plot(..., type = "forecast")` return predictive
-intervals on top of the historical target path and forecast mean.
+The uncertainty implementation uses HAC standard errors for the linear bridge
+equation, or Delta-HAC standard errors when parametric aggregation weights are
+estimated jointly. By default, prediction intervals are simulated from
+resampled centered target-equation residuals. If you also set
+`full_system_bootstrap = TRUE`, `bridgr` instead uses a full-system
+target-period block bootstrap controlled through `bootstrap = list(N = ...,
+block_length = ...)`.
 
 # Where to Go Next
 
@@ -165,5 +166,6 @@ data at the forecast origin.
 
 The vignette
 `vignette("uncertainty-and-scenarios", package = "bridgr")` shows how to work
-with conditional block-bootstrap uncertainty and scenario forecasts based on
+with HAC / Delta-HAC coefficient uncertainty, residual-resampling prediction
+intervals, the optional full-system bootstrap, and scenario forecasts based on
 custom future regressor paths.

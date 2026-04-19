@@ -50,7 +50,8 @@ devtools::install_github("marcburri/bridgr")
 
 ## Example
 
-This is a basic example with the default mean aggregation:
+This example estimates an `expalmon` bridge model and requests uncertainty
+output:
 
 ```{r example}
 suppressPackageStartupMessages(library(bridgr))
@@ -61,16 +62,20 @@ bridge_model <- bridge(
   target = gdp,
   indic = baro,
   indic_predict = "auto.arima",
-  indic_aggregators = "mean",
+  indic_aggregators = "expalmon",
   indic_lags = 2,
-  target_lags = 0,
-  h = 2
+  target_lags = 1,
+  h = 2,
+  se = TRUE
 )
 
 forecast(bridge_model)
 
 summary(bridge_model)
 ```
+
+With `se = TRUE`, `bridgr` reports HAC or Delta-HAC coefficient standard
+errors and residual-resampling prediction intervals.
 
 If you want data-driven within-period weights instead of a simple mean, you can switch the indicator aggregator to `expalmon`. The corresponding weights are estimated jointly within the bridge model, and `solver_options` let you control the optimization.
 
