@@ -181,14 +181,15 @@ This is particularly useful at the ragged edge when you want to work
 only with observed high-frequency information and avoid a separate
 indicator forecasting step.
 
-## Optional Uncertainty
+## Optional Uncertainty Output
 
 By default, `bridgr` returns point forecasts only. If you want
 uncertainty output, request it at estimation time with `se = TRUE` and,
-if needed, custom `bootstrap` controls.
+if needed, custom simulation or full-system bootstrap controls through
+`bootstrap`.
 
 ``` r
-boot_model <- bridge(
+uncertainty_model <- bridge(
   target = gdp_growth,
   indic = baro,
   indic_predict = "auto.arima",
@@ -199,7 +200,7 @@ boot_model <- bridge(
   bootstrap = list(N = 40, block_length = NULL)
 )
 
-forecast(boot_model)
+forecast(uncertainty_model)
 #> Bridge forecast
 #> -----------------------------------
 #> Target series: gdp_growth
@@ -212,7 +213,7 @@ forecast(boot_model)
 #> 2 2023-04-01 0.486 1.097 -0.433   1.761    -2.025   3.268   
 #> 3 2023-07-01 0.500 0.827 -0.441   1.370    -1.174   2.638   
 #> 4 2023-10-01 0.521 0.884 -0.532   1.731    -1.030   2.191
-summary(boot_model)
+summary(uncertainty_model)
 #> Bridge model summary
 #> -----------------------------------
 #> Target series: gdp_growth
@@ -236,10 +237,10 @@ summary(boot_model)
 #> Prediction intervals: residual resampling
 #> Simulation paths: 40
 #> -----------------------------------
-plot(boot_model, type = "forecast")
+plot(uncertainty_model, type = "forecast")
 ```
 
-![](bridgr_files/figure-html/bootstrap-example-1.png)
+![](bridgr_files/figure-html/uncertainty-example-1.png)
 
 The uncertainty implementation uses HAC standard errors for the linear
 bridge equation, or Delta-HAC standard errors when parametric
