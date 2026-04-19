@@ -190,6 +190,35 @@ test_that("summary.bridge reports bootstrap SEs under full-system bootstrap", {
   )))
 })
 
+test_that(
+  "summary.bridge reports unavailable intervals when bootstrap is requested",
+  {
+  indic <- make_monthly_indicator(n = 36)
+  target <- make_quarter_target(indic, n_quarters = 12)
+
+  model <- bridge(
+    target = target,
+    indic = indic,
+    indic_predict = "last",
+    target_lags = 1,
+    se = TRUE,
+    h = 1
+  )
+  model$bootstrap$requested <- TRUE
+  model$uncertainty$prediction_method <- NULL
+  model$uncertainty$prediction_draws <- NULL
+  model$uncertainty$simulation_paths <- 0L
+
+  output <- capture.output(summary(model))
+
+  expect_true(any(grepl(
+    "Prediction intervals: unavailable",
+    output,
+    fixed = TRUE
+  )))
+  }
+)
+
 test_that("forecast.bridge omits uncertainty columns when se is FALSE", {
   indic <- make_monthly_indicator(n = 36)
   target <- make_quarter_target(indic, n_quarters = 12)

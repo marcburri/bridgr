@@ -219,6 +219,17 @@ test_that("beta parameters are mapped to and from optimizer scale positively", {
   )
 })
 
+test_that("removed parametric aggregators are rejected by helper functions", {
+  expect_error(
+    bridgr:::parametric_parameter_names("legendre"),
+    "Unsupported parametric aggregator `legendre`"
+  )
+  expect_error(
+    bridgr:::parametric_polynomial_basis("beta", c(1, 1), 3),
+    "Unsupported polynomial aggregator `beta`"
+  )
+})
+
 finite_difference_jacobian <- function(fun, x, eps = 1e-6) {
   baseline <- fun(x)
   jacobian <- matrix(NA_real_, nrow = length(baseline), ncol = length(x))

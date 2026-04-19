@@ -257,3 +257,104 @@ test_that("bridge keeps full bootstrap opt-in for direct forecasts", {
     fixed = TRUE
   )))
 })
+
+test_that(
+  "forecast.bridge uses bootstrap scenario draws under full-system bootstrap",
+  {
+  indic <- make_monthly_indicator(n = 36)
+  target <- make_quarter_target(indic, n_quarters = 12)
+
+  model <- bridge(
+    target = target,
+    indic = indic,
+    indic_predict = "last",
+    indic_lags = 1,
+    target_lags = 1,
+    se = TRUE,
+    full_system_bootstrap = TRUE,
+    bootstrap = list(N = 6, block_length = 3),
+    h = 2
+  )
+
+  custom_xreg <- dplyr::tibble(
+    id = rep(model$xreg_names, each = nrow(model$forecast_base_set)),
+    time = rep(model$forecast_base_set$time, times = length(model$xreg_names)),
+    value = c(
+      model$forecast_base_set$indic + 3,
+      model$forecast_base_set$indic_lag1 + 3
+    )
+  )
+
+  scenario_fc <- forecast(model, xreg = custom_xreg)
+
+  expect_equal(scenario_fc$uncertainty$prediction_method, "block_bootstrap")
+  expect_equal(scenario_fc$bootstrap$enabled, TRUE)
+  expect_equal(
+    scenario_fc$uncertainty$simulation_paths,
+    model$bootstrap$valid_N
+  )
+  expect_false(all(is.na(scenario_fc$se)))
+  expect_equal(ncol(scenario_fc$lower), 2)
+  expect_equal(ncol(scenario_fc$upper), 2)
+  }
+)
+
+test_that(
+  "build_prediction_uncertainty disables unavailable full bootstrap output",
+  {
+  result <- bridgr:::build_prediction_uncertainty(
+    enabled = TRUE,
+    model = NULL,
+    forecast_set = dplyr::tibble(x = 1),
+    target_name = "y",
+    regressor_names = "x",
+    target_lags = 0,
+    target_history = NULL,
+    bootstrap = list(N = 5L, block_length = 2L),
+    full_system_bootstrap = TRUE,
+    full_bootstrap = list(
+      enabled = FALSE,
+      prediction_draws = NULL,
+      valid_N = 0L
+    )
+  )
+
+  expect_false(result$enabled)
+  expect_null(result$method)
+  expect_null(result$draws)
+  expect_equal(result$N, 0L)
+  }
+)
+
+test_that("build_prediction_uncertainty warns when residual simulation fails", {
+  model <- stats::lm(y ~ x, data = dplyr::tibble(y = 1:5, x = 1:5))
+  forecast_set <- dplyr::tibble(x = c(6, 7))
+
+  testthat::local_mocked_bindings(
+    simulate_target_model_draws = function(...) {
+      stop("simulation failed")
+    },
+    .package = "bridgr"
+  )
+
+  expect_warning(
+    result <- bridgr:::build_prediction_uncertainty(
+      enabled = TRUE,
+      model = model,
+      forecast_set = forecast_set,
+      target_name = "y",
+      regressor_names = "x",
+      target_lags = 0,
+      target_history = NULL,
+      bootstrap = list(N = 5L, block_length = 2L),
+      full_system_bootstrap = FALSE,
+      full_bootstrap = list(enabled = FALSE)
+    ),
+    "Prediction intervals will be unavailable"
+  )
+
+  expect_false(result$enabled)
+  expect_null(result$method)
+  expect_null(result$draws)
+  expect_equal(result$N, 0L)
+})
