@@ -38,3 +38,10 @@ A ggplot2 theme, color palette, or scale.
 Plot styling helpers for \code{bridgr} graphics, based on the visual defaults
 used in the \code{reviser} package.
 }
+\examples{
+ggplot2::ggplot(mtcars, ggplot2::aes(wt, mpg, color = factor(cyl))) +
+  ggplot2::geom_point() +
+  theme_bridgr()
+
+colors_bridgr()[1:3]
+}

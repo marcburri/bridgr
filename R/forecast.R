@@ -16,6 +16,18 @@
 #' point forecasts, predictive uncertainty summaries, the
 #' target-period regressors used for forecasting, and optional full-system
 #' bootstrap metadata.
+#'
+#' @examples
+#' gdp_growth <- suppressMessages(tsbox::ts_na_omit(tsbox::ts_pc(gdp)))
+#' model <- mf_model(
+#'   target = gdp_growth,
+#'   indic = baro,
+#'   indic_predict = "auto.arima",
+#'   indic_aggregators = "mean",
+#'   h = 1
+#' )
+#'
+#' forecast(model)
 #' @method forecast mf_model
 #' @export
 forecast.mf_model <- function(

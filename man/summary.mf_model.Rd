@@ -17,3 +17,15 @@
 \description{
 Summarize a Mixed-Frequency Model
 }
+\examples{
+gdp_growth <- suppressMessages(tsbox::ts_na_omit(tsbox::ts_pc(gdp)))
+model <- mf_model(
+  target = gdp_growth,
+  indic = baro,
+  indic_predict = "auto.arima",
+  indic_aggregators = "mean",
+  h = 1
+)
+
+summary(model)
+}

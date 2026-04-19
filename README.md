@@ -1,30 +1,41 @@
----
-output: github_document
----
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-
-
 # bridgr <a><img src="man/figures/logo.png" align="right" height="138"></a>
- 
 
 <!-- badges: start -->
-[![Lifecycle: stable](https://img.shields.io/badge/lifecycle-stable-green.svg)](https://lifecycle.r-lib.org/articles/stages.html#stable)
+
+[![Lifecycle:
+stable](https://img.shields.io/badge/lifecycle-stable-green.svg)](https://lifecycle.r-lib.org/articles/stages.html#stable)
 [![R-CMD-check](https://github.com/marcburri/bridgr/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/marcburri/bridgr/actions/workflows/R-CMD-check.yaml)
+[![pkgcheck](https://github.com/marcburri/bridgr/actions/workflows/pkgcheck.yaml/badge.svg)](https://github.com/marcburri/bridgr/actions/workflows/pkgcheck.yaml)
 [![Lint](https://github.com/marcburri/bridgr/actions/workflows/lint.yaml/badge.svg)](https://github.com/marcburri/bridgr/actions/workflows/lint.yaml)
-[![bridgr status badge](https://marcburri.r-universe.dev/badges/bridgr)](https://marcburri.r-universe.dev/bridgr)
-[![CRAN status](https://www.r-pkg.org/badges/version/bridgr)](https://CRAN.R-project.org/package=bridgr)
+[![bridgr status
+badge](https://marcburri.r-universe.dev/badges/bridgr)](https://marcburri.r-universe.dev/bridgr)
+[![CRAN
+status](https://www.r-pkg.org/badges/version/bridgr)](https://CRAN.R-project.org/package=bridgr)
 [![](https://cranlogs.r-pkg.org/badges/grand-total/bridgr)](https://CRAN.R-project.org/package=bridgr)
-[![Codecov test coverage](https://codecov.io/gh/marcburri/bridgr/graph/badge.svg)](https://app.codecov.io/gh/marcburri/bridgr)
+[![Codecov test
+coverage](https://codecov.io/gh/marcburri/bridgr/graph/badge.svg)](https://app.codecov.io/gh/marcburri/bridgr)
 <!-- badges: end -->
 
+`bridgr` is designed to simplify the implementation and evaluation of
+bridge models, which are useful for nowcasting (predicting the present
+or near-term) and forecasting macroeconomic variables like GDP.
 
-`bridgr` is designed to simplify the implementation and evaluation of bridge models, which are useful for nowcasting (predicting the present or near-term) and forecasting macroeconomic variables like GDP. 
+Bridge models are statistical tools that link high-frequency indicators
+(e.g., monthly industrial production) to low-frequency target variables
+(e.g., quarterly GDP) by forecasting and aggregating the indicators to
+match the target’s frequency. They enable timely predictions before the
+official release of low-frequency data, making them essential for
+policymakers who need early insights for decision-making.
 
-Bridge models are statistical tools that link high-frequency indicators (e.g., monthly industrial production) to low-frequency target variables (e.g., quarterly GDP) by forecasting and aggregating the indicators to match the target's frequency. They enable timely predictions before the official release of low-frequency data, making them essential for policymakers who need early insights for decision-making.
-
-`bridgr` supports regular frequency ladders from `second` up to `year`, several deterministic and model-based indicator forecasting rules, and multiple aggregation choices including joint `expalmon` and `beta` weighting. If a target period contains more high-frequency observations than implied by the current frequency mapping, the package keeps the most recent observations and reports a summarized warning.
+`bridgr` supports regular frequency ladders from `second` up to `year`,
+several deterministic and model-based indicator forecasting rules, and
+multiple aggregation choices including joint `expalmon` and `beta`
+weighting. If a target period contains more high-frequency observations
+than implied by the current frequency mapping, the package keeps the
+most recent observations and reports a summarized warning.
 
 ## Installation
 
@@ -44,7 +55,6 @@ devtools::install_github("marcburri/bridgr")
 ## Example
 
 This example estimates a bridge model with uncertainty output:
-
 
 ``` r
 suppressPackageStartupMessages(library(bridgr))
@@ -71,8 +81,8 @@ forecast(bridge_model)
 #> Simulation paths: 100
 #> -----------------------------------
 #>   time       mean  se    lower_80 upper_80 lower_95 upper_95
-#> 1 2023-01-01 0.808 0.681 -0.191   1.621    -0.757   2.046   
-#> 2 2023-04-01 0.468 0.771 -0.469   1.300    -1.158   2.763
+#> 1 2023-01-01 0.808 0.725 -0.149   1.707    -0.358   2.388   
+#> 2 2023-04-01 0.468 0.708 -0.292   1.629    -0.696   1.892
 ```
 
 ``` r
@@ -108,11 +118,10 @@ summary(bridge_model)
 With `se = TRUE`, `bridgr` reports HAC or Delta-HAC coefficient standard
 errors and residual-resampling prediction intervals.
 
-If you want data-driven within-period weights instead of a simple deterministic
-aggregator, you can switch the indicator aggregator to `expalmon`. The
-corresponding weights are estimated jointly within the bridge model, and
-`solver_options` let you control the optimization.
-
+If you want data-driven within-period weights instead of a simple
+deterministic aggregator, you can switch the indicator aggregator to
+`expalmon`. The corresponding weights are estimated jointly within the
+bridge model, and `solver_options` let you control the optimization.
 
 ``` r
 expalmon_model <- mf_model(

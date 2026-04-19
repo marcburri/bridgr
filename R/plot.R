@@ -11,6 +11,13 @@
 #'   helpers, `...` is forwarded to the ggplot2 scale constructors.
 #'
 #' @return A ggplot2 theme, color palette, or scale.
+#'
+#' @examples
+#' ggplot2::ggplot(mtcars, ggplot2::aes(wt, mpg, color = factor(cyl))) +
+#'   ggplot2::geom_point() +
+#'   theme_bridgr()
+#'
+#' colors_bridgr()[1:3]
 #' @name theme_bridgr
 #' @export
 theme_bridgr <- function(
@@ -167,6 +174,18 @@ scale_fill_bridgr <- function(...) {
 #' @param ... Additional arguments passed to [theme_bridgr()].
 #'
 #' @return A ggplot2 object.
+#'
+#' @examples
+#' gdp_growth <- suppressMessages(tsbox::ts_na_omit(tsbox::ts_pc(gdp)))
+#' model <- mf_model(
+#'   target = gdp_growth,
+#'   indic = baro,
+#'   indic_predict = "auto.arima",
+#'   indic_aggregators = "mean",
+#'   h = 1
+#' )
+#'
+#' plot(model, type = "fit")
 #' @method plot mf_model
 #' @export
 plot.mf_model <- function(
