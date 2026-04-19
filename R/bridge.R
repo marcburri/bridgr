@@ -1,4 +1,4 @@
-#' Estimate a Bridge Model
+#' Estimate a Mixed-Frequency Model
 #'
 #' Estimate a bridge model that links one lower-frequency target series to one
 #' or more higher-frequency indicator series. Indicators are aligned to the
@@ -17,7 +17,7 @@
 #' indicator at a time.
 #'
 #' Unrestricted mixed-frequency regressions can become parameter-heavy quickly.
-#' When `indic_aggregators = "unrestricted"`, `bridge()` warns if the final
+#' When `indic_aggregators = "unrestricted"`, `mf_model()` warns if the final
 #' estimation sample contains fewer than 10 observations per predictor in the
 #' bridge regression.
 #'
@@ -35,7 +35,7 @@
 #'
 #' Users can override any subset of these values with
 #' `frequency_conversions`. If a target period contains more high-frequency
-#' observations than implied by the current mapping, `bridge()` keeps the most
+#' observations than implied by the current mapping, `mf_model()` keeps the most
 #' recent observations and emits a summarized warning. If a target period
 #' contains fewer observations than required, the call fails. Month-, quarter-,
 #' and year-based input dates are standardized to period starts when needed
@@ -73,7 +73,8 @@
 #' regular frequency ladder. Supported names are `spm`, `mph`, `hpd`, `dpw`,
 #' `wpm`, `mpq`, and `qpy`.
 #' @param se Logical flag indicating whether coefficient standard errors and
-#' prediction intervals should be computed. When `TRUE`, `bridge()` reports HAC
+#' prediction intervals should be computed. When `TRUE`, `mf_model()`
+#' reports HAC
 #' standard errors for the linear target equation, or Delta-HAC standard errors
 #' when parametric aggregation weights are estimated jointly.
 #' @param bootstrap A list of uncertainty controls. Currently only
@@ -82,7 +83,7 @@
 #' `full_system_bootstrap = TRUE`, the same `N` controls the number of
 #' full-system target-period block-bootstrap replications used for prediction
 #' intervals. `block_length` is only used by the full-system bootstrap. When
-#' `block_length` is `NULL`, `bridge()` uses `ceiling(n^(1/3))` based on the
+#' `block_length` is `NULL`, `mf_model()` uses `ceiling(n^(1/3))` based on the
 #' final target-period sample size.
 #' @param full_system_bootstrap Logical flag indicating whether prediction
 #' intervals and coefficient standard errors should be based on a full-system
@@ -107,15 +108,19 @@
 #' parametric aggregator.
 #' @param ... Reserved for future extensions.
 #'
-#' @return An object of class `"bridge"` containing the standardized input
+#' @return An object of class `"mf_model"` containing the standardized input
 #' series, inferred frequencies, aligned estimation and forecast datasets, the
 #' fitted target model, fitted indicator models, and metadata required by
-#' [forecast.bridge()] and [summary.bridge()].
+#' [forecast.mf_model()] and [summary.mf_model()].
+#'
+#' @section Deprecated `bridge()` wrapper:
+#' [bridge()] is retained for compatibility and forwards to `mf_model()` with a
+#' deprecation warning.
 #'
 #' @examples
 #' gdp_growth <- suppressMessages(tsbox::ts_na_omit(tsbox::ts_pc(gdp)))
 #'
-#' model <- bridge(
+#' model <- mf_model(
 #'   target = gdp_growth,
 #'   indic = baro,
 #'   indic_predict = "auto.arima",
@@ -125,7 +130,7 @@
 #'   h = 2
 #' )
 #'
-#' expalmon_model <- bridge(
+#' expalmon_model <- mf_model(
 #'   target = gdp_growth,
 #'   indic = baro,
 #'   indic_predict = "auto.arima",
@@ -158,7 +163,7 @@
 #' Simple Methods Are Sufficient. *Oxford Bulletin of Economics and
 #' Statistics*, 1-25. \doi{10.1111/obes.70073}
 #' @export
-bridge <- function(
+mf_model <- function(
   target,
   indic,
   indic_predict = NULL,
@@ -214,6 +219,13 @@ bridge <- function(
     target_name = target_name,
     config = config
   )
+}
+
+#' @rdname mf_model
+#' @export
+bridge <- function(...) {
+  .Deprecated(new = "mf_model", package = "bridgr")
+  mf_model(...)
 }
 
 #' @keywords internal
@@ -488,7 +500,7 @@ fit_bridge_model <- function(
       target_anchor = target_anchor,
       future_target_times = future_target_times
     ),
-    class = "bridge"
+    class = "mf_model"
   )
 }
 

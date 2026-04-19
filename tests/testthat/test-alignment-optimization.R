@@ -77,7 +77,7 @@ test_that(
   )
   weights <- c(0.2, 0.3, 0.5)
 
-  model <- bridge(
+  model <- mf_model(
     target = target,
     indic = indic,
     indic_predict = c("direct", "direct"),
@@ -149,7 +149,7 @@ test_that("bridge accepts end-of-period dates via fallback", {
     value = c(2, 5, 8, 11, 14)
   )
 
-  model <- bridge(
+  model <- mf_model(
     target = target,
     indic = indic,
     indic_predict = "last",
@@ -301,7 +301,7 @@ test_that("unrestricted warning depends on predictor density", {
   target <- make_quarter_target(monthly_indicator, n_quarters = 40)
 
   expect_no_warning(
-    bridge(
+    mf_model(
       target = target,
       indic = monthly_indicator,
       indic_predict = "last",
@@ -321,7 +321,7 @@ test_that("unrestricted warning depends on predictor density", {
   )
 
   expect_warning(
-    bridge(
+    mf_model(
       target = target_multi,
       indic = multi_indic,
       indic_predict = c("last", "last"),
@@ -371,7 +371,7 @@ test_that("named start_values flow through mixed aggregators", {
     .package = "bridgr"
   )
 
-  model <- bridge(
+  model <- mf_model(
     target = target,
     indic = indic,
     indic_predict = c("last", "last"),
@@ -395,7 +395,7 @@ test_that("beta aggregation stays positive under BFGS", {
   indic <- make_monthly_indicator(n = 36)
   target <- make_quarter_target(indic, n_quarters = 12)
 
-  model <- bridge(
+  model <- mf_model(
     target = target,
     indic = indic,
     indic_predict = "last",

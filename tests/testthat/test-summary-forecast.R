@@ -1,8 +1,8 @@
-test_that("summary.bridge reports deterministic custom weights", {
+test_that("summary.mf_model reports deterministic custom weights", {
   indic <- make_monthly_indicator()
   target <- make_quarter_target(indic, n_quarters = 6)
 
-  model <- bridge(
+  model <- mf_model(
     target = target,
     indic = indic,
     indic_predict = "last",
@@ -12,7 +12,11 @@ test_that("summary.bridge reports deterministic custom weights", {
 
   output <- capture.output(summary(model))
 
-  expect_true(any(grepl("Bridge model summary", output, fixed = TRUE)))
+  expect_true(any(grepl(
+    "Mixed-frequency model summary",
+    output,
+    fixed = TRUE
+  )))
   expect_true(any(grepl("Target equation coefficients:", output, fixed = TRUE)))
   expect_true(any(grepl("Indicator summary:", output, fixed = TRUE)))
   expect_true(any(grepl("custom_weights", output, fixed = TRUE)))
@@ -25,11 +29,11 @@ test_that("summary.bridge reports deterministic custom weights", {
   expect_false(any(grepl("Uncertainty:", output, fixed = TRUE)))
 })
 
-test_that("summary.bridge reports parametric optimization details", {
+test_that("summary.mf_model reports parametric optimization details", {
   indic <- make_monthly_indicator(n = 36)
   target <- make_quarter_target(indic, n_quarters = 12)
 
-  model <- suppressWarnings(bridge(
+  model <- suppressWarnings(mf_model(
     target = target,
     indic = indic,
     indic_predict = "last",
@@ -61,11 +65,11 @@ test_that("summary.bridge reports parametric optimization details", {
   expect_false(any(grepl("Message: optimizer note", output, fixed = TRUE)))
 })
 
-test_that("summary.bridge omits aggregation details for direct alignment", {
+test_that("summary.mf_model omits aggregation details for direct alignment", {
   indic <- make_monthly_indicator(n = 36)
   target <- make_quarter_target(indic, n_quarters = 12)
 
-  model <- bridge(
+  model <- mf_model(
     target = target,
     indic = indic,
     indic_predict = "direct",
@@ -82,11 +86,11 @@ test_that("summary.bridge omits aggregation details for direct alignment", {
   expect_false(any(grepl(parametric_label, output, fixed = TRUE)))
 })
 
-test_that("forecast.bridge accepts custom xreg for lm bridge models", {
+test_that("forecast.mf_model accepts custom xreg for lm bridge models", {
   indic <- make_monthly_indicator(n = 36)
   target <- make_quarter_target(indic, n_quarters = 12)
 
-  model <- bridge(
+  model <- mf_model(
     target = target,
     indic = indic,
     indic_predict = "last",
@@ -109,7 +113,7 @@ test_that("forecast.bridge accepts custom xreg for lm bridge models", {
   scenario_forecast <- forecast(model, xreg = custom_xreg)
 
   expect_s3_class(model$model, "lm")
-  expect_s3_class(scenario_forecast, "bridge_forecast")
+  expect_s3_class(scenario_forecast, "mf_model_forecast")
   expect_s3_class(scenario_forecast, "forecast")
   expect_equal(nrow(scenario_forecast$forecast_set), 2)
   expect_equal(length(scenario_forecast$se), 2)
@@ -134,11 +138,11 @@ test_that("forecast.bridge accepts custom xreg for lm bridge models", {
   )
 })
 
-test_that("forecast.bridge prints a standardized forecast table", {
+test_that("forecast.mf_model prints a standardized forecast table", {
   indic <- make_monthly_indicator(n = 36)
   target <- make_quarter_target(indic, n_quarters = 12)
 
-  model <- bridge(
+  model <- mf_model(
     target = target,
     indic = indic,
     indic_predict = "last",
@@ -150,7 +154,11 @@ test_that("forecast.bridge prints a standardized forecast table", {
 
   output <- capture.output(print(forecast(model)))
 
-  expect_true(any(grepl("Bridge forecast", output, fixed = TRUE)))
+  expect_true(any(grepl(
+    "Mixed-frequency forecast",
+    output,
+    fixed = TRUE
+  )))
   expect_false(any(grepl("# A tibble", output, fixed = TRUE)))
   expect_false(any(grepl("Target model:", output, fixed = TRUE)))
   expect_true(any(grepl(
@@ -160,11 +168,13 @@ test_that("forecast.bridge prints a standardized forecast table", {
   )))
 })
 
-test_that("summary.bridge reports bootstrap SEs under full-system bootstrap", {
+test_that(
+  "summary.mf_model reports bootstrap SEs under full-system bootstrap",
+  {
   indic <- make_monthly_indicator(n = 36)
   target <- make_quarter_target(indic, n_quarters = 12)
 
-  model <- bridge(
+  model <- mf_model(
     target = target,
     indic = indic,
     indic_predict = "last",
@@ -188,15 +198,16 @@ test_that("summary.bridge reports bootstrap SEs under full-system bootstrap", {
     output,
     fixed = TRUE
   )))
-})
+  }
+)
 
 test_that(
-  "summary.bridge reports unavailable intervals when bootstrap is requested",
+  "summary.mf_model reports unavailable intervals when bootstrap is requested",
   {
   indic <- make_monthly_indicator(n = 36)
   target <- make_quarter_target(indic, n_quarters = 12)
 
-  model <- bridge(
+  model <- mf_model(
     target = target,
     indic = indic,
     indic_predict = "last",
@@ -219,11 +230,11 @@ test_that(
   }
 )
 
-test_that("forecast.bridge omits uncertainty columns when se is FALSE", {
+test_that("forecast.mf_model omits uncertainty columns when se is FALSE", {
   indic <- make_monthly_indicator(n = 36)
   target <- make_quarter_target(indic, n_quarters = 12)
 
-  model <- bridge(
+  model <- mf_model(
     target = target,
     indic = indic,
     indic_predict = "last",
@@ -235,7 +246,11 @@ test_that("forecast.bridge omits uncertainty columns when se is FALSE", {
   output <- capture.output(print(forecast(model)))
   point_only_label <- "Uncertainty: point forecast only"
 
-  expect_true(any(grepl("Bridge forecast", output, fixed = TRUE)))
+  expect_true(any(grepl(
+    "Mixed-frequency forecast",
+    output,
+    fixed = TRUE
+  )))
   expect_false(any(grepl("# A tibble", output, fixed = TRUE)))
   expect_false(any(grepl("Target model:", output, fixed = TRUE)))
   expect_true(any(grepl(point_only_label, output, fixed = TRUE)))
@@ -244,11 +259,13 @@ test_that("forecast.bridge omits uncertainty columns when se is FALSE", {
   expect_false(any(grepl("upper_95", output, fixed = TRUE)))
 })
 
-test_that("forecast.bridge errors when custom xreg omits required regressors", {
+test_that(
+  "forecast.mf_model errors when custom xreg omits required regressors",
+  {
   indic <- make_monthly_indicator(n = 36)
   target <- make_quarter_target(indic, n_quarters = 12)
 
-  model <- bridge(
+  model <- mf_model(
     target = target,
     indic = indic,
     indic_predict = "last",
@@ -267,4 +284,5 @@ test_that("forecast.bridge errors when custom xreg omits required regressors", {
     forecast(model, xreg = incomplete_xreg),
     "missing required regressors: indic_lag1"
   )
-})
+  }
+)

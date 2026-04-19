@@ -227,7 +227,7 @@ test_that("bridge keeps full bootstrap opt-in for direct forecasts", {
   indic <- make_monthly_indicator(n = 36)
   target <- make_quarter_target(indic, n_quarters = 12)
 
-  model <- bridge(
+  model <- mf_model(
     target = target,
     indic = indic,
     indic_predict = "direct",
@@ -259,12 +259,12 @@ test_that("bridge keeps full bootstrap opt-in for direct forecasts", {
 })
 
 test_that(
-  "forecast.bridge uses bootstrap scenario draws under full-system bootstrap",
+  "forecast.mf_model uses bootstrap scenario draws under full-system bootstrap",
   {
   indic <- make_monthly_indicator(n = 36)
   target <- make_quarter_target(indic, n_quarters = 12)
 
-  model <- bridge(
+  model <- mf_model(
     target = target,
     indic = indic,
     indic_predict = "last",

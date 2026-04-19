@@ -1,8 +1,8 @@
-#' Forecast a Bridge Model
+#' Forecast a Mixed-Frequency Model
 #'
-#' Forecast the target variable from a fitted [bridge()] model.
+#' Forecast the target variable from a fitted [mf_model()] object.
 #'
-#' @param object A `"bridge"` object returned by [bridge()].
+#' @param object A `"mf_model"` object returned by [mf_model()].
 #' @param xreg Optional future regressors in a [tsbox::ts_boxable()] format.
 #' When omitted, the forecast regressor set stored inside `object` is used.
 #' When supplied, `xreg` must contain the same non-target regressors used when
@@ -12,13 +12,13 @@
 #' returns the `se`, `lower`, and `upper` components, filled with `NA`.
 #' @param ... Reserved for future extensions.
 #'
-#' @return An object of class `"bridge_forecast"` and `"forecast"` containing
+#' @return An object of class `"mf_model_forecast"` and `"forecast"` containing
 #' point forecasts, predictive uncertainty summaries, the
 #' target-period regressors used for forecasting, and optional full-system
 #' bootstrap metadata.
-#' @method forecast bridge
+#' @method forecast mf_model
 #' @export
-forecast.bridge <- function(
+forecast.mf_model <- function(
   object,
   xreg = NULL,
   level = c(80, 95),
@@ -114,25 +114,25 @@ forecast.bridge <- function(
       direct = identical(unique(object$indic_predict), "direct"),
       model_class = class(object$model)[[1]]
     ),
-    class = c("bridge_forecast", "forecast")
+    class = c("mf_model_forecast", "forecast")
   )
 }
 
-#' Print a Bridge Forecast
+#' Print a Mixed-Frequency Forecast
 #'
-#' @param x A `"bridge_forecast"` object returned by [forecast.bridge()].
+#' @param x A `"mf_model_forecast"` object returned by [forecast.mf_model()].
 #' @param ... Unused.
 #'
 #' @return `x`, invisibly.
-#' @method print bridge_forecast
-#' @rdname forecast.bridge
+#' @method print mf_model_forecast
+#' @rdname forecast.mf_model
 #' @export
-print.bridge_forecast <- function(x, ...) {
+print.mf_model_forecast <- function(x, ...) {
   format_number <- function(x) {
     formatC(x, format = "f", digits = 3)
   }
 
-  cat("Bridge forecast\n")
+  cat("Mixed-frequency forecast\n")
   cat("-----------------------------------\n")
   cat("Target series: ", x$target_name, "\n", sep = "")
   cat("Forecast horizon: ", length(x$mean), "\n", sep = "")

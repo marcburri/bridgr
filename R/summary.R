@@ -1,12 +1,12 @@
-#' Summarize a Bridge Model
+#' Summarize a Mixed-Frequency Model
 #'
-#' @param object A `"bridge"` object returned by [bridge()].
+#' @param object A `"mf_model"` object returned by [mf_model()].
 #' @param ... Unused.
 #'
 #' @return `object`, invisibly.
-#' @method summary bridge
+#' @method summary mf_model
 #' @export
-summary.bridge <- function(object, ...) {
+summary.mf_model <- function(object, ...) {
   format_number <- function(x) {
     formatC(x, format = "f", digits = 3)
   }
@@ -73,7 +73,7 @@ summary.bridge <- function(object, ...) {
     drop = FALSE
   ]
 
-  cat("Bridge model summary\n")
+  cat("Mixed-frequency model summary\n")
   cat("-----------------------------------\n")
   cat("Target series: ", object$target_name, "\n", sep = "")
   cat("Target frequency: ", object$target_frequency$unit[[1]], "\n", sep = "")

@@ -9,7 +9,7 @@ test_that(
   target <- fixture$target
   indic <- fixture$indic
 
-  model <- bridge(
+  model <- mf_model(
     target = target,
     indic = indic,
     indic_predict = "last",
@@ -31,7 +31,7 @@ test_that("forecast method `mean` repeats the last block mean", {
   target <- fixture$target
   indic <- fixture$indic
 
-  model <- bridge(
+  model <- mf_model(
     target = target,
     indic = indic,
     indic_predict = "mean",
@@ -54,7 +54,7 @@ test_that("bridge suppresses tsbox value-name messages", {
     dplyr::slice_head(n = nrow(baro) - 2)
 
   expect_no_message(
-    bridge(
+    mf_model(
       target = gdp_nowcast,
       indic = baro_ragged,
       indic_predict = "mean",
@@ -75,7 +75,7 @@ test_that("forecast method `auto.arima` matches direct indicator forecasting", {
   target <- fixture$target
   indic <- fixture$indic
 
-  model <- bridge(
+  model <- mf_model(
     target = target,
     indic = indic,
     indic_predict = "auto.arima",
@@ -109,7 +109,7 @@ test_that("forecast method `ets` matches direct indicator forecasting", {
   target <- fixture$target
   indic <- fixture$indic
 
-  model <- bridge(
+  model <- mf_model(
     target = target,
     indic = indic,
     indic_predict = "ets",
@@ -137,7 +137,7 @@ test_that("aggregation method `mean` uses the within-period mean", {
   target <- fixture$target
   indic <- fixture$indic
 
-  model <- bridge(
+  model <- mf_model(
     target = target,
     indic = indic,
     indic_predict = "last",
@@ -157,7 +157,7 @@ test_that("aggregation method `last` uses the within-period last observation", {
   target <- fixture$target
   indic <- fixture$indic
 
-  model <- bridge(
+  model <- mf_model(
     target = target,
     indic = indic,
     indic_predict = "last",
@@ -177,7 +177,7 @@ test_that("aggregation method `sum` uses the within-period sum", {
   target <- fixture$target
   indic <- fixture$indic
 
-  model <- bridge(
+  model <- mf_model(
     target = target,
     indic = indic,
     indic_predict = "last",
@@ -198,7 +198,7 @@ test_that("aggregation with numeric weights uses the supplied weights", {
   target <- fixture$target
   indic <- fixture$indic
 
-  model <- bridge(
+  model <- mf_model(
     target = target,
     indic = indic,
     indic_predict = "last",
@@ -221,7 +221,7 @@ test_that(
     indicator_values = seq_len(49)
   )
 
-  model <- suppressWarnings(bridge(
+  model <- suppressWarnings(mf_model(
     target = fixture$target,
     indic = fixture$indic,
     indic_predict = "last",
@@ -268,7 +268,7 @@ test_that(
       rep(c(0.1, -0.05, 0.08, -0.02), length.out = n_quarters)
   )
 
-  model <- bridge(
+  model <- mf_model(
     target = target,
     indic = indic,
     indic_predict = "last",
@@ -294,7 +294,7 @@ test_that("aggregation method `expalmon` uses its estimated weights", {
   target <- fixture$target
   indic <- fixture$indic
 
-  model <- bridge(
+  model <- mf_model(
     target = target,
     indic = indic,
     indic_predict = "last",
@@ -321,7 +321,7 @@ test_that("aggregation method `beta` uses its estimated weights", {
       rep(c(1, -1, 2, -2, 3, -3, 0), length.out = 91)
   )
 
-  model <- bridge(
+  model <- mf_model(
     target = fixture$target,
     indic = fixture$indic,
     indic_predict = "last",
@@ -351,7 +351,7 @@ test_that("forecast method `direct` aligns blocks backward", {
     value = seq_len(43)
   )
 
-  model <- bridge(
+  model <- mf_model(
     target = fixture$target,
     indic = indic,
     indic_predict = "direct",
@@ -374,7 +374,7 @@ test_that("forecast method `direct` ignores supplied aggregators", {
     value = seq_len(43)
   )
 
-  model <- bridge(
+  model <- mf_model(
     target = fixture$target,
     indic = indic,
     indic_predict = "direct",
@@ -399,7 +399,7 @@ test_that("forecast method `direct` supports horizons greater than one", {
     value = seq_len(43)
   )
 
-  model <- bridge(
+  model <- mf_model(
     target = fixture$target,
     indic = indic,
     indic_predict = "direct",
@@ -434,7 +434,7 @@ test_that(
   )
 
   expect_warning(
-    bridge(
+    mf_model(
       target = fixture$target,
       indic = fixture$indic,
       indic_predict = "last",
@@ -456,7 +456,7 @@ test_that("a full pipeline example works end to end", {
   target <- fixture$target
   indic <- fixture$indic
 
-  model <- bridge(
+  model <- mf_model(
     target = target,
     indic = indic,
     indic_predict = "auto.arima",
@@ -468,21 +468,21 @@ test_that("a full pipeline example works end to end", {
 
   fcst <- forecast(model)
 
-  expect_s3_class(model, "bridge")
+  expect_s3_class(model, "mf_model")
   expect_s3_class(fcst, "forecast")
   expect_equal(nrow(model$forecast_set), 1)
   expect_equal(nrow(fcst$forecast_set), 1)
   expect_true(all(c("indic", "indic_lag1") %in% model$regressor_names))
 })
 
-test_that("plot.bridge renders forecast and fit views", {
+test_that("plot.mf_model renders forecast and fit views", {
   fixture <- make_daily_week_fixture(
     n_weeks = 60,
     h = 3,
     indicator_values = make_method_comparison_indicator(n = 441)$value
   )
 
-  model <- bridge(
+  model <- mf_model(
     target = fixture$target,
     indic = fixture$indic,
     indic_predict = "auto.arima",
@@ -492,7 +492,7 @@ test_that("plot.bridge renders forecast and fit views", {
     h = 1
   )
 
-  interval_model <- bridge(
+  interval_model <- mf_model(
     target = fixture$target,
     indic = fixture$indic,
     indic_predict = "auto.arima",

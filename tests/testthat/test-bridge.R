@@ -1,8 +1,26 @@
+test_that("bridge warns and forwards to mf_model", {
+  indic <- make_monthly_indicator()
+  target <- make_quarter_target(indic, n_quarters = 6)
+
+  expect_warning(
+    model <- bridge(
+      target = target,
+      indic = indic,
+      indic_predict = "last",
+      h = 1
+    ),
+    "deprecated"
+  )
+
+  expect_s3_class(model, "mf_model")
+  expect_equal(model$target_name, "target")
+})
+
 test_that("bridge keeps indicators beyond the forecast horizon", {
   indic <- make_monthly_indicator()
   target <- make_quarter_target(indic, n_quarters = 6)
 
-  model <- bridge(
+  model <- mf_model(
     target = target,
     indic = indic,
     indic_predict = "last",
@@ -24,7 +42,7 @@ test_that("bridge supports multiple indicators with mixed aggregation", {
     n_quarters = 6
   )
 
-  model <- bridge(
+  model <- mf_model(
     target = target,
     indic = indic,
     indic_predict = c("last", "last"),
@@ -41,7 +59,7 @@ test_that("extra high-frequency observations trigger a summarized warning", {
   target <- make_weekly_target(indic, n_weeks = 8)
 
   expect_warning(
-    model <- bridge(
+    model <- mf_model(
       target = target,
       indic = indic,
       indic_predict = "last",
@@ -60,7 +78,7 @@ test_that("too few high-frequency observations within a target period fail", {
   target <- make_weekly_target(indic, n_weeks = 8)
 
   expect_error(
-    bridge(
+    mf_model(
       target = target,
       indic = indic,
       indic_predict = "last",
@@ -82,7 +100,7 @@ test_that("invalid or lower-frequency indicators are rejected", {
   )
 
   expect_error(
-    bridge(target = target, indic = indic),
+    mf_model(target = target, indic = indic),
     "lower-frequency than the target"
   )
 })
@@ -98,7 +116,7 @@ test_that("direct alignment must be used for all indicators", {
   )
 
   expect_error(
-    bridge(
+    mf_model(
       target = target,
       indic = indic,
       indic_predict = c("direct", "last"),
@@ -113,7 +131,7 @@ test_that("parametric starting values must have the exact required length", {
   target <- make_quarter_target(indic, n_quarters = 6)
 
   expect_error(
-    bridge(
+    mf_model(
       target = target,
       indic = indic,
       indic_predict = "last",
@@ -125,7 +143,7 @@ test_that("parametric starting values must have the exact required length", {
   )
 
   expect_error(
-    bridge(
+    mf_model(
       target = target,
       indic = dplyr::tibble(
         id = rep(c("a", "b"), each = nrow(indic)),
@@ -141,7 +159,7 @@ test_that("parametric starting values must have the exact required length", {
   )
 
   expect_error(
-    bridge(
+    mf_model(
       target = target,
       indic = indic,
       indic_predict = "last",
@@ -157,7 +175,7 @@ test_that("deprecated solver option `start` is rejected", {
   target <- make_quarter_target(indic, n_quarters = 6)
 
   expect_error(
-    bridge(
+    mf_model(
       target = target,
       indic = indic,
       indic_predict = "last",
@@ -169,11 +187,11 @@ test_that("deprecated solver option `start` is rejected", {
   )
 })
 
-test_that("forecast.bridge uses stored regressors and accepts xreg", {
+test_that("forecast.mf_model uses stored regressors and accepts xreg", {
   indic <- make_monthly_indicator()
   target <- make_quarter_target(indic, n_quarters = 6)
 
-  model <- bridge(
+  model <- mf_model(
     target = target,
     indic = indic,
     indic_predict = "last",
@@ -184,7 +202,7 @@ test_that("forecast.bridge uses stored regressors and accepts xreg", {
   )
 
   default_forecast <- forecast(model)
-  expect_s3_class(default_forecast, "bridge_forecast")
+  expect_s3_class(default_forecast, "mf_model_forecast")
   expect_s3_class(default_forecast, "forecast")
   expect_equal(nrow(default_forecast$forecast_set), 2)
   expect_equal(length(default_forecast$se), 2)
@@ -209,11 +227,11 @@ test_that("forecast.bridge uses stored regressors and accepts xreg", {
   expect_equal(nrow(scenario_forecast$forecast_set), 2)
 })
 
-test_that("summary.bridge prints model information", {
+test_that("summary.mf_model prints model information", {
   indic <- make_monthly_indicator()
   target <- make_quarter_target(indic, n_quarters = 6)
 
-  model <- bridge(
+  model <- mf_model(
     target = target,
     indic = indic,
     indic_predict = "last",
@@ -221,7 +239,7 @@ test_that("summary.bridge prints model information", {
   )
 
   output <- capture.output(summary(model))
-  expect_true(any(grepl("Bridge model summary", output)))
+  expect_true(any(grepl("Mixed-frequency model summary", output)))
   expect_true(any(grepl("Target series:", output)))
   expect_true(any(grepl("Indicator summary:", output)))
 })
@@ -230,7 +248,7 @@ test_that("se = FALSE leaves bootstrap inactive", {
   indic <- make_monthly_indicator()
   target <- make_quarter_target(indic, n_quarters = 6)
 
-  model <- bridge(
+  model <- mf_model(
     target = target,
     indic = indic,
     indic_predict = "last",
@@ -251,7 +269,7 @@ test_that("full_system_bootstrap is validated as logical", {
   target <- make_quarter_target(indic, n_quarters = 6)
 
   expect_error(
-    bridge(
+    mf_model(
       target = target,
       indic = indic,
       full_system_bootstrap = "yes"
@@ -268,7 +286,7 @@ test_that("bridge validates duplicate timestamps and missing values", {
   indic <- make_monthly_indicator(n = 12)
 
   expect_error(
-    bridge(target = duplicate_target, indic = indic),
+    mf_model(target = duplicate_target, indic = indic),
     "duplicated values in time column|duplicate timestamps"
   )
 
@@ -277,7 +295,7 @@ test_that("bridge validates duplicate timestamps and missing values", {
   target <- make_quarter_target(indic, n_quarters = 4)
 
   expect_error(
-    bridge(target = target, indic = missing_indic),
+    mf_model(target = target, indic = missing_indic),
     "contains missing values"
   )
 })
@@ -517,7 +535,7 @@ test_that(
 test_that("single-indicator expalmon recovers deterministic weights", {
   fixture <- make_expalmon_single_fixture()
 
-  model <- bridge(
+  model <- mf_model(
     target = fixture$target,
     indic = fixture$indic,
     indic_predict = "last",
@@ -539,7 +557,7 @@ test_that("single-indicator expalmon recovers deterministic weights", {
 test_that("joint expalmon optimization improves the fit", {
   fixture <- make_expalmon_joint_fixture(n_periods = 12)
 
-  model <- bridge(
+  model <- mf_model(
     target = fixture$target,
     indic = fixture$indic,
     indic_predict = c("last", "last"),
@@ -640,7 +658,7 @@ test_that("joint expalmon optimization works alongside fixed aggregators", {
     include_mean_indicator = TRUE
   )
 
-  model <- bridge(
+  model <- mf_model(
     target = fixture$target,
     indic = fixture$indic,
     indic_predict = c("last", "last", "last"),
@@ -667,7 +685,7 @@ test_that("auto.arima recovers indicator dynamics", {
     slope = 1.1
   )
 
-  model <- bridge(
+  model <- mf_model(
     target = target,
     indic = indic,
     indic_predict = "auto.arima",

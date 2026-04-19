@@ -149,16 +149,16 @@ scale_fill_bridgr <- function(...) {
   )
 }
 
-#' Plot a Bridge Model
+#' Plot a Mixed-Frequency Model
 #'
-#' Visualize a fitted [bridge()] model either as an in-sample fit or as a
+#' Visualize a fitted [mf_model()] object either as an in-sample fit or as a
 #' forecast with prediction intervals.
 #'
-#' @param x A `"bridge"` object returned by [bridge()].
+#' @param x A `"mf_model"` object returned by [mf_model()].
 #' @param type Plot type. Use `"forecast"` to plot the observed target history
 #'   together with the bridge forecast, or `"fit"` to compare the observed
 #'   target to the in-sample fitted values.
-#' @param level Forecast interval level passed to [forecast.bridge()] when
+#' @param level Forecast interval level passed to [forecast.mf_model()] when
 #'   `type = "forecast"`.
 #' @param history_n Number of historical target observations to display.
 #'   Defaults to the most recent `50`. Set to `NULL` to show the full history.
@@ -167,9 +167,9 @@ scale_fill_bridgr <- function(...) {
 #' @param ... Additional arguments passed to [theme_bridgr()].
 #'
 #' @return A ggplot2 object.
-#' @method plot bridge
+#' @method plot mf_model
 #' @export
-plot.bridge <- function(
+plot.mf_model <- function(
   x,
   type = c("forecast", "fit"),
   level = 95,
@@ -209,7 +209,7 @@ plot.bridge <- function(
     )
 
     if (is.null(main)) {
-      main <- "Bridge Model Fit"
+      main <- "Mixed-Frequency Model Fit"
     }
     if (is.null(xlab)) {
       xlab <- "Time"
@@ -263,7 +263,7 @@ plot.bridge <- function(
   )
 
   if (is.null(main)) {
-    main <- "Bridge Forecast"
+    main <- "Mixed-Frequency Forecast"
   }
   if (is.null(xlab)) {
     xlab <- "Time"
