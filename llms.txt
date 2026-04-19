@@ -13,10 +13,10 @@ policymakers who need early insights for decision-making.
 
 `bridgr` supports regular frequency ladders from `second` up to `year`,
 several deterministic and model-based indicator forecasting rules, and
-multiple aggregation choices including joint `expalmon` weighting. If a
-target period contains more high-frequency observations than implied by
-the current frequency mapping, the package keeps the most recent
-observations and reports a summarized warning.
+multiple aggregation choices including joint `expalmon` and `beta`
+weighting. If a target period contains more high-frequency observations
+than implied by the current frequency mapping, the package keeps the
+most recent observations and reports a summarized warning.
 
 ## Installation
 
@@ -35,7 +35,7 @@ devtools::install_github("marcburri/bridgr")
 
 ## Example
 
-This is a basic example with the default mean aggregation:
+This example estimates a bridge model with uncertainty output:
 
 ``` r
 suppressPackageStartupMessages(library(bridgr))
@@ -48,8 +48,9 @@ bridge_model <- bridge(
   indic_predict = "auto.arima",
   indic_aggregators = "mean",
   indic_lags = 2,
-  target_lags = 0,
-  h = 2
+  target_lags = 1,
+  h = 2,
+  se = TRUE
 )
 
 forecast(bridge_model)
@@ -57,11 +58,12 @@ forecast(bridge_model)
 #> -----------------------------------
 #> Target series: gdp
 #> Forecast horizon: 2
-#> Uncertainty: point forecast only
+#> Uncertainty: prediction intervals from residual resampling
+#> Simulation paths: 100
 #> -----------------------------------
-#>   time       mean 
-#> 1 2023-01-01 0.741
-#> 2 2023-04-01 0.472
+#>   time       mean  se    lower_80 upper_80 lower_95 upper_95
+#> 1 2023-01-01 0.808 0.785 -0.342   1.605    -0.515   2.388   
+#> 2 2023-04-01 0.468 0.821 -0.552   1.449    -1.335   2.213
 
 summary(bridge_model)
 #> Bridge model summary
@@ -69,26 +71,35 @@ summary(bridge_model)
 #> Target series: gdp
 #> Target frequency: quarter
 #> Forecast horizon: 2
-#> Estimation rows: 73
-#> Regressors: baro, baro_lag1, baro_lag2
+#> Estimation rows: 72
+#> Regressors: baro, baro_lag1, baro_lag2, gdp_lag1
 #> -----------------------------------
 #> Target equation coefficients:
-#>             Estimate
-#> (Intercept)   -7.426
-#> baro           0.151
-#> baro_lag1     -0.095
-#> baro_lag2      0.023
+#>             Estimate HAC SE
+#> (Intercept)   -6.356  1.254
+#> baro           0.159  0.031
+#> baro_lag1     -0.134  0.049
+#> baro_lag2      0.042  0.019
+#> gdp_lag1       0.223  0.143
 #> -----------------------------------
 #> Indicator summary:
 #>      Frequency Predict    Aggregation
 #> baro month     auto.arima mean       
 #> -----------------------------------
+#> Uncertainty:
+#> Coefficient SEs: hac
+#> Prediction intervals: residual resampling
+#> Simulation paths: 100
+#> -----------------------------------
 ```
 
-If you want data-driven within-period weights instead of a simple mean,
-you can switch the indicator aggregator to `expalmon`. The corresponding
-weights are estimated jointly within the bridge model, and
-`solver_options` let you control the optimization.
+With `se = TRUE`, `bridgr` reports HAC or Delta-HAC coefficient standard
+errors and residual-resampling prediction intervals.
+
+If you want data-driven within-period weights instead of a simple
+deterministic aggregator, you can switch the indicator aggregator to
+`expalmon`. The corresponding weights are estimated jointly within the
+bridge model, and `solver_options` let you control the optimization.
 
 ``` r
 expalmon_model <- bridge(
@@ -164,5 +175,5 @@ summary(expalmon_model)
   bridgr](https://marcburri.github.io/bridgr/articles/mixed-frequency-modeling.md):
 - [Ragged-Edge Nowcasting with
   bridgr](https://marcburri.github.io/bridgr/articles/ragged-edge-nowcasting.md):
-- [Bootstrap Uncertainty and Scenario
-  Forecasting](https://marcburri.github.io/bridgr/articles/uncertainty-and-scenarios.md):
+- [UNKNOWN
+  TITLE](https://marcburri.github.io/bridgr/articles/uncertainty-and-scenarios.md):

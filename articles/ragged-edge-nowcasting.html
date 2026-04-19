@@ -47,7 +47,7 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/mixed-frequency-modeling.html">Aggregation and Mixed-Frequency Modeling in bridgr</a></li>
     <li><a class="dropdown-item" href="../articles/ragged-edge-nowcasting.html">Ragged-Edge Nowcasting with bridgr</a></li>
-    <li><a class="dropdown-item" href="../articles/uncertainty-and-scenarios.html">Bootstrap Uncertainty and Scenario Forecasting</a></li>
+    <li><a class="dropdown-item" href="../articles/uncertainty-and-scenarios.html">UNKNOWN TITLE</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -114,7 +114,8 @@ the missing observations.</li>
 <li>
 <code>"direct"</code>: do not forecast the indicator at all.
 Instead, align the latest observed complete high-frequency blocks
-directly to the target periods.</li>
+directly to the target periods and average them within each target
+period.</li>
 </ul>
 </div>
 <div class="section level2">
@@ -205,10 +206,10 @@ nowcast.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 3</span></span></span>
 <span><span class="co">#&gt;   method     forecast_time forecast</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;date&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> last       2022-10-01      -<span style="color: #BB0000;">0.885</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> mean       2022-10-01      -<span style="color: #BB0000;">0.810</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> auto.arima 2022-10-01      -<span style="color: #BB0000;">0.670</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> ets        2022-10-01      -<span style="color: #BB0000;">0.884</span></span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> last       2022-10-01      -<span style="color: #BB0000;">0.968</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> mean       2022-10-01      -<span style="color: #BB0000;">0.876</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> auto.arima 2022-10-01      -<span style="color: #BB0000;">0.706</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> ets        2022-10-01      -<span style="color: #BB0000;">0.968</span></span></span></code></pre></div>
 <p>The model specification is the same in each case. The only difference
 is how the missing monthly observations are completed before the
 indicator is aggregated to the quarterly frequency.</p>
@@ -227,16 +228,16 @@ used for the final forecast.</p>
 <span>  <span class="op">}</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; $last</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 2</span></span></span>
-<span><span class="co">#&gt;   time       baro_ragged</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;date&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 2022-10-01        87.5</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 3</span></span></span>
+<span><span class="co">#&gt;   time       baro_ragged gdp_nowcast_lag1</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;date&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;list&gt;</span>          </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 2022-10-01        87.5 <span style="color: #949494;">&lt;dbl [1]&gt;</span>       </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $mean</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 2</span></span></span>
-<span><span class="co">#&gt;   time       baro_ragged</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;date&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 2022-10-01        88.2</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 3</span></span></span>
+<span><span class="co">#&gt;   time       baro_ragged gdp_nowcast_lag1</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;date&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;list&gt;</span>          </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 2022-10-01        88.2 <span style="color: #949494;">&lt;dbl [1]&gt;</span></span></span></code></pre></div>
 <p>With <code>"last"</code>, the last observed monthly value is extended
 forward. With <code>"mean"</code>, the mean of the latest available
 high-frequency block is extended forward instead.</p>
@@ -246,14 +247,13 @@ high-frequency block is extended forward instead.</p>
 </h2>
 <p><code>"direct"</code> takes a different route. The indicator is not
 forecasted. Instead, <code>bridgr</code> assigns the latest complete
-high-frequency blocks backward to the target periods. That is closest to
-a direct MIDAS-style setup.</p>
+high-frequency blocks backward to the target periods and averages them
+within each target period.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">direct_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/bridge.html">bridge</a></span><span class="op">(</span></span>
 <span>  target <span class="op">=</span> <span class="va">gdp_nowcast</span>,</span>
 <span>  indic <span class="op">=</span> <span class="va">baro_ragged</span>,</span>
 <span>  indic_predict <span class="op">=</span> <span class="st">"direct"</span>,</span>
-<span>  indic_aggregators <span class="op">=</span> <span class="st">"unrestricted"</span>,</span>
 <span>  h <span class="op">=</span> <span class="fl">1</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -282,8 +282,9 @@ based on the latest high-frequency block.</li>
 <li>Use <code>"auto.arima"</code> or <code>"ets"</code> when the
 indicator has meaningful time-series structure and a separate
 extrapolation step is sensible.</li>
-<li>Use <code>"direct"</code> when you want direct MIDAS-style alignment
-without indicator forecasting.</li>
+<li>Use <code>"direct"</code> when you want direct alignment without
+indicator forecasting and want to rely only on the latest observed
+complete high-frequency blocks.</li>
 </ul>
 <p>The good part is that the downstream workflow does not change. The
 same <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> and <code><a href="https://generics.r-lib.org/reference/forecast.html" class="external-link">forecast()</a></code> interface works

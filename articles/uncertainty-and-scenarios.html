@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Bootstrap Uncertainty and Scenario Forecasting • bridgr</title>
+<title> • bridgr</title>
 <!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="../favicon-96x96.png">
 <link rel="icon" type="”image/svg+xml”" href="../favicon.svg">
 <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
@@ -21,7 +21,7 @@
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Bootstrap Uncertainty and Scenario Forecasting">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -47,7 +47,7 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/mixed-frequency-modeling.html">Aggregation and Mixed-Frequency Modeling in bridgr</a></li>
     <li><a class="dropdown-item" href="../articles/ragged-edge-nowcasting.html">Ragged-Edge Nowcasting with bridgr</a></li>
-    <li><a class="dropdown-item" href="../articles/uncertainty-and-scenarios.html">Bootstrap Uncertainty and Scenario Forecasting</a></li>
+    <li><a class="dropdown-item" href="../articles/uncertainty-and-scenarios.html">UNKNOWN TITLE</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -77,7 +77,7 @@
 
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-      <img src="../logo.png" class="logo" alt=""><h1>Bootstrap Uncertainty and Scenario Forecasting</h1>
+      <img src="../logo.png" class="logo" alt=""><h1></h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/marcburri/bridgr/blob/main/vignettes/uncertainty-and-scenarios.Rmd" class="external-link"><code>vignettes/uncertainty-and-scenarios.Rmd</code></a></small>
@@ -86,28 +86,35 @@
 
     
     
+<p>title: “Uncertainty and Scenario Forecasting” output:
+rmarkdown::html_vignette vignette: &gt; % % % —</p>
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
 <p><code>bridgr</code> can return point forecasts only, or it can also
-compute bootstrap uncertainty for the fitted target equation and
-predictive intervals for forecasts.</p>
+compute coefficient uncertainty for the fitted target equation and
+prediction intervals for forecasts.</p>
 <p>The relevant estimation arguments are:</p>
 <ul>
 <li>
 <code>se = FALSE</code>: point forecasts only.</li>
 <li>
-<code>se = TRUE</code>: compute bootstrap coefficient uncertainty
-and predictive forecast intervals.</li>
+<code>se = TRUE</code>: compute HAC or Delta-HAC coefficient
+uncertainty and prediction intervals.</li>
 <li>
-<code>bootstrap = list(type = "block", N = 100, block_length = NULL)</code>:
-control the bootstrap.</li>
+<code>bootstrap = list(N = 100, block_length = NULL)</code>: control
+the number of predictive simulation paths. <code>block_length</code> is
+only used when <code>full_system_bootstrap = TRUE</code>.</li>
+<li>
+<code>full_system_bootstrap = TRUE</code>: replace the default
+residual-resampling prediction intervals and HAC / Delta-HAC coefficient
+standard errors with a full-system target-period block bootstrap.
+Because this refits the full bridge workflow on every draw, it can be
+substantially slower.</li>
 </ul>
-<p>At the moment, <code>"block"</code> is the only supported bootstrap
-type.</p>
 </div>
 <div class="section level2">
-<h2 id="fitting-a-model-with-bootstrap-uncertainty">Fitting a Model with Bootstrap Uncertainty<a class="anchor" aria-label="anchor" href="#fitting-a-model-with-bootstrap-uncertainty"></a>
+<h2 id="fitting-a-model-with-default-uncertainty">Fitting a Model with Default Uncertainty<a class="anchor" aria-label="anchor" href="#fitting-a-model-with-default-uncertainty"></a>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">gdp_growth</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">suppressMessages</a></span><span class="op">(</span><span class="fu">tsbox</span><span class="fu">::</span><span class="fu"><a href="https://docs.ropensci.org/tsbox/reference/ts_na_omit.html" class="external-link">ts_na_omit</a></span><span class="op">(</span><span class="fu">tsbox</span><span class="fu">::</span><span class="fu"><a href="https://docs.ropensci.org/tsbox/reference/ts_pc.html" class="external-link">ts_pc</a></span><span class="op">(</span><span class="va">gdp</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
@@ -121,13 +128,13 @@ type.</p>
 <span>  target_lags <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  h <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>  se <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  bootstrap <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"block"</span>, N <span class="op">=</span> <span class="fl">20</span>, block_length <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
+<span>  bootstrap <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fl">20</span>, block_length <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>The current implementation uses a conditional block bootstrap on the
-final target-frequency estimation sample. It does not re-estimate
-indicator forecast models or parametric aggregation weights inside each
-bootstrap draw, but it does add simulated future target shocks to the
-stored forecast draws.</p>
+<p><code>bridgr</code> computes HAC standard errors for the linear
+bridge equation, or Delta-HAC standard errors when parametric
+aggregation weights are estimated jointly. Forecast uncertainty is
+obtained by simulating from resampled centered residuals of the fitted
+target equation.</p>
 </div>
 <div class="section level2">
 <h2 id="forecast-output">Forecast Output<a class="anchor" aria-label="anchor" href="#forecast-output"></a>
@@ -140,7 +147,7 @@ stored forecast draws.</p>
 <li><code>lower</code></li>
 <li><code>upper</code></li>
 <li><code>forecast_set</code></li>
-<li>bootstrap metadata</li>
+<li>uncertainty metadata</li>
 </ul>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://generics.r-lib.org/reference/forecast.html" class="external-link">forecast</a></span><span class="op">(</span><span class="va">boot_model</span><span class="op">)</span></span>
@@ -150,38 +157,35 @@ stored forecast draws.</p>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Target series: gdp_growth</span></span>
 <span><span class="co">#&gt; Forecast horizon: 2</span></span>
-<span><span class="co">#&gt; Uncertainty: predictive intervals from conditional block bootstrap</span></span>
-<span><span class="co">#&gt; Bootstrap draws: 20 / 20</span></span>
-<span><span class="co">#&gt; Block length: 5</span></span>
+<span><span class="co">#&gt; Uncertainty: prediction intervals from residual resampling</span></span>
+<span><span class="co">#&gt; Simulation paths: 20</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt;   time       mean  se    lower_80 upper_80 lower_95 upper_95</span></span>
-<span><span class="co">#&gt; 1 2023-01-01 0.972 0.947 -0.499   2.440    -0.524   2.775   </span></span>
-<span><span class="co">#&gt; 2 2023-04-01 0.698 0.571 -0.190   1.378    -0.529   1.578</span></span>
+<span><span class="co">#&gt; 1 2023-01-01 0.875 0.949 -0.430   1.794    -1.461   2.943   </span></span>
+<span><span class="co">#&gt; 2 2023-04-01 0.678 0.671 -0.470   1.030    -1.670   1.225</span></span>
 <span><span class="va">fc</span><span class="op">$</span><span class="va">bootstrap</span></span>
-<span><span class="co">#&gt; $enabled</span></span>
-<span><span class="co">#&gt; [1] TRUE</span></span>
+<span><span class="co">#&gt; $requested</span></span>
+<span><span class="co">#&gt; [1] FALSE</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $type</span></span>
-<span><span class="co">#&gt; [1] "block"</span></span>
+<span><span class="co">#&gt; $enabled</span></span>
+<span><span class="co">#&gt; [1] FALSE</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $N</span></span>
 <span><span class="co">#&gt; [1] 20</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $valid_N</span></span>
-<span><span class="co">#&gt; [1] 20</span></span>
+<span><span class="co">#&gt; [1] 0</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $block_length</span></span>
-<span><span class="co">#&gt; [1] 5</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $conditional</span></span>
-<span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
-<p>The intervals are empirical predictive intervals based on the stored
-bootstrap forecast draws.</p>
+<span><span class="co">#&gt; NULL</span></span></code></pre></div>
+<p>The intervals are empirical prediction intervals based on the stored
+residual- resampling forecast draws.</p>
 </div>
 <div class="section level2">
 <h2 id="summary-output">Summary Output<a class="anchor" aria-label="anchor" href="#summary-output"></a>
 </h2>
-<p>The same bootstrap run also feeds into <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code>.</p>
+<p>The same uncertainty configuration also feeds into
+<code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code>.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">boot_model</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Bridge model summary</span></span>
@@ -189,27 +193,27 @@ bootstrap forecast draws.</p>
 <span><span class="co">#&gt; Target series: gdp_growth</span></span>
 <span><span class="co">#&gt; Target frequency: quarter</span></span>
 <span><span class="co">#&gt; Forecast horizon: 2</span></span>
-<span><span class="co">#&gt; Estimation rows: 74</span></span>
-<span><span class="co">#&gt; Regressors: baro, baro_lag1</span></span>
+<span><span class="co">#&gt; Estimation rows: 73</span></span>
+<span><span class="co">#&gt; Regressors: baro, baro_lag1, gdp_growth_lag1</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Target equation coefficients:</span></span>
-<span><span class="co">#&gt;           Estimate Bootstrap SE</span></span>
-<span><span class="co">#&gt; ar1          0.243        0.162</span></span>
-<span><span class="co">#&gt; intercept   -6.493        1.730</span></span>
-<span><span class="co">#&gt; baro         0.161        0.045</span></span>
-<span><span class="co">#&gt; baro_lag1   -0.092        0.038</span></span>
+<span><span class="co">#&gt;                 Estimate HAC SE</span></span>
+<span><span class="co">#&gt; (Intercept)       -6.249  1.424</span></span>
+<span><span class="co">#&gt; baro               0.151  0.033</span></span>
+<span><span class="co">#&gt; baro_lag1         -0.084  0.031</span></span>
+<span><span class="co">#&gt; gdp_growth_lag1    0.012  0.073</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Indicator summary:</span></span>
 <span><span class="co">#&gt;      Frequency Predict    Aggregation</span></span>
 <span><span class="co">#&gt; baro month     auto.arima mean       </span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Uncertainty:</span></span>
-<span><span class="co">#&gt; Method: conditional block bootstrap with predictive forecast draws</span></span>
-<span><span class="co">#&gt; Bootstrap draws: 20 / 20</span></span>
-<span><span class="co">#&gt; Block length: 5</span></span>
+<span><span class="co">#&gt; Coefficient SEs: hac</span></span>
+<span><span class="co">#&gt; Prediction intervals: residual resampling</span></span>
+<span><span class="co">#&gt; Simulation paths: 20</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span></code></pre></div>
 <p>The printed summary keeps the same base layout as a point-estimate
-model and adds the uncertainty section only when bootstrap output is
+model and adds the uncertainty section only when uncertainty output is
 available.</p>
 </div>
 <div class="section level2">
@@ -221,14 +225,14 @@ The custom regressor names must match the ones used in the fitted target
 equation.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">scenario_xreg</span> <span class="op">&lt;-</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
-<span>  id <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">boot_model</span><span class="op">$</span><span class="va">regressor_names</span>, each <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">boot_model</span><span class="op">$</span><span class="va">forecast_set</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  id <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">boot_model</span><span class="op">$</span><span class="va">xreg_names</span>, each <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">boot_model</span><span class="op">$</span><span class="va">forecast_base_set</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span></span>
-<span>    <span class="va">boot_model</span><span class="op">$</span><span class="va">forecast_set</span><span class="op">$</span><span class="va">time</span>,</span>
-<span>    times <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">boot_model</span><span class="op">$</span><span class="va">regressor_names</span><span class="op">)</span></span>
+<span>    <span class="va">boot_model</span><span class="op">$</span><span class="va">forecast_base_set</span><span class="op">$</span><span class="va">time</span>,</span>
+<span>    times <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">boot_model</span><span class="op">$</span><span class="va">xreg_names</span><span class="op">)</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  value <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
-<span>    <span class="va">boot_model</span><span class="op">$</span><span class="va">forecast_set</span><span class="op">$</span><span class="va">baro</span> <span class="op">+</span> <span class="fl">5</span>,</span>
-<span>    <span class="va">boot_model</span><span class="op">$</span><span class="va">forecast_set</span><span class="op">$</span><span class="va">baro_lag1</span> <span class="op">+</span> <span class="fl">5</span></span>
+<span>    <span class="va">boot_model</span><span class="op">$</span><span class="va">forecast_base_set</span><span class="op">$</span><span class="va">baro</span> <span class="op">+</span> <span class="fl">5</span>,</span>
+<span>    <span class="va">boot_model</span><span class="op">$</span><span class="va">forecast_base_set</span><span class="op">$</span><span class="va">baro_lag1</span> <span class="op">+</span> <span class="fl">5</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -242,13 +246,50 @@ equation.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 3</span></span></span>
 <span><span class="co">#&gt;   time       baseline scenario</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;date&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 2023-01-01    0.972     1.32</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> 2023-04-01    0.698     1.05</span></span></code></pre></div>
-<p>When a model contains stored bootstrap draws,
-<code>forecast(..., xreg = ...)</code> reuses the bootstrap refits and
-evaluates them on the scenario regressor path. That keeps the predictive
-uncertainty handling consistent between the baseline forecast and
-scenario forecasts.</p>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 2023-01-01    0.875     1.21</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> 2023-04-01    0.678     1.02</span></span></code></pre></div>
+<p>Scenario forecasts reuse the same uncertainty method and evaluate it
+on the supplied regressor path.</p>
+</div>
+<div class="section level2">
+<h2 id="optional-full-system-bootstrap">Optional Full-System Bootstrap<a class="anchor" aria-label="anchor" href="#optional-full-system-bootstrap"></a>
+</h2>
+<p>If you want to propagate uncertainty through the full bridge
+workflow, including indicator completion and aggregation, set
+<code>full_system_bootstrap = TRUE</code>. This can be substantially
+slower than the default residual-resampling intervals because each
+bootstrap draw re-estimates the full bridge pipeline. In that mode, both
+the reported coefficient standard errors and the forecast intervals are
+based on the bootstrap draws.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">full_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/bridge.html">bridge</a></span><span class="op">(</span></span>
+<span>  target <span class="op">=</span> <span class="va">gdp_growth</span>,</span>
+<span>  indic <span class="op">=</span> <span class="va">baro</span>,</span>
+<span>  indic_predict <span class="op">=</span> <span class="st">"auto.arima"</span>,</span>
+<span>  indic_aggregators <span class="op">=</span> <span class="st">"mean"</span>,</span>
+<span>  indic_lags <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  target_lags <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  h <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  se <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  full_system_bootstrap <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  bootstrap <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fl">20</span>, block_length <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://generics.r-lib.org/reference/forecast.html" class="external-link">forecast</a></span><span class="op">(</span><span class="va">full_model</span><span class="op">)</span><span class="op">$</span><span class="va">bootstrap</span></span>
+<span><span class="co">#&gt; $requested</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $enabled</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $N</span></span>
+<span><span class="co">#&gt; [1] 20</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $valid_N</span></span>
+<span><span class="co">#&gt; [1] 20</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $block_length</span></span>
+<span><span class="co">#&gt; [1] 5</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="point-forecasts-only">Point Forecasts Only<a class="anchor" aria-label="anchor" href="#point-forecasts-only"></a>
@@ -257,7 +298,7 @@ scenario forecasts.</p>
 <code>se = FALSE</code>. In that case, <code>bootstrap</code> is ignored
 and <code><a href="https://generics.r-lib.org/reference/forecast.html" class="external-link">forecast()</a></code> still returns the same object shape, with
 <code>NA</code> uncertainty fields.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">point_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/bridge.html">bridge</a></span><span class="op">(</span></span>
 <span>  target <span class="op">=</span> <span class="va">gdp_growth</span>,</span>
 <span>  indic <span class="op">=</span> <span class="va">baro</span>,</span>
@@ -267,7 +308,7 @@ and <code><a href="https://generics.r-lib.org/reference/forecast.html" class="ex
 <span>  target_lags <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  h <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  se <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  bootstrap <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"block"</span>, N <span class="op">=</span> <span class="fl">20</span><span class="op">)</span></span>
+<span>  bootstrap <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fl">20</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://generics.r-lib.org/reference/forecast.html" class="external-link">forecast</a></span><span class="op">(</span><span class="va">point_model</span><span class="op">)</span></span>
@@ -278,15 +319,19 @@ and <code><a href="https://generics.r-lib.org/reference/forecast.html" class="ex
 <span><span class="co">#&gt; Uncertainty: point forecast only</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt;   time       mean </span></span>
-<span><span class="co">#&gt; 1 2023-01-01 0.972</span></span></code></pre></div>
+<span><span class="co">#&gt; 1 2023-01-01 0.875</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="interpretation">Interpretation<a class="anchor" aria-label="anchor" href="#interpretation"></a>
 </h2>
-<p>These intervals are conditional on the aligned target-frequency
-design matrix. That means they are predictive intervals for the final
-target equation given the regressor path, rather than full end-to-end
-uncertainty for the whole mixed-frequency system.</p>
+<p>With the default <code>se = TRUE</code>, these intervals are
+residual-resampling prediction intervals for the fitted target equation,
+while coefficient standard errors come from HAC or Delta-HAC estimation.
+When <code>full_system_bootstrap = TRUE</code>, both the coefficient
+standard errors and the forecast intervals come from a full-system block
+bootstrap that resamples target-period blocks from the aligned
+mixed-frequency system, refits the bridge workflow on each draw, and
+evaluates the resulting future paths.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

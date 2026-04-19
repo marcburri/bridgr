@@ -19,6 +19,7 @@ bridge(
   frequency_conversions = NULL,
   se = FALSE,
   bootstrap = NULL,
+  full_system_bootstrap = FALSE,
   solver_options = NULL,
   ...
 )
@@ -61,12 +62,10 @@ bridge(
   length for the inferred target-period block size. `"unrestricted"`
   keeps one separate coefficient per high-frequency observation within
   the target period. The parametric aggregators use two coefficients
-  each: `"expalmon"` uses `(linear, quadratic)`, `"beta"` uses
-  `(left_shape, right_shape)` as the normalized beta shape parameters,
-  and `"legendre"` uses `(first_order, second_order)` as coefficients on
-  the first two shifted orthonormal Legendre basis functions. When
-  `indic_predict = "direct"`, `indic_aggregators` is ignored and direct
-  blocks are averaged within each target period.
+  each: `"expalmon"` uses `(linear, quadratic)`, and `"beta"` uses
+  `(left_shape, right_shape)` as the normalized beta shape parameters.
+  When `indic_predict = "direct"`, `indic_aggregators` is ignored and
+  direct blocks are averaged within each target period.
 
 - indic_lags:
 
@@ -90,23 +89,32 @@ bridge(
 
 - se:
 
-  Logical flag indicating whether bootstrap coefficient standard errors
-  and predictive forecast intervals should be computed. When `FALSE`,
-  `bootstrap` is ignored.
+  Logical flag indicating whether coefficient standard errors and
+  prediction intervals should be computed. When `TRUE`, `bridge()`
+  reports HAC standard errors for the linear target equation, or
+  Delta-HAC standard errors when parametric aggregation weights are
+  estimated jointly.
 
 - bootstrap:
 
-  A list of bootstrap controls. Currently only
-  `list(type = "block", N = 100, block_length = NULL)` is supported.
-  `type` must be `"block"`, `N` is the number of bootstrap replications,
-  and `block_length` is the target-frequency block length. When
-  `block_length` is `NULL`, `bridge()` uses `ceiling(n^(1/3))` based on
-  the final target-period estimation sample size. The bootstrap is
-  conditional on the aligned low-frequency design matrix and therefore
-  does not re-estimate indicator forecasts or aggregation weights, but
-  the stored forecast draws include simulated future target shocks so
-  [`forecast()`](https://generics.r-lib.org/reference/forecast.html)
-  returns predictive intervals.
+  A list of uncertainty controls. Currently only
+  `list(N = 100, block_length = NULL)` is supported. `N` is the number
+  of predictive simulation paths used when `se = TRUE`. If
+  `full_system_bootstrap = TRUE`, the same `N` controls the number of
+  full-system target-period block-bootstrap replications used for
+  prediction intervals. `block_length` is only used by the full-system
+  bootstrap. When `block_length` is `NULL`, `bridge()` uses
+  `ceiling(n^(1/3))` based on the final target-period sample size.
+
+- full_system_bootstrap:
+
+  Logical flag indicating whether prediction intervals and coefficient
+  standard errors should be based on a full-system target-period block
+  bootstrap instead of residual resampling and HAC / Delta-HAC
+  uncertainty from the fitted target equation. This option is only used
+  when `se = TRUE`. Because it refits the full bridge workflow on every
+  draw, `full_system_bootstrap = TRUE` can be substantially slower than
+  the default residual-resampling intervals.
 
 - solver_options:
 
@@ -119,12 +127,11 @@ bridge(
   parameter values. `start_values` can be either a numeric vector or a
   named list. For a numeric vector, values are concatenated in indicator
   order across the parametric aggregators. Within each indicator, the
-  parameter order is `(linear, quadratic)` for `"expalmon"`,
-  `(left_shape, right_shape)` for `"beta"`, and
-  `(first_order, second_order)` for `"legendre"`. Named-list
-  `start_values` must provide exactly the required number of values for
-  each parametric indicator. These controls are ignored unless at least
-  one indicator uses a parametric aggregator.
+  parameter order is `(linear, quadratic)` for `"expalmon"` and
+  `(left_shape, right_shape)` for `"beta"`. Named-list `start_values`
+  must provide exactly the required number of values for each parametric
+  indicator. These controls are ignored unless at least one indicator
+  uses a parametric aggregator.
 
 - ...:
 
@@ -144,7 +151,7 @@ and
 Supported indicator forecasting methods are `"mean"`, `"last"`,
 `"auto.arima"`, `"ets"`, and `"direct"`. Supported aggregation methods
 are `"mean"`, `"last"`, `"sum"`, `"unrestricted"`, `"expalmon"`,
-`"beta"`, `"legendre"`, or a numeric weight vector supplied inside a
+`"beta"`, or a numeric weight vector supplied inside a
 [`list()`](https://rdrr.io/r/base/list.html). `"unrestricted"` expands
 each high-frequency observation within a target period into its own
 bridge regressor, which corresponds to a U-MIDAS style specification
@@ -241,8 +248,8 @@ forecast(model)
 #> Uncertainty: point forecast only
 #> -----------------------------------
 #>   time       mean 
-#> 1 2023-01-01 0.972
-#> 2 2023-04-01 0.698
+#> 1 2023-01-01 0.875
+#> 2 2023-04-01 0.678
 summary(expalmon_model)
 #> Bridge model summary
 #> -----------------------------------

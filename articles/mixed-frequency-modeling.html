@@ -47,7 +47,7 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/mixed-frequency-modeling.html">Aggregation and Mixed-Frequency Modeling in bridgr</a></li>
     <li><a class="dropdown-item" href="../articles/ragged-edge-nowcasting.html">Ragged-Edge Nowcasting with bridgr</a></li>
-    <li><a class="dropdown-item" href="../articles/uncertainty-and-scenarios.html">Bootstrap Uncertainty and Scenario Forecasting</a></li>
+    <li><a class="dropdown-item" href="../articles/uncertainty-and-scenarios.html">UNKNOWN TITLE</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -97,8 +97,8 @@ a continuum:</p>
 <code>"last"</code>, <code>"sum"</code>, or fixed numeric weights.</li>
 <li>Unrestricted mixed-frequency regression:
 <code>"unrestricted"</code>.</li>
-<li>Parametric MIDAS-style weighting: <code>"expalmon"</code>,
-<code>"beta"</code>, and <code>"legendre"</code>.</li>
+<li>Parametric MIDAS-style weighting: <code>"expalmon"</code> and
+<code>"beta"</code>.</li>
 </ul>
 <p>This vignette uses a simple monthly-to-quarterly simulation so the
 differences between these approaches are easy to see.</p>
@@ -239,9 +239,10 @@ aggregation.</p>
 within-quarter monthly observation. In a monthly-on-quarterly example
 this means three separate regressors. This example keeps
 <code>indic_predict = "last"</code> so the comparison isolates the
-aggregation choice; combining <code>"unrestricted"</code> with
-<code>indic_predict = "direct"</code> gives a direct MIDAS-style
-alignment and is covered in the ragged-edge vignette.</p>
+aggregation choice. The ragged-edge vignette covers
+<code>indic_predict = "direct"</code>, which skips indicator forecasting
+and instead works from the latest observed complete high-frequency
+blocks.</p>
 </div>
 <div class="section level2">
 <h2 id="parametric-midas-style-weighting">Parametric MIDAS-Style Weighting<a class="anchor" aria-label="anchor" href="#parametric-midas-style-weighting"></a>
@@ -271,15 +272,6 @@ of free parameters small.</p>
 <span>    start_values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  h <span class="op">=</span> <span class="fl">1</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">legendre_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/bridge.html">bridge</a></span><span class="op">(</span></span>
-<span>  target <span class="op">=</span> <span class="va">quarter_target</span>,</span>
-<span>  indic <span class="op">=</span> <span class="va">monthly_indicator</span>,</span>
-<span>  indic_predict <span class="op">=</span> <span class="st">"last"</span>,</span>
-<span>  indic_aggregators <span class="op">=</span> <span class="st">"legendre"</span>,</span>
-<span>  solver_options <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>seed <span class="op">=</span> <span class="fl">123</span>, n_starts <span class="op">=</span> <span class="fl">1</span>, maxiter <span class="op">=</span> <span class="fl">100</span><span class="op">)</span>,</span>
-<span>  h <span class="op">=</span> <span class="fl">1</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>The fitted object stores both the estimated weight profile and the
 underlying parametric coefficients.</p>
@@ -296,14 +288,9 @@ underlying parametric coefficients.</p>
 <span>    model <span class="op">=</span> <span class="st">"beta"</span>,</span>
 <span>    month <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_along</a></span><span class="op">(</span><span class="va">beta_model</span><span class="op">$</span><span class="va">parametric_weights</span><span class="op">[[</span><span class="va">indicator_id</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>,</span>
 <span>    weight <span class="op">=</span> <span class="va">beta_model</span><span class="op">$</span><span class="va">parametric_weights</span><span class="op">[[</span><span class="va">indicator_id</span><span class="op">]</span><span class="op">]</span></span>
-<span>  <span class="op">)</span>,</span>
-<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
-<span>    model <span class="op">=</span> <span class="st">"legendre"</span>,</span>
-<span>    month <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_along</a></span><span class="op">(</span><span class="va">legendre_model</span><span class="op">$</span><span class="va">parametric_weights</span><span class="op">[[</span><span class="va">indicator_id</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>,</span>
-<span>    weight <span class="op">=</span> <span class="va">legendre_model</span><span class="op">$</span><span class="va">parametric_weights</span><span class="op">[[</span><span class="va">indicator_id</span><span class="op">]</span><span class="op">]</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 9 × 3</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 3</span></span></span>
 <span><span class="co">#&gt;   model    month    weight</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> expalmon     1 1.99 <span style="color: #949494;">e</span><span style="color: #BB0000;">- 1</span></span></span>
@@ -311,10 +298,7 @@ underlying parametric coefficients.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> expalmon     3 2.05 <span style="color: #949494;">e</span><span style="color: #BB0000;">- 1</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> beta         1 8.88 <span style="color: #949494;">e</span><span style="color: #BB0000;">-16</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> beta         2 1.000<span style="color: #949494;">e</span>+ 0</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> beta         3 8.88 <span style="color: #949494;">e</span><span style="color: #BB0000;">-16</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">7</span> legendre     1 1.99 <span style="color: #949494;">e</span><span style="color: #BB0000;">- 1</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">8</span> legendre     2 5.97 <span style="color: #949494;">e</span><span style="color: #BB0000;">- 1</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">9</span> legendre     3 2.05 <span style="color: #949494;">e</span><span style="color: #BB0000;">- 1</span></span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> beta         3 8.88 <span style="color: #949494;">e</span><span style="color: #BB0000;">-16</span></span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="forecast-comparison">Forecast Comparison<a class="anchor" aria-label="anchor" href="#forecast-comparison"></a>
@@ -341,44 +325,39 @@ underlying parametric coefficients.</p>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
 <span>    model <span class="op">=</span> <span class="st">"beta"</span>,</span>
 <span>    forecast <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://generics.r-lib.org/reference/forecast.html" class="external-link">forecast</a></span><span class="op">(</span><span class="va">beta_model</span><span class="op">)</span><span class="op">$</span><span class="va">mean</span><span class="op">)</span></span>
-<span>  <span class="op">)</span>,</span>
-<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
-<span>    model <span class="op">=</span> <span class="st">"legendre"</span>,</span>
-<span>    forecast <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://generics.r-lib.org/reference/forecast.html" class="external-link">forecast</a></span><span class="op">(</span><span class="va">legendre_model</span><span class="op">)</span><span class="op">$</span><span class="va">mean</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 2</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 5 × 2</span></span></span>
 <span><span class="co">#&gt;   model        forecast</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> mean             29.0</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> last             28.9</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> unrestricted     29.0</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> expalmon         29.0</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> beta             29.0</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> legendre         29.0</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> beta             29.0</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="choosing-an-aggregation-strategy">Choosing an Aggregation Strategy<a class="anchor" aria-label="anchor" href="#choosing-an-aggregation-strategy"></a>
 </h2>
 <p>As a rough guide:</p>
 <ul>
-<li>Use deterministic bridge aggregation when you want a transparent and
-stable nowcasting rule.</li>
+<li>Use deterministic bridge aggregation like “mean”, “last”, “sum” when
+you want a transparent and stable nowcasting rule.</li>
 <li>Use <code>"unrestricted"</code> when the frequency gap is small and
 you want each within-period observation to have its own
 coefficient.</li>
-<li>Use <code>"expalmon"</code>, <code>"beta"</code>, or
-<code>"legendre"</code> when you want data-driven within-period weights
-but would like a more parsimonious parameterization than
-<code>"unrestricted"</code>.</li>
+<li>Use <code>"expalmon"</code> or <code>"beta"</code> when you want
+data-driven within-period weights but would like a more parsimonious
+parameterization than <code>"unrestricted"</code>.</li>
 <li>Use <code>indic_predict = "direct"</code> when you want direct
-MIDAS-style alignment based only on the latest observed high-frequency
+alignment based only on the latest observed complete high-frequency
 blocks.</li>
 </ul>
 <p>The key design choice in <code>bridgr</code> is that all of these
 specifications share the same estimation, forecasting, and summary
-workflow. You can therefore move between bridge and MIDAS-style models
-without switching to a different API.</p>
+workflow. You can therefore move between classic bridge models,
+unrestricted mixed-frequency regressions, and parametric MIDAS-style
+models without switching to a different API.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

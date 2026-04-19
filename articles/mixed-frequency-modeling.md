@@ -8,8 +8,7 @@ a lower-frequency target equation. Those choices span a continuum:
 - Bridge-style deterministic aggregation: `"mean"`, `"last"`, `"sum"`,
   or fixed numeric weights.
 - Unrestricted mixed-frequency regression: `"unrestricted"`.
-- Parametric MIDAS-style weighting: `"expalmon"`, `"beta"`, and
-  `"legendre"`.
+- Parametric MIDAS-style weighting: `"expalmon"` and `"beta"`.
 
 This vignette uses a simple monthly-to-quarterly simulation so the
 differences between these approaches are easy to see.
@@ -152,9 +151,9 @@ summary(unrestricted_model)
 `"unrestricted"` estimates one coefficient for each within-quarter
 monthly observation. In a monthly-on-quarterly example this means three
 separate regressors. This example keeps `indic_predict = "last"` so the
-comparison isolates the aggregation choice; combining `"unrestricted"`
-with `indic_predict = "direct"` gives a direct MIDAS-style alignment and
-is covered in the ragged-edge vignette.
+comparison isolates the aggregation choice. The ragged-edge vignette
+covers `indic_predict = "direct"`, which skips indicator forecasting and
+instead works from the latest observed complete high-frequency blocks.
 
 ## Parametric MIDAS-Style Weighting
 
@@ -185,15 +184,6 @@ beta_model <- bridge(
   ),
   h = 1
 )
-
-legendre_model <- bridge(
-  target = quarter_target,
-  indic = monthly_indicator,
-  indic_predict = "last",
-  indic_aggregators = "legendre",
-  solver_options = list(seed = 123, n_starts = 1, maxiter = 100),
-  h = 1
-)
 ```
 
 The fitted object stores both the estimated weight profile and the
@@ -212,14 +202,9 @@ dplyr::bind_rows(
     model = "beta",
     month = seq_along(beta_model$parametric_weights[[indicator_id]]),
     weight = beta_model$parametric_weights[[indicator_id]]
-  ),
-  dplyr::tibble(
-    model = "legendre",
-    month = seq_along(legendre_model$parametric_weights[[indicator_id]]),
-    weight = legendre_model$parametric_weights[[indicator_id]]
   )
 )
-#> # A tibble: 9 × 3
+#> # A tibble: 6 × 3
 #>   model    month    weight
 #>   <chr>    <int>     <dbl>
 #> 1 expalmon     1 1.99 e- 1
@@ -228,9 +213,6 @@ dplyr::bind_rows(
 #> 4 beta         1 8.88 e-16
 #> 5 beta         2 1.000e+ 0
 #> 6 beta         3 8.88 e-16
-#> 7 legendre     1 1.99 e- 1
-#> 8 legendre     2 5.97 e- 1
-#> 9 legendre     3 2.05 e- 1
 ```
 
 ## Forecast Comparison
@@ -258,13 +240,9 @@ dplyr::bind_rows(
   dplyr::tibble(
     model = "beta",
     forecast = as.numeric(forecast(beta_model)$mean)
-  ),
-  dplyr::tibble(
-    model = "legendre",
-    forecast = as.numeric(forecast(legendre_model)$mean)
   )
 )
-#> # A tibble: 6 × 2
+#> # A tibble: 5 × 2
 #>   model        forecast
 #>   <chr>           <dbl>
 #> 1 mean             29.0
@@ -272,24 +250,24 @@ dplyr::bind_rows(
 #> 3 unrestricted     29.0
 #> 4 expalmon         29.0
 #> 5 beta             29.0
-#> 6 legendre         29.0
 ```
 
 ## Choosing an Aggregation Strategy
 
 As a rough guide:
 
-- Use deterministic bridge aggregation when you want a transparent and
-  stable nowcasting rule.
+- Use deterministic bridge aggregation like “mean”, “last”, “sum” when
+  you want a transparent and stable nowcasting rule.
 - Use `"unrestricted"` when the frequency gap is small and you want each
   within-period observation to have its own coefficient.
-- Use `"expalmon"`, `"beta"`, or `"legendre"` when you want data-driven
-  within-period weights but would like a more parsimonious
-  parameterization than `"unrestricted"`.
-- Use `indic_predict = "direct"` when you want direct MIDAS-style
-  alignment based only on the latest observed high-frequency blocks.
+- Use `"expalmon"` or `"beta"` when you want data-driven within-period
+  weights but would like a more parsimonious parameterization than
+  `"unrestricted"`.
+- Use `indic_predict = "direct"` when you want direct alignment based
+  only on the latest observed complete high-frequency blocks.
 
 The key design choice in `bridgr` is that all of these specifications
 share the same estimation, forecasting, and summary workflow. You can
-therefore move between bridge and MIDAS-style models without switching
-to a different API.
+therefore move between classic bridge models, unrestricted
+mixed-frequency regressions, and parametric MIDAS-style models without
+switching to a different API.

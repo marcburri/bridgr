@@ -50,7 +50,7 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="articles/mixed-frequency-modeling.html">Aggregation and Mixed-Frequency Modeling in bridgr</a></li>
     <li><a class="dropdown-item" href="articles/ragged-edge-nowcasting.html">Ragged-Edge Nowcasting with bridgr</a></li>
-    <li><a class="dropdown-item" href="articles/uncertainty-and-scenarios.html">Bootstrap Uncertainty and Scenario Forecasting</a></li>
+    <li><a class="dropdown-item" href="articles/uncertainty-and-scenarios.html">UNKNOWN TITLE</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
@@ -85,7 +85,7 @@
 
 <p><code>bridgr</code> is designed to simplify the implementation and evaluation of bridge models, which are useful for nowcasting (predicting the present or near-term) and forecasting macroeconomic variables like GDP.</p>
 <p>Bridge models are statistical tools that link high-frequency indicators (e.g., monthly industrial production) to low-frequency target variables (e.g., quarterly GDP) by forecasting and aggregating the indicators to match the target’s frequency. They enable timely predictions before the official release of low-frequency data, making them essential for policymakers who need early insights for decision-making.</p>
-<p><code>bridgr</code> supports regular frequency ladders from <code>second</code> up to <code>year</code>, several deterministic and model-based indicator forecasting rules, and multiple aggregation choices including joint <code>expalmon</code> weighting. If a target period contains more high-frequency observations than implied by the current frequency mapping, the package keeps the most recent observations and reports a summarized warning.</p>
+<p><code>bridgr</code> supports regular frequency ladders from <code>second</code> up to <code>year</code>, several deterministic and model-based indicator forecasting rules, and multiple aggregation choices including joint <code>expalmon</code> and <code>beta</code> weighting. If a target period contains more high-frequency observations than implied by the current frequency mapping, the package keeps the most recent observations and reports a summarized warning.</p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
@@ -100,7 +100,7 @@
 <div class="section level2">
 <h2 id="example">Example<a class="anchor" aria-label="anchor" href="#example"></a>
 </h2>
-<p>This is a basic example with the default mean aggregation:</p>
+<p>This example estimates a bridge model with uncertainty output:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">suppressPackageStartupMessages</a></span><span class="op">(</span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/marcburri/bridgr" class="external-link">bridgr</a></span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
@@ -112,8 +112,9 @@
 <span>  indic_predict <span class="op">=</span> <span class="st">"auto.arima"</span>,</span>
 <span>  indic_aggregators <span class="op">=</span> <span class="st">"mean"</span>,</span>
 <span>  indic_lags <span class="op">=</span> <span class="fl">2</span>,</span>
-<span>  target_lags <span class="op">=</span> <span class="fl">0</span>,</span>
-<span>  h <span class="op">=</span> <span class="fl">2</span></span>
+<span>  target_lags <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  h <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  se <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://generics.r-lib.org/reference/forecast.html" class="external-link">forecast</a></span><span class="op">(</span><span class="va">bridge_model</span><span class="op">)</span></span>
@@ -121,11 +122,12 @@
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Target series: gdp</span></span>
 <span><span class="co">#&gt; Forecast horizon: 2</span></span>
-<span><span class="co">#&gt; Uncertainty: point forecast only</span></span>
+<span><span class="co">#&gt; Uncertainty: prediction intervals from residual resampling</span></span>
+<span><span class="co">#&gt; Simulation paths: 100</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
-<span><span class="co">#&gt;   time       mean </span></span>
-<span><span class="co">#&gt; 1 2023-01-01 0.741</span></span>
-<span><span class="co">#&gt; 2 2023-04-01 0.472</span></span>
+<span><span class="co">#&gt;   time       mean  se    lower_80 upper_80 lower_95 upper_95</span></span>
+<span><span class="co">#&gt; 1 2023-01-01 0.808 0.785 -0.342   1.605    -0.515   2.388   </span></span>
+<span><span class="co">#&gt; 2 2023-04-01 0.468 0.821 -0.552   1.449    -1.335   2.213</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">bridge_model</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Bridge model summary</span></span>
@@ -133,21 +135,28 @@
 <span><span class="co">#&gt; Target series: gdp</span></span>
 <span><span class="co">#&gt; Target frequency: quarter</span></span>
 <span><span class="co">#&gt; Forecast horizon: 2</span></span>
-<span><span class="co">#&gt; Estimation rows: 73</span></span>
-<span><span class="co">#&gt; Regressors: baro, baro_lag1, baro_lag2</span></span>
+<span><span class="co">#&gt; Estimation rows: 72</span></span>
+<span><span class="co">#&gt; Regressors: baro, baro_lag1, baro_lag2, gdp_lag1</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Target equation coefficients:</span></span>
-<span><span class="co">#&gt;             Estimate</span></span>
-<span><span class="co">#&gt; (Intercept)   -7.426</span></span>
-<span><span class="co">#&gt; baro           0.151</span></span>
-<span><span class="co">#&gt; baro_lag1     -0.095</span></span>
-<span><span class="co">#&gt; baro_lag2      0.023</span></span>
+<span><span class="co">#&gt;             Estimate HAC SE</span></span>
+<span><span class="co">#&gt; (Intercept)   -6.356  1.254</span></span>
+<span><span class="co">#&gt; baro           0.159  0.031</span></span>
+<span><span class="co">#&gt; baro_lag1     -0.134  0.049</span></span>
+<span><span class="co">#&gt; baro_lag2      0.042  0.019</span></span>
+<span><span class="co">#&gt; gdp_lag1       0.223  0.143</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Indicator summary:</span></span>
 <span><span class="co">#&gt;      Frequency Predict    Aggregation</span></span>
 <span><span class="co">#&gt; baro month     auto.arima mean       </span></span>
+<span><span class="co">#&gt; -----------------------------------</span></span>
+<span><span class="co">#&gt; Uncertainty:</span></span>
+<span><span class="co">#&gt; Coefficient SEs: hac</span></span>
+<span><span class="co">#&gt; Prediction intervals: residual resampling</span></span>
+<span><span class="co">#&gt; Simulation paths: 100</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span></code></pre></div>
-<p>If you want data-driven within-period weights instead of a simple mean, you can switch the indicator aggregator to <code>expalmon</code>. The corresponding weights are estimated jointly within the bridge model, and <code>solver_options</code> let you control the optimization.</p>
+<p>With <code>se = TRUE</code>, <code>bridgr</code> reports HAC or Delta-HAC coefficient standard errors and residual-resampling prediction intervals.</p>
+<p>If you want data-driven within-period weights instead of a simple deterministic aggregator, you can switch the indicator aggregator to <code>expalmon</code>. The corresponding weights are estimated jointly within the bridge model, and <code>solver_options</code> let you control the optimization.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">expalmon_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/bridge.html">bridge</a></span><span class="op">(</span></span>
 <span>  target <span class="op">=</span> <span class="va">gdp</span>,</span>

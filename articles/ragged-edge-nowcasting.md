@@ -22,7 +22,7 @@ The currently supported options are:
   observations.
 - `"direct"`: do not forecast the indicator at all. Instead, align the
   latest observed complete high-frequency blocks directly to the target
-  periods.
+  periods and average them within each target period.
 
 ## A Ragged-Edge Example
 
@@ -112,10 +112,10 @@ dplyr::bind_rows(
 #> # A tibble: 4 × 3
 #>   method     forecast_time forecast
 #>   <chr>      <date>           <dbl>
-#> 1 last       2022-10-01      -0.885
-#> 2 mean       2022-10-01      -0.810
-#> 3 auto.arima 2022-10-01      -0.670
-#> 4 ets        2022-10-01      -0.884
+#> 1 last       2022-10-01      -0.968
+#> 2 mean       2022-10-01      -0.876
+#> 3 auto.arima 2022-10-01      -0.706
+#> 4 ets        2022-10-01      -0.968
 ```
 
 The model specification is the same in each case. The only difference is
@@ -136,16 +136,16 @@ lapply(
   }
 )
 #> $last
-#> # A tibble: 1 × 2
-#>   time       baro_ragged
-#>   <date>           <dbl>
-#> 1 2022-10-01        87.5
+#> # A tibble: 1 × 3
+#>   time       baro_ragged gdp_nowcast_lag1
+#>   <date>           <dbl> <list>          
+#> 1 2022-10-01        87.5 <dbl [1]>       
 #> 
 #> $mean
-#> # A tibble: 1 × 2
-#>   time       baro_ragged
-#>   <date>           <dbl>
-#> 1 2022-10-01        88.2
+#> # A tibble: 1 × 3
+#>   time       baro_ragged gdp_nowcast_lag1
+#>   <date>           <dbl> <list>          
+#> 1 2022-10-01        88.2 <dbl [1]>
 ```
 
 With `"last"`, the last observed monthly value is extended forward. With
@@ -156,15 +156,14 @@ extended forward instead.
 
 `"direct"` takes a different route. The indicator is not forecasted.
 Instead, `bridgr` assigns the latest complete high-frequency blocks
-backward to the target periods. That is closest to a direct MIDAS-style
-setup.
+backward to the target periods and averages them within each target
+period.
 
 ``` r
 direct_model <- bridge(
   target = gdp_nowcast,
   indic = baro_ragged,
   indic_predict = "direct",
-  indic_aggregators = "unrestricted",
   h = 1
 )
 
@@ -192,8 +191,9 @@ As a rough guide:
   latest high-frequency block.
 - Use `"auto.arima"` or `"ets"` when the indicator has meaningful
   time-series structure and a separate extrapolation step is sensible.
-- Use `"direct"` when you want direct MIDAS-style alignment without
-  indicator forecasting.
+- Use `"direct"` when you want direct alignment without indicator
+  forecasting and want to rely only on the latest observed complete
+  high-frequency blocks.
 
 The good part is that the downstream workflow does not change. The same
 [`summary()`](https://rdrr.io/r/base/summary.html) and

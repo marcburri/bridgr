@@ -76,8 +76,8 @@ forecast(bridge_model)
 #> Uncertainty: point forecast only
 #> -----------------------------------
 #>   time       mean 
-#> 1 2023-01-01 0.972
-#> 2 2023-04-01 0.698
+#> 1 2023-01-01 0.875
+#> 2 2023-04-01 0.678
 ```
 
 The default mean aggregator is the classic bridge-model setup: each
@@ -89,21 +89,21 @@ the future target-period regressor path used for forecasting.
 
 ``` r
 tail(bridge_model$estimation_set)
-#> # A tibble: 6 × 4
-#>   time       gdp_growth  baro baro_lag1
-#>   <date>          <dbl> <dbl>     <dbl>
-#> 1 2021-07-01      2.34  112.      125. 
-#> 2 2021-10-01      0.411 104.      112. 
-#> 3 2022-01-01      0.105  97.4     104. 
-#> 4 2022-04-01      1.03   94.3      97.4
-#> 5 2022-07-01      0.255  90.0      94.3
-#> 6 2022-10-01      0.102  90.7      90.0
+#> # A tibble: 6 × 5
+#>   time       gdp_growth  baro baro_lag1 gdp_growth_lag1
+#>   <date>          <dbl> <dbl>     <dbl>           <dbl>
+#> 1 2021-07-01      2.34  112.      125.            2.47 
+#> 2 2021-10-01      0.411 104.      112.            2.34 
+#> 3 2022-01-01      0.105  97.4     104.            0.411
+#> 4 2022-04-01      1.03   94.3      97.4           0.105
+#> 5 2022-07-01      0.255  90.0      94.3           1.03 
+#> 6 2022-10-01      0.102  90.7      90.0           0.255
 bridge_model$forecast_set
-#> # A tibble: 2 × 3
-#>   time        baro baro_lag1
-#>   <date>     <dbl>     <dbl>
-#> 1 2023-01-01  97.4      90.7
-#> 2 2023-04-01  99.8      97.4
+#> # A tibble: 2 × 4
+#>   time        baro baro_lag1 gdp_growth_lag1
+#>   <date>     <dbl>     <dbl> <list>         
+#> 1 2023-01-01  97.4      90.7 <dbl [1]>      
+#> 2 2023-04-01  99.8      97.4 <dbl [1]>
 ```
 
 ## Standardized Output
@@ -111,8 +111,8 @@ bridge_model$forecast_set
 [`summary()`](https://rdrr.io/r/base/summary.html) and
 [`forecast()`](https://generics.r-lib.org/reference/forecast.html) use a
 stable package-specific layout. The base output is the same across
-bridge, MIDAS-style, and direct-alignment specifications. Additional
-details, such as optimization summaries or bootstrap settings, are
+bridge, mixed-frequency, and direct-alignment specifications. Additional
+details, such as optimization summaries or uncertainty settings, are
 appended only when they are relevant.
 
 ``` r
@@ -122,15 +122,15 @@ summary(bridge_model)
 #> Target series: gdp_growth
 #> Target frequency: quarter
 #> Forecast horizon: 2
-#> Estimation rows: 74
-#> Regressors: baro, baro_lag1
+#> Estimation rows: 73
+#> Regressors: baro, baro_lag1, gdp_growth_lag1
 #> -----------------------------------
 #> Target equation coefficients:
-#>           Estimate
-#> ar1          0.243
-#> intercept   -6.493
-#> baro         0.161
-#> baro_lag1   -0.092
+#>                 Estimate
+#> (Intercept)       -6.249
+#> baro               0.151
+#> baro_lag1         -0.084
+#> gdp_growth_lag1    0.012
 #> -----------------------------------
 #> Indicator summary:
 #>      Frequency Predict    Aggregation
@@ -153,16 +153,16 @@ plot(bridge_model, type = "forecast")
 ## Direct Alignment
 
 If you set `indic_predict = "direct"`, `bridgr` switches from indicator
-forecasting to direct MIDAS-style alignment. In that case, the latest
-complete high-frequency blocks are assigned backward to target periods
-instead of being forecast forward first.
+forecasting to direct alignment based only on observed complete
+high-frequency blocks. In that case, the latest complete blocks are
+assigned backward to target periods instead of being forecast forward
+first, and they are averaged within each target period.
 
 ``` r
 direct_model <- bridge(
   target = gdp_growth,
   indic = baro,
   indic_predict = "direct",
-  indic_aggregators = "unrestricted",
   h = 1
 )
 
@@ -181,11 +181,11 @@ This is particularly useful at the ragged edge when you want to work
 only with observed high-frequency information and avoid a separate
 indicator forecasting step.
 
-## Optional Bootstrap Uncertainty
+## Optional Uncertainty
 
 By default, `bridgr` returns point forecasts only. If you want
-uncertainty output, request it at estimation time with `se = TRUE` and a
-bootstrap configuration.
+uncertainty output, request it at estimation time with `se = TRUE` and,
+if needed, custom `bootstrap` controls.
 
 ``` r
 boot_model <- bridge(
@@ -196,7 +196,7 @@ boot_model <- bridge(
   target_lags = 1,
   h = 4,
   se = TRUE,
-  bootstrap = list(type = "block", N = 40, block_length = NULL)
+  bootstrap = list(N = 40, block_length = NULL)
 )
 
 forecast(boot_model)
@@ -204,52 +204,51 @@ forecast(boot_model)
 #> -----------------------------------
 #> Target series: gdp_growth
 #> Forecast horizon: 4
-#> Uncertainty: predictive intervals from conditional block bootstrap
-#> Bootstrap draws: 40 / 40
-#> Block length: 5
+#> Uncertainty: prediction intervals from residual resampling
+#> Simulation paths: 40
 #> -----------------------------------
 #>   time       mean  se    lower_80 upper_80 lower_95 upper_95
-#> 1 2023-01-01 0.116 0.938 -1.191   1.104    -1.790   2.586   
-#> 2 2023-04-01 0.428 0.920 -0.920   1.496    -2.233   1.834   
-#> 3 2023-07-01 0.487 0.994 -0.631   2.207    -1.324   3.017   
-#> 4 2023-10-01 0.509 1.104 -0.504   2.036    -2.696   2.799
+#> 1 2023-01-01 0.259 0.746 -0.850   1.230    -1.069   1.638   
+#> 2 2023-04-01 0.486 1.097 -0.433   1.761    -2.025   3.268   
+#> 3 2023-07-01 0.500 0.827 -0.441   1.370    -1.174   2.638   
+#> 4 2023-10-01 0.521 0.884 -0.532   1.731    -1.030   2.191
 summary(boot_model)
 #> Bridge model summary
 #> -----------------------------------
 #> Target series: gdp_growth
 #> Target frequency: quarter
 #> Forecast horizon: 4
-#> Estimation rows: 75
-#> Regressors: baro
+#> Estimation rows: 74
+#> Regressors: baro, gdp_growth_lag1
 #> -----------------------------------
 #> Target equation coefficients:
-#>           Estimate Bootstrap SE
-#> ar1         -0.135        0.203
-#> intercept   -9.060        3.626
-#> baro         0.095        0.036
+#>                 Estimate HAC SE
+#> (Intercept)      -10.988  3.304
+#> baro               0.116  0.033
+#> gdp_growth_lag1   -0.316  0.120
 #> -----------------------------------
 #> Indicator summary:
 #>      Frequency Predict    Aggregation
 #> baro month     auto.arima mean       
 #> -----------------------------------
 #> Uncertainty:
-#> Method: conditional block bootstrap with predictive forecast draws
-#> Bootstrap draws: 40 / 40
-#> Block length: 5
+#> Coefficient SEs: hac
+#> Prediction intervals: residual resampling
+#> Simulation paths: 40
 #> -----------------------------------
 plot(boot_model, type = "forecast")
 ```
 
 ![](bridgr_files/figure-html/bootstrap-example-1.png)
 
-The current uncertainty implementation uses a conditional block
-bootstrap on the final target-frequency estimation sample. It does not
-re-estimate indicator forecast models or parametric aggregation weights
-inside each bootstrap draw. The stored forecast draws do add simulated
-future target shocks, so
-[`forecast()`](https://generics.r-lib.org/reference/forecast.html) and
-`plot(..., type = "forecast")` return predictive intervals on top of the
-historical target path and forecast mean.
+The uncertainty implementation uses HAC standard errors for the linear
+bridge equation, or Delta-HAC standard errors when parametric
+aggregation weights are estimated jointly. By default, prediction
+intervals are simulated from resampled centered target-equation
+residuals. If you also set `full_system_bootstrap = TRUE`, `bridgr`
+instead uses a full-system target-period block bootstrap for both
+coefficient standard errors and prediction intervals, controlled through
+`bootstrap = list(N = ..., block_length = ...)`.
 
 ## Where to Go Next
 
@@ -266,5 +265,7 @@ high-frequency data at the forecast origin.
 
 The vignette
 [`vignette("uncertainty-and-scenarios", package = "bridgr")`](https://marcburri.github.io/bridgr/articles/uncertainty-and-scenarios.md)
-shows how to work with conditional block-bootstrap uncertainty and
-scenario forecasts based on custom future regressor paths.
+shows how to work with HAC / Delta-HAC coefficient uncertainty,
+residual-resampling prediction intervals, the optional full-system
+bootstrap, and scenario forecasts based on custom future regressor
+paths.

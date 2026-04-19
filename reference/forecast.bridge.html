@@ -27,7 +27,7 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/mixed-frequency-modeling.html">Aggregation and Mixed-Frequency Modeling in bridgr</a></li>
     <li><a class="dropdown-item" href="../articles/ragged-edge-nowcasting.html">Ragged-Edge Nowcasting with bridgr</a></li>
-    <li><a class="dropdown-item" href="../articles/uncertainty-and-scenarios.html">Bootstrap Uncertainty and Scenario Forecasting</a></li>
+    <li><a class="dropdown-item" href="../articles/uncertainty-and-scenarios.html">UNKNOWN TITLE</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -74,16 +74,15 @@
 
 <dt id="arg-xreg">xreg<a class="anchor" aria-label="anchor" href="#arg-xreg"></a></dt>
 <dd><p>Optional future regressors in a <code><a href="https://docs.ropensci.org/tsbox/reference/ts_boxable.html" class="external-link">tsbox::ts_boxable()</a></code> format.
-When omitted, the forecast set stored inside <code>object</code> is used. When
-supplied, <code>xreg</code> must contain the same regressor names used when fitting the
-bridge equation.</p></dd>
+When omitted, the forecast regressor set stored inside <code>object</code> is used.
+When supplied, <code>xreg</code> must contain the same non-target regressors used when
+fitting the bridge equation.</p></dd>
 
 
 <dt id="arg-level">level<a class="anchor" aria-label="anchor" href="#arg-level"></a></dt>
-<dd><p>Confidence levels used for bootstrap predictive intervals when
-the model was estimated with <code>se = TRUE</code>. When uncertainty is unavailable,
-<code><a href="https://generics.r-lib.org/reference/forecast.html" class="external-link">forecast()</a></code> still returns the <code>se</code>, <code>lower</code>, and <code>upper</code> components, filled
-with <code>NA</code>.</p></dd>
+<dd><p>Prediction interval levels used when the model was estimated
+with <code>se = TRUE</code>. When uncertainty is unavailable, <code><a href="https://generics.r-lib.org/reference/forecast.html" class="external-link">forecast()</a></code> still
+returns the <code>se</code>, <code>lower</code>, and <code>upper</code> components, filled with <code>NA</code>.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
@@ -97,8 +96,9 @@ with <code>NA</code>.</p></dd>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>An object of class <code>"bridge_forecast"</code> and <code>"forecast"</code> containing
-point forecasts, bootstrap predictive uncertainty summaries, the
-target-period regressors used for forecasting, and bootstrap metadata.</p>
+point forecasts, predictive uncertainty summaries, the
+target-period regressors used for forecasting, and optional full-system
+bootstrap metadata.</p>
 <p><code>x</code>, invisibly.</p>
     </div>
 

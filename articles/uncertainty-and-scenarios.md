@@ -1,22 +1,29 @@
-# Bootstrap Uncertainty and Scenario Forecasting
+# 
+
+title: “Uncertainty and Scenario Forecasting” output:
+rmarkdown::html_vignette vignette: \> % % % —
 
 ## Overview
 
 `bridgr` can return point forecasts only, or it can also compute
-bootstrap uncertainty for the fitted target equation and predictive
+coefficient uncertainty for the fitted target equation and prediction
 intervals for forecasts.
 
 The relevant estimation arguments are:
 
 - `se = FALSE`: point forecasts only.
-- `se = TRUE`: compute bootstrap coefficient uncertainty and predictive
-  forecast intervals.
-- `bootstrap = list(type = "block", N = 100, block_length = NULL)`:
-  control the bootstrap.
+- `se = TRUE`: compute HAC or Delta-HAC coefficient uncertainty and
+  prediction intervals.
+- `bootstrap = list(N = 100, block_length = NULL)`: control the number
+  of predictive simulation paths. `block_length` is only used when
+  `full_system_bootstrap = TRUE`.
+- `full_system_bootstrap = TRUE`: replace the default
+  residual-resampling prediction intervals and HAC / Delta-HAC
+  coefficient standard errors with a full-system target-period block
+  bootstrap. Because this refits the full bridge workflow on every draw,
+  it can be substantially slower.
 
-At the moment, `"block"` is the only supported bootstrap type.
-
-## Fitting a Model with Bootstrap Uncertainty
+## Fitting a Model with Default Uncertainty
 
 ``` r
 gdp_growth <- suppressMessages(tsbox::ts_na_omit(tsbox::ts_pc(gdp)))
@@ -30,15 +37,14 @@ boot_model <- bridge(
   target_lags = 1,
   h = 2,
   se = TRUE,
-  bootstrap = list(type = "block", N = 20, block_length = NULL)
+  bootstrap = list(N = 20, block_length = NULL)
 )
 ```
 
-The current implementation uses a conditional block bootstrap on the
-final target-frequency estimation sample. It does not re-estimate
-indicator forecast models or parametric aggregation weights inside each
-bootstrap draw, but it does add simulated future target shocks to the
-stored forecast draws.
+`bridgr` computes HAC standard errors for the linear bridge equation, or
+Delta-HAC standard errors when parametric aggregation weights are
+estimated jointly. Forecast uncertainty is obtained by simulating from
+resampled centered residuals of the fitted target equation.
 
 ## Forecast Output
 
@@ -51,7 +57,7 @@ returns a standardized forecast object with:
 - `lower`
 - `upper`
 - `forecast_set`
-- bootstrap metadata
+- uncertainty metadata
 
 ``` r
 fc <- forecast(boot_model)
@@ -61,39 +67,35 @@ fc
 #> -----------------------------------
 #> Target series: gdp_growth
 #> Forecast horizon: 2
-#> Uncertainty: predictive intervals from conditional block bootstrap
-#> Bootstrap draws: 20 / 20
-#> Block length: 5
+#> Uncertainty: prediction intervals from residual resampling
+#> Simulation paths: 20
 #> -----------------------------------
 #>   time       mean  se    lower_80 upper_80 lower_95 upper_95
-#> 1 2023-01-01 0.972 0.947 -0.499   2.440    -0.524   2.775   
-#> 2 2023-04-01 0.698 0.571 -0.190   1.378    -0.529   1.578
+#> 1 2023-01-01 0.875 0.949 -0.430   1.794    -1.461   2.943   
+#> 2 2023-04-01 0.678 0.671 -0.470   1.030    -1.670   1.225
 fc$bootstrap
-#> $enabled
-#> [1] TRUE
+#> $requested
+#> [1] FALSE
 #> 
-#> $type
-#> [1] "block"
+#> $enabled
+#> [1] FALSE
 #> 
 #> $N
 #> [1] 20
 #> 
 #> $valid_N
-#> [1] 20
+#> [1] 0
 #> 
 #> $block_length
-#> [1] 5
-#> 
-#> $conditional
-#> [1] TRUE
+#> NULL
 ```
 
-The intervals are empirical predictive intervals based on the stored
-bootstrap forecast draws.
+The intervals are empirical prediction intervals based on the stored
+residual- resampling forecast draws.
 
 ## Summary Output
 
-The same bootstrap run also feeds into
+The same uncertainty configuration also feeds into
 [`summary()`](https://rdrr.io/r/base/summary.html).
 
 ``` r
@@ -103,29 +105,29 @@ summary(boot_model)
 #> Target series: gdp_growth
 #> Target frequency: quarter
 #> Forecast horizon: 2
-#> Estimation rows: 74
-#> Regressors: baro, baro_lag1
+#> Estimation rows: 73
+#> Regressors: baro, baro_lag1, gdp_growth_lag1
 #> -----------------------------------
 #> Target equation coefficients:
-#>           Estimate Bootstrap SE
-#> ar1          0.243        0.162
-#> intercept   -6.493        1.730
-#> baro         0.161        0.045
-#> baro_lag1   -0.092        0.038
+#>                 Estimate HAC SE
+#> (Intercept)       -6.249  1.424
+#> baro               0.151  0.033
+#> baro_lag1         -0.084  0.031
+#> gdp_growth_lag1    0.012  0.073
 #> -----------------------------------
 #> Indicator summary:
 #>      Frequency Predict    Aggregation
 #> baro month     auto.arima mean       
 #> -----------------------------------
 #> Uncertainty:
-#> Method: conditional block bootstrap with predictive forecast draws
-#> Bootstrap draws: 20 / 20
-#> Block length: 5
+#> Coefficient SEs: hac
+#> Prediction intervals: residual resampling
+#> Simulation paths: 20
 #> -----------------------------------
 ```
 
 The printed summary keeps the same base layout as a point-estimate model
-and adds the uncertainty section only when bootstrap output is
+and adds the uncertainty section only when uncertainty output is
 available.
 
 ## Scenario Forecasting with `xreg`
@@ -138,14 +140,14 @@ equation.
 
 ``` r
 scenario_xreg <- dplyr::tibble(
-  id = rep(boot_model$regressor_names, each = nrow(boot_model$forecast_set)),
+  id = rep(boot_model$xreg_names, each = nrow(boot_model$forecast_base_set)),
   time = rep(
-    boot_model$forecast_set$time,
-    times = length(boot_model$regressor_names)
+    boot_model$forecast_base_set$time,
+    times = length(boot_model$xreg_names)
   ),
   value = c(
-    boot_model$forecast_set$baro + 5,
-    boot_model$forecast_set$baro_lag1 + 5
+    boot_model$forecast_base_set$baro + 5,
+    boot_model$forecast_base_set$baro_lag1 + 5
   )
 )
 
@@ -159,15 +161,53 @@ dplyr::tibble(
 #> # A tibble: 2 × 3
 #>   time       baseline scenario
 #>   <date>        <dbl>    <dbl>
-#> 1 2023-01-01    0.972     1.32
-#> 2 2023-04-01    0.698     1.05
+#> 1 2023-01-01    0.875     1.21
+#> 2 2023-04-01    0.678     1.02
 ```
 
-When a model contains stored bootstrap draws,
-`forecast(..., xreg = ...)` reuses the bootstrap refits and evaluates
-them on the scenario regressor path. That keeps the predictive
-uncertainty handling consistent between the baseline forecast and
-scenario forecasts.
+Scenario forecasts reuse the same uncertainty method and evaluate it on
+the supplied regressor path.
+
+## Optional Full-System Bootstrap
+
+If you want to propagate uncertainty through the full bridge workflow,
+including indicator completion and aggregation, set
+`full_system_bootstrap = TRUE`. This can be substantially slower than
+the default residual-resampling intervals because each bootstrap draw
+re-estimates the full bridge pipeline. In that mode, both the reported
+coefficient standard errors and the forecast intervals are based on the
+bootstrap draws.
+
+``` r
+full_model <- bridge(
+  target = gdp_growth,
+  indic = baro,
+  indic_predict = "auto.arima",
+  indic_aggregators = "mean",
+  indic_lags = 1,
+  target_lags = 1,
+  h = 2,
+  se = TRUE,
+  full_system_bootstrap = TRUE,
+  bootstrap = list(N = 20, block_length = NULL)
+)
+
+forecast(full_model)$bootstrap
+#> $requested
+#> [1] TRUE
+#> 
+#> $enabled
+#> [1] TRUE
+#> 
+#> $N
+#> [1] 20
+#> 
+#> $valid_N
+#> [1] 20
+#> 
+#> $block_length
+#> [1] 5
+```
 
 ## Point Forecasts Only
 
@@ -186,7 +226,7 @@ point_model <- bridge(
   target_lags = 1,
   h = 1,
   se = FALSE,
-  bootstrap = list(type = "block", N = 20)
+  bootstrap = list(N = 20)
 )
 
 forecast(point_model)
@@ -197,12 +237,16 @@ forecast(point_model)
 #> Uncertainty: point forecast only
 #> -----------------------------------
 #>   time       mean 
-#> 1 2023-01-01 0.972
+#> 1 2023-01-01 0.875
 ```
 
 ## Interpretation
 
-These intervals are conditional on the aligned target-frequency design
-matrix. That means they are predictive intervals for the final target
-equation given the regressor path, rather than full end-to-end
-uncertainty for the whole mixed-frequency system.
+With the default `se = TRUE`, these intervals are residual-resampling
+prediction intervals for the fitted target equation, while coefficient
+standard errors come from HAC or Delta-HAC estimation. When
+`full_system_bootstrap = TRUE`, both the coefficient standard errors and
+the forecast intervals come from a full-system block bootstrap that
+resamples target-period blocks from the aligned mixed-frequency system,
+refits the bridge workflow on each draw, and evaluates the resulting
+future paths.

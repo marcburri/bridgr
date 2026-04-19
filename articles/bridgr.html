@@ -47,7 +47,7 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/mixed-frequency-modeling.html">Aggregation and Mixed-Frequency Modeling in bridgr</a></li>
     <li><a class="dropdown-item" href="../articles/ragged-edge-nowcasting.html">Ragged-Edge Nowcasting with bridgr</a></li>
-    <li><a class="dropdown-item" href="../articles/uncertainty-and-scenarios.html">Bootstrap Uncertainty and Scenario Forecasting</a></li>
+    <li><a class="dropdown-item" href="../articles/uncertainty-and-scenarios.html">UNKNOWN TITLE</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -160,8 +160,8 @@ fitting the target equation.</p>
 <span><span class="co">#&gt; Uncertainty: point forecast only</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt;   time       mean </span></span>
-<span><span class="co">#&gt; 1 2023-01-01 0.972</span></span>
-<span><span class="co">#&gt; 2 2023-04-01 0.698</span></span></code></pre></div>
+<span><span class="co">#&gt; 1 2023-01-01 0.875</span></span>
+<span><span class="co">#&gt; 2 2023-04-01 0.678</span></span></code></pre></div>
 <p>The default mean aggregator is the classic bridge-model setup: each
 monthly block is completed first, then averaged to the quarterly
 frequency before the target equation is estimated.</p>
@@ -169,30 +169,30 @@ frequency before the target equation is estimated.</p>
 and the future target-period regressor path used for forecasting.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">tail</a></span><span class="op">(</span><span class="va">bridge_model</span><span class="op">$</span><span class="va">estimation_set</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 4</span></span></span>
-<span><span class="co">#&gt;   time       gdp_growth  baro baro_lag1</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;date&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 2021-07-01      2.34  112.      125. </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> 2021-10-01      0.411 104.      112. </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> 2022-01-01      0.105  97.4     104. </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> 2022-04-01      1.03   94.3      97.4</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> 2022-07-01      0.255  90.0      94.3</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> 2022-10-01      0.102  90.7      90.0</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 5</span></span></span>
+<span><span class="co">#&gt;   time       gdp_growth  baro baro_lag1 gdp_growth_lag1</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;date&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 2021-07-01      2.34  112.      125.            2.47 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> 2021-10-01      0.411 104.      112.            2.34 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> 2022-01-01      0.105  97.4     104.            0.411</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> 2022-04-01      1.03   94.3      97.4           0.105</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> 2022-07-01      0.255  90.0      94.3           1.03 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> 2022-10-01      0.102  90.7      90.0           0.255</span></span>
 <span><span class="va">bridge_model</span><span class="op">$</span><span class="va">forecast_set</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 3</span></span></span>
-<span><span class="co">#&gt;   time        baro baro_lag1</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;date&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 2023-01-01  97.4      90.7</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> 2023-04-01  99.8      97.4</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 4</span></span></span>
+<span><span class="co">#&gt;   time        baro baro_lag1 gdp_growth_lag1</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;date&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;list&gt;</span>         </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 2023-01-01  97.4      90.7 <span style="color: #949494;">&lt;dbl [1]&gt;</span>      </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> 2023-04-01  99.8      97.4 <span style="color: #949494;">&lt;dbl [1]&gt;</span></span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="standardized-output">Standardized Output<a class="anchor" aria-label="anchor" href="#standardized-output"></a>
 </h2>
 <p><code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> and <code><a href="https://generics.r-lib.org/reference/forecast.html" class="external-link">forecast()</a></code> use a stable
 package-specific layout. The base output is the same across bridge,
-MIDAS-style, and direct-alignment specifications. Additional details,
-such as optimization summaries or bootstrap settings, are appended only
-when they are relevant.</p>
+mixed-frequency, and direct-alignment specifications. Additional
+details, such as optimization summaries or uncertainty settings, are
+appended only when they are relevant.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">bridge_model</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Bridge model summary</span></span>
@@ -200,15 +200,15 @@ when they are relevant.</p>
 <span><span class="co">#&gt; Target series: gdp_growth</span></span>
 <span><span class="co">#&gt; Target frequency: quarter</span></span>
 <span><span class="co">#&gt; Forecast horizon: 2</span></span>
-<span><span class="co">#&gt; Estimation rows: 74</span></span>
-<span><span class="co">#&gt; Regressors: baro, baro_lag1</span></span>
+<span><span class="co">#&gt; Estimation rows: 73</span></span>
+<span><span class="co">#&gt; Regressors: baro, baro_lag1, gdp_growth_lag1</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Target equation coefficients:</span></span>
-<span><span class="co">#&gt;           Estimate</span></span>
-<span><span class="co">#&gt; ar1          0.243</span></span>
-<span><span class="co">#&gt; intercept   -6.493</span></span>
-<span><span class="co">#&gt; baro         0.161</span></span>
-<span><span class="co">#&gt; baro_lag1   -0.092</span></span>
+<span><span class="co">#&gt;                 Estimate</span></span>
+<span><span class="co">#&gt; (Intercept)       -6.249</span></span>
+<span><span class="co">#&gt; baro               0.151</span></span>
+<span><span class="co">#&gt; baro_lag1         -0.084</span></span>
+<span><span class="co">#&gt; gdp_growth_lag1    0.012</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Indicator summary:</span></span>
 <span><span class="co">#&gt;      Frequency Predict    Aggregation</span></span>
@@ -230,15 +230,16 @@ model.</p>
 <h2 id="direct-alignment">Direct Alignment<a class="anchor" aria-label="anchor" href="#direct-alignment"></a>
 </h2>
 <p>If you set <code>indic_predict = "direct"</code>, <code>bridgr</code>
-switches from indicator forecasting to direct MIDAS-style alignment. In
-that case, the latest complete high-frequency blocks are assigned
-backward to target periods instead of being forecast forward first.</p>
+switches from indicator forecasting to direct alignment based only on
+observed complete high-frequency blocks. In that case, the latest
+complete blocks are assigned backward to target periods instead of being
+forecast forward first, and they are averaged within each target
+period.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">direct_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/bridge.html">bridge</a></span><span class="op">(</span></span>
 <span>  target <span class="op">=</span> <span class="va">gdp_growth</span>,</span>
 <span>  indic <span class="op">=</span> <span class="va">baro</span>,</span>
 <span>  indic_predict <span class="op">=</span> <span class="st">"direct"</span>,</span>
-<span>  indic_aggregators <span class="op">=</span> <span class="st">"unrestricted"</span>,</span>
 <span>  h <span class="op">=</span> <span class="fl">1</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -256,11 +257,12 @@ only with observed high-frequency information and avoid a separate
 indicator forecasting step.</p>
 </div>
 <div class="section level2">
-<h2 id="optional-bootstrap-uncertainty">Optional Bootstrap Uncertainty<a class="anchor" aria-label="anchor" href="#optional-bootstrap-uncertainty"></a>
+<h2 id="optional-uncertainty">Optional Uncertainty<a class="anchor" aria-label="anchor" href="#optional-uncertainty"></a>
 </h2>
 <p>By default, <code>bridgr</code> returns point forecasts only. If you
 want uncertainty output, request it at estimation time with
-<code>se = TRUE</code> and a bootstrap configuration.</p>
+<code>se = TRUE</code> and, if needed, custom <code>bootstrap</code>
+controls.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">boot_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/bridge.html">bridge</a></span><span class="op">(</span></span>
 <span>  target <span class="op">=</span> <span class="va">gdp_growth</span>,</span>
@@ -270,7 +272,7 @@ want uncertainty output, request it at estimation time with
 <span>  target_lags <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  h <span class="op">=</span> <span class="fl">4</span>,</span>
 <span>  se <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  bootstrap <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"block"</span>, N <span class="op">=</span> <span class="fl">40</span>, block_length <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
+<span>  bootstrap <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fl">40</span>, block_length <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://generics.r-lib.org/reference/forecast.html" class="external-link">forecast</a></span><span class="op">(</span><span class="va">boot_model</span><span class="op">)</span></span>
@@ -278,48 +280,49 @@ want uncertainty output, request it at estimation time with
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Target series: gdp_growth</span></span>
 <span><span class="co">#&gt; Forecast horizon: 4</span></span>
-<span><span class="co">#&gt; Uncertainty: predictive intervals from conditional block bootstrap</span></span>
-<span><span class="co">#&gt; Bootstrap draws: 40 / 40</span></span>
-<span><span class="co">#&gt; Block length: 5</span></span>
+<span><span class="co">#&gt; Uncertainty: prediction intervals from residual resampling</span></span>
+<span><span class="co">#&gt; Simulation paths: 40</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt;   time       mean  se    lower_80 upper_80 lower_95 upper_95</span></span>
-<span><span class="co">#&gt; 1 2023-01-01 0.116 0.938 -1.191   1.104    -1.790   2.586   </span></span>
-<span><span class="co">#&gt; 2 2023-04-01 0.428 0.920 -0.920   1.496    -2.233   1.834   </span></span>
-<span><span class="co">#&gt; 3 2023-07-01 0.487 0.994 -0.631   2.207    -1.324   3.017   </span></span>
-<span><span class="co">#&gt; 4 2023-10-01 0.509 1.104 -0.504   2.036    -2.696   2.799</span></span>
+<span><span class="co">#&gt; 1 2023-01-01 0.259 0.746 -0.850   1.230    -1.069   1.638   </span></span>
+<span><span class="co">#&gt; 2 2023-04-01 0.486 1.097 -0.433   1.761    -2.025   3.268   </span></span>
+<span><span class="co">#&gt; 3 2023-07-01 0.500 0.827 -0.441   1.370    -1.174   2.638   </span></span>
+<span><span class="co">#&gt; 4 2023-10-01 0.521 0.884 -0.532   1.731    -1.030   2.191</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">boot_model</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Bridge model summary</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Target series: gdp_growth</span></span>
 <span><span class="co">#&gt; Target frequency: quarter</span></span>
 <span><span class="co">#&gt; Forecast horizon: 4</span></span>
-<span><span class="co">#&gt; Estimation rows: 75</span></span>
-<span><span class="co">#&gt; Regressors: baro</span></span>
+<span><span class="co">#&gt; Estimation rows: 74</span></span>
+<span><span class="co">#&gt; Regressors: baro, gdp_growth_lag1</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Target equation coefficients:</span></span>
-<span><span class="co">#&gt;           Estimate Bootstrap SE</span></span>
-<span><span class="co">#&gt; ar1         -0.135        0.203</span></span>
-<span><span class="co">#&gt; intercept   -9.060        3.626</span></span>
-<span><span class="co">#&gt; baro         0.095        0.036</span></span>
+<span><span class="co">#&gt;                 Estimate HAC SE</span></span>
+<span><span class="co">#&gt; (Intercept)      -10.988  3.304</span></span>
+<span><span class="co">#&gt; baro               0.116  0.033</span></span>
+<span><span class="co">#&gt; gdp_growth_lag1   -0.316  0.120</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Indicator summary:</span></span>
 <span><span class="co">#&gt;      Frequency Predict    Aggregation</span></span>
 <span><span class="co">#&gt; baro month     auto.arima mean       </span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Uncertainty:</span></span>
-<span><span class="co">#&gt; Method: conditional block bootstrap with predictive forecast draws</span></span>
-<span><span class="co">#&gt; Bootstrap draws: 40 / 40</span></span>
-<span><span class="co">#&gt; Block length: 5</span></span>
+<span><span class="co">#&gt; Coefficient SEs: hac</span></span>
+<span><span class="co">#&gt; Prediction intervals: residual resampling</span></span>
+<span><span class="co">#&gt; Simulation paths: 40</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">boot_model</span>, type <span class="op">=</span> <span class="st">"forecast"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="bridgr_files/figure-html/bootstrap-example-1.png" class="r-plt" alt="" width="700"></p>
-<p>The current uncertainty implementation uses a conditional block
-bootstrap on the final target-frequency estimation sample. It does not
-re-estimate indicator forecast models or parametric aggregation weights
-inside each bootstrap draw. The stored forecast draws do add simulated
-future target shocks, so <code><a href="https://generics.r-lib.org/reference/forecast.html" class="external-link">forecast()</a></code> and
-<code>plot(..., type = "forecast")</code> return predictive intervals on
-top of the historical target path and forecast mean.</p>
+<p>The uncertainty implementation uses HAC standard errors for the
+linear bridge equation, or Delta-HAC standard errors when parametric
+aggregation weights are estimated jointly. By default, prediction
+intervals are simulated from resampled centered target-equation
+residuals. If you also set <code>full_system_bootstrap = TRUE</code>,
+<code>bridgr</code> instead uses a full-system target-period block
+bootstrap for both coefficient standard errors and prediction intervals,
+controlled through
+<code>bootstrap = list(N = ..., block_length = ...)</code>.</p>
 </div>
 <div class="section level2">
 <h2 id="where-to-go-next">Where to Go Next<a class="anchor" aria-label="anchor" href="#where-to-go-next"></a>
@@ -335,8 +338,10 @@ focuses on <code>indic_predict</code> and the different ways to handle
 incomplete high-frequency data at the forecast origin.</p>
 <p>The vignette
 <code><a href="../articles/uncertainty-and-scenarios.html">vignette("uncertainty-and-scenarios", package = "bridgr")</a></code>
-shows how to work with conditional block-bootstrap uncertainty and
-scenario forecasts based on custom future regressor paths.</p>
+shows how to work with HAC / Delta-HAC coefficient uncertainty,
+residual-resampling prediction intervals, the optional full-system
+bootstrap, and scenario forecasts based on custom future regressor
+paths.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

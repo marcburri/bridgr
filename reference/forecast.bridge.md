@@ -25,14 +25,14 @@ print(x, ...)
 
   Optional future regressors in a
   [`tsbox::ts_boxable()`](https://docs.ropensci.org/tsbox/reference/ts_boxable.html)
-  format. When omitted, the forecast set stored inside `object` is used.
-  When supplied, `xreg` must contain the same regressor names used when
-  fitting the bridge equation.
+  format. When omitted, the forecast regressor set stored inside
+  `object` is used. When supplied, `xreg` must contain the same
+  non-target regressors used when fitting the bridge equation.
 
 - level:
 
-  Confidence levels used for bootstrap predictive intervals when the
-  model was estimated with `se = TRUE`. When uncertainty is unavailable,
+  Prediction interval levels used when the model was estimated with
+  `se = TRUE`. When uncertainty is unavailable,
   [`forecast()`](https://generics.r-lib.org/reference/forecast.html)
   still returns the `se`, `lower`, and `upper` components, filled with
   `NA`.
@@ -48,7 +48,8 @@ print(x, ...)
 ## Value
 
 An object of class `"bridge_forecast"` and `"forecast"` containing point
-forecasts, bootstrap predictive uncertainty summaries, the target-period
-regressors used for forecasting, and bootstrap metadata.
+forecasts, predictive uncertainty summaries, the target-period
+regressors used for forecasting, and optional full-system bootstrap
+metadata.
 
 `x`, invisibly.

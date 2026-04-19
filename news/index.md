@@ -2,6 +2,12 @@
 
 ## bridgr (development version)
 
+- Remove the `legendre` parametric aggregation option.
+
+- Use analytic gradients for parametric aggregation optimization with
+  `expalmon` weights, and improve the normalized beta polynomial
+  gradient used in the optimizer.
+
 ## bridgr 0.1.2
 
 CRAN release: 2026-02-18
