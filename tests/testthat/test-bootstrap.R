@@ -244,6 +244,8 @@ test_that("bridge keeps full bootstrap opt-in for direct forecasts", {
     model$bootstrap$block_length,
     ceiling(nrow(model$target)^(1 / 3))
   )
+  expect_equal(model$uncertainty$coefficient_method, "block_bootstrap")
+  expect_false(any(is.na(model$uncertainty$coefficient_se)))
   expect_equal(fc$bootstrap$block_length, model$bootstrap$block_length)
   expect_true(fc$uncertainty$enabled)
   expect_equal(fc$uncertainty$prediction_method, "block_bootstrap")

@@ -43,10 +43,8 @@ series. Numeric weights must sum to one and have the appropriate length for
 the inferred target-period block size. \code{"unrestricted"} keeps one separate
 coefficient per high-frequency observation within the target period. The
 parametric aggregators use two coefficients each: \code{"expalmon"} uses
-\verb{(linear, quadratic)}, \code{"beta"} uses \verb{(left_shape, right_shape)} as the
-normalized beta shape parameters, and \code{"legendre"} uses
-\verb{(first_order, second_order)} as coefficients on the first two shifted
-orthonormal Legendre basis functions. When \code{indic_predict = "direct"},
+\verb{(linear, quadratic)}, and \code{"beta"} uses \verb{(left_shape, right_shape)} as the
+normalized beta shape parameters. When \code{indic_predict = "direct"},
 \code{indic_aggregators} is ignored and direct blocks are averaged within each
 target period.}
 
@@ -77,11 +75,12 @@ intervals. \code{block_length} is only used by the full-system bootstrap. When
 final target-period sample size.}
 
 \item{full_system_bootstrap}{Logical flag indicating whether prediction
-intervals should be based on a full-system target-period block bootstrap
-instead of residual resampling from the fitted target equation. This option
-is only used when \code{se = TRUE}. Because it refits the full bridge workflow
-on every draw, \code{full_system_bootstrap = TRUE} can be substantially slower
-than the default residual-resampling intervals.}
+intervals and coefficient standard errors should be based on a full-system
+target-period block bootstrap instead of residual resampling and HAC /
+Delta-HAC uncertainty from the fitted target equation. This option is only
+used when \code{se = TRUE}. Because it refits the full bridge workflow on every
+draw, \code{full_system_bootstrap = TRUE} can be substantially slower than the
+default residual-resampling intervals.}
 
 \item{solver_options}{A list of optional controls for joint parametric-weight
 optimization. Supported entries are:
@@ -92,11 +91,11 @@ random restarts, \code{trace} for optimizer verbosity, and \code{start_values} f
 user-supplied initial parameter values. \code{start_values} can be either a
 numeric vector or a named list. For a numeric vector, values are concatenated
 in indicator order across the parametric aggregators. Within each indicator,
-the parameter order is \verb{(linear, quadratic)} for \code{"expalmon"},
-\verb{(left_shape, right_shape)} for \code{"beta"}, and \verb{(first_order, second_order)}
-for \code{"legendre"}. Named-list \code{start_values} must provide exactly the
-required number of values for each parametric indicator. These controls are
-ignored unless at least one indicator uses a parametric aggregator.}
+the parameter order is \verb{(linear, quadratic)} for \code{"expalmon"} and
+\verb{(left_shape, right_shape)} for \code{"beta"}. Named-list \code{start_values} must
+provide exactly the required number of values for each parametric
+indicator. These controls are ignored unless at least one indicator uses a
+parametric aggregator.}
 
 \item{...}{Reserved for future extensions.}
 }
@@ -115,8 +114,8 @@ aggregating them within each target period.
 \details{
 Supported indicator forecasting methods are \code{"mean"}, \code{"last"},
 \code{"auto.arima"}, \code{"ets"}, and \code{"direct"}. Supported aggregation methods are
-\code{"mean"}, \code{"last"}, \code{"sum"}, \code{"unrestricted"}, \code{"expalmon"}, \code{"beta"},
-\code{"legendre"}, or a numeric weight vector supplied inside a \code{list()}.
+\code{"mean"}, \code{"last"}, \code{"sum"}, \code{"unrestricted"}, \code{"expalmon"}, \code{"beta"}, or
+a numeric weight vector supplied inside a \code{list()}.
 \code{"unrestricted"} expands each high-frequency observation within a target
 period into its own bridge regressor, which corresponds to a U-MIDAS style
 specification when the frequency gap is small. When one or more indicators

@@ -340,33 +340,6 @@ test_that("aggregation method `beta` uses its estimated weights", {
   )
 })
 
-test_that("aggregation method `legendre` uses its estimated weights", {
-  fixture <- make_daily_week_fixture(
-    n_weeks = 12,
-    h = 1,
-    indicator_values = 75 + seq_len(91) +
-      rep(c(2, 1, 0, -1, -2, 1, 3), length.out = 91)
-  )
-
-  model <- bridge(
-    target = fixture$target,
-    indic = fixture$indic,
-    indic_predict = "last",
-    indic_aggregators = "legendre",
-    solver_options = list(seed = 84, n_starts = 2, maxiter = 150),
-    h = 1
-  )
-
-  weights <- model$parametric_weights[[model$indic_name[[1]]]]
-  expect_length(weights, 7)
-  expect_equal(sum(weights), 1, tolerance = 1e-8)
-  expect_equal(
-    model$estimation_set[[model$indic_name[[1]]]][[12]],
-    sum(weights * fixture$observed_indicator_values[78:84]),
-    tolerance = 1e-8
-  )
-})
-
 test_that("forecast method `direct` aligns blocks backward", {
   fixture <- make_daily_week_fixture(
     n_weeks = 6,
@@ -450,20 +423,6 @@ test_that("beta weights match the normalized beta definition used by midasr", {
 
   expect_equal(weights, expected, tolerance = 1e-12)
 })
-
-test_that(
-  "legendre basis matches the shifted orthonormal midasml definition",
-  {
-  basis <- bridgr:::parametric_polynomial_basis("legendre", c(0, 0), 5)
-  x <- seq(0, 1, length.out = 5)
-  expected <- cbind(
-    sqrt(3) * (2 * x - 1),
-    sqrt(5) * (6 * x^2 - 6 * x + 1)
-  )
-
-  expect_equal(basis, expected, tolerance = 1e-12)
-  }
-)
 
 test_that(
   "aggregation method `unrestricted` warns for dense predictors",

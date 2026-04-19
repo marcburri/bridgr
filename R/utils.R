@@ -485,7 +485,7 @@ normalize_indicator_aggregators <- function(
     )
   }
 
-  valid_names <- c("mean", "last", "sum", "expalmon", "beta", "legendre")
+  valid_names <- c("mean", "last", "sum", "expalmon", "beta")
   valid_names <- c(valid_names, "unrestricted")
 
   for (aggregator in aggregators) {
@@ -515,7 +515,7 @@ normalize_indicator_aggregators <- function(
 is_parametric_aggregator <- function(aggregator) {
   is.character(aggregator) &&
     length(aggregator) == 1 &&
-    aggregator %in% c("expalmon", "beta", "legendre")
+    aggregator %in% c("expalmon", "beta")
 }
 
 #' @keywords internal
@@ -525,7 +525,6 @@ parametric_parameter_names <- function(aggregator) {
     aggregator,
     "expalmon" = c("linear", "quadratic"),
     "beta" = c("left_shape", "right_shape"),
-    "legendre" = c("first_order", "second_order"),
     rlang::abort(
       paste0("Unsupported parametric aggregator `", aggregator, "`."),
       call = rlang::caller_env()
@@ -1563,34 +1562,6 @@ as_unrestricted_indicator_long <- function(indicator_id, periods, blocks) {
 
 #' @keywords internal
 #' @noRd
-shifted_legendre_basis <- function(n_weights, degree) {
-  positions <- seq(0, 1, length.out = n_weights)
-  basis_raw <- matrix(1, nrow = n_weights, ncol = degree + 2)
-  basis <- matrix(1, nrow = n_weights, ncol = degree + 1)
-
-  if (degree >= 0) {
-    basis[, 1] <- 1
-  }
-  if (degree >= 1) {
-    basis_raw[, 2] <- 2 * positions - 1
-  }
-
-  for (i in seq_len(degree)) {
-    basis[, i + 1] <- sqrt(2 * i + 1) * basis_raw[, i + 1]
-    if (i < degree) {
-      basis_raw[, i + 2] <- ((2 * i + 1) / (i + 1)) *
-        basis_raw[, 2] *
-        basis_raw[, i + 1] -
-        (i / (i + 1)) *
-        basis_raw[, i]
-    }
-  }
-
-  basis
-}
-
-#' @keywords internal
-#' @noRd
 aggregate_period_values <- function(
   values,
   aggregator,
@@ -1781,6 +1752,236 @@ exp_almon_gradient <- function(parameters, n_weights) {
 
 #' @keywords internal
 #' @noRd
+parametric_weight_gradient <- function(aggregator, parameters, n_weights) {
+  if (n_weights == 1) {
+    return(matrix(
+      0,
+      nrow = 1,
+      ncol = parametric_parameter_count(aggregator)
+    ))
+  }
+
+  if (identical(aggregator, "beta")) {
+    eps <- .Machine$double.eps
+    positions <- (seq_len(n_weights) - 1) / (n_weights - 1)
+    positions[[1]] <- positions[[1]] + eps
+    positions[[n_weights]] <- positions[[n_weights]] - eps
+    raw_weights <- positions^(parameters[[1]] - 1) *
+      (1 - positions)^(parameters[[2]] - 1)
+    raw_sum <- sum(raw_weights)
+    log_left <- raw_weights * log(positions)
+    log_right <- raw_weights * log(1 - positions)
+
+    return(cbind(
+      log_left / raw_sum -
+        raw_weights * sum(log_left) / raw_sum^2,
+      log_right / raw_sum -
+        raw_weights * sum(log_right) / raw_sum^2
+    ))
+  }
+
+  basis <- parametric_polynomial_basis(
+    aggregator = aggregator,
+    parameters = parameters,
+    n_weights = n_weights
+  )
+  weights <- parametric_weights(
+    aggregator = aggregator,
+    parameters = parameters,
+    n_weights = n_weights
+  )
+  weighted_basis <- colSums(weights * basis)
+
+  basis_centered <- sweep(basis, 2, weighted_basis, FUN = "-")
+  basis_centered * as.vector(weights)
+}
+
+#' @keywords internal
+#' @noRd
+optimizer_scale_derivative <- function(parameters, aggregator) {
+  if (identical(aggregator, "beta")) {
+    return(as.numeric(parameters))
+  }
+
+  rep(1, length(parameters))
+}
+
+#' @keywords internal
+#' @noRd
+build_parametric_derivative_wide <- function(
+  indicator_id,
+  periods,
+  values,
+  indic_lags
+) {
+  derivative_long <- as_indicator_long(
+    indicator_id = indicator_id,
+    periods = periods,
+    values = values
+  )
+
+  suppressMessages(tsbox::ts_wide(
+    add_indicator_lags(
+      derivative_long,
+      indic_lags = indic_lags
+    )
+  ))
+}
+
+#' @keywords internal
+#' @noRd
+compute_parametric_objective_gradient <- function(
+  estimation_set,
+  target_name,
+  regressor_names,
+  coefficients,
+  residuals,
+  parametric_specs,
+  parameter_blocks,
+  indic_lags
+) {
+  gradient <- numeric(sum(vapply(
+    parametric_specs,
+    function(spec) parametric_parameter_count(spec$aggregator),
+    FUN.VALUE = integer(1)
+  )))
+  offset <- 0L
+  estimation_times <- estimation_set$time
+  regressor_coefficients <- coefficients[regressor_names]
+  regressor_coefficients[is.na(regressor_coefficients)] <- 0
+
+  for (indicator_id in names(parametric_specs)) {
+    spec <- parametric_specs[[indicator_id]]
+    parameters <- parameter_blocks[[indicator_id]]
+    weight_gradient <- parametric_weight_gradient(
+      aggregator = spec$aggregator,
+      parameters = parameters,
+      n_weights = ncol(spec$blocks)
+    )
+    scale_gradient <- optimizer_scale_derivative(
+      parameters = parameters,
+      aggregator = spec$aggregator
+    )
+
+    for (parameter_index in seq_len(ncol(weight_gradient))) {
+      derivative_values <- as.numeric(
+        spec$blocks %*% weight_gradient[, parameter_index]
+      )
+      derivative_wide <- build_parametric_derivative_wide(
+        indicator_id = indicator_id,
+        periods = spec$periods,
+        values = derivative_values,
+        indic_lags = indic_lags
+      )
+      matched_rows <- match(estimation_times, derivative_wide$time)
+      present <- !is.na(matched_rows)
+      prediction_derivative <- numeric(nrow(estimation_set))
+      derivative_columns <- intersect(
+        setdiff(names(derivative_wide), "time"),
+        regressor_names
+      )
+
+      for (column_name in derivative_columns) {
+        prediction_derivative[present] <- prediction_derivative[present] +
+          derivative_wide[[column_name]][matched_rows[present]] *
+            regressor_coefficients[[column_name]]
+      }
+
+      gradient[[offset + parameter_index]] <- -2 * sum(
+        residuals * prediction_derivative,
+        na.rm = TRUE
+      ) * scale_gradient[[parameter_index]]
+    }
+
+    offset <- offset + length(parameters)
+  }
+
+  gradient
+}
+
+#' @keywords internal
+#' @noRd
+evaluate_parametric_objective <- function(
+  parameters,
+  parametric_specs,
+  fixed_aggregated,
+  target_tbl,
+  target_name,
+  indic_lags,
+  target_lags
+) {
+  parameter_blocks <- parameter_blocks_from_optimizer(
+    parameters = parameters,
+    specs = parametric_specs
+  )
+  parametric_data <- aggregate_parametric_specs(
+    parametric_specs = parametric_specs,
+    parameter_blocks = parameter_blocks
+  )
+  estimation_set <- build_bridge_estimation_set(
+    target_tbl = target_tbl,
+    target_name = target_name,
+    feature_long = dplyr::bind_rows(
+      fixed_aggregated,
+      parametric_data$aggregated
+    ),
+    indic_lags = indic_lags,
+    estimation_times = unique(target_tbl$time),
+    target_lags = target_lags
+  )
+
+  if (nrow(estimation_set) == 0) {
+    return(list(value = Inf, gradient = rep(0, length(parameters))))
+  }
+
+  regressor_names <- setdiff(colnames(estimation_set), c("time", target_name))
+  if (length(regressor_names) == 0) {
+    return(list(value = Inf, gradient = rep(0, length(parameters))))
+  }
+
+  fit <- suppressWarnings(try(
+    stats::lm.fit(
+      x = cbind(
+        "(Intercept)" = 1,
+        as.matrix(estimation_set[, regressor_names, drop = FALSE])
+      ),
+      y = estimation_set[[target_name]]
+    ),
+    silent = TRUE
+  ))
+  if (inherits(fit, "try-error")) {
+    return(list(value = Inf, gradient = rep(0, length(parameters))))
+  }
+
+  residuals <- stats::residuals(fit)
+  rss <- sum(residuals^2, na.rm = TRUE)
+  if (!is.finite(rss)) {
+    return(list(value = Inf, gradient = rep(0, length(parameters))))
+  }
+
+  coefficient_names <- c("(Intercept)", regressor_names)
+  coefficients <- stats::setNames(
+    as.numeric(fit$coefficients),
+    coefficient_names
+  )
+
+  list(
+    value = rss,
+    gradient = compute_parametric_objective_gradient(
+      estimation_set = estimation_set,
+      target_name = target_name,
+      regressor_names = regressor_names,
+      coefficients = coefficients,
+      residuals = residuals,
+      parametric_specs = parametric_specs,
+      parameter_blocks = parameter_blocks,
+      indic_lags = indic_lags
+    )
+  )
+}
+
+#' @keywords internal
+#' @noRd
 parametric_polynomial_basis <- function(aggregator, parameters, n_weights) {
   positions <- parametric_positions(aggregator, n_weights)
 
@@ -1790,14 +1991,6 @@ parametric_polynomial_basis <- function(aggregator, parameters, n_weights) {
       function(i) positions^i,
       FUN.VALUE = numeric(n_weights)
     ))
-  }
-
-  if (identical(aggregator, "legendre")) {
-    basis <- shifted_legendre_basis(
-      n_weights = n_weights,
-      degree = length(parameters)
-    )
-    return(basis[, seq_along(parameters) + 1, drop = FALSE])
   }
 
   rlang::abort(
@@ -1986,6 +2179,7 @@ aggregate_parametric_specs <- function(parametric_specs, parameter_blocks) {
 #' @noRd
 run_parametric_optimizer <- function(
   objective,
+  gradient,
   start,
   lower,
   upper,
@@ -1996,6 +2190,7 @@ run_parametric_optimizer <- function(
     fit <- stats::nlminb(
       start = start,
       objective = objective,
+      gradient = gradient,
       lower = lower,
       upper = upper,
       control = list(
@@ -2022,6 +2217,9 @@ run_parametric_optimizer <- function(
       maxit = solver_options$maxiter
     )
   )
+  if (!is.null(gradient) && !identical(method, "Nelder-Mead")) {
+    args$gr <- gradient
+  }
   if (method == "L-BFGS-B") {
     args$lower <- lower
     args$upper <- upper
@@ -2075,38 +2273,30 @@ optimize_parametric_weights <- function(
   bounds <- parametric_bounds(parametric_specs)
   lower <- bounds$lower
   upper <- bounds$upper
-  estimation_times <- unique(target_tbl$time)
+  evaluation_cache <- new.env(parent = emptyenv())
 
   # Score candidate weights by the final bridge-model fit, not indicator
   # fit alone.
-  objective <- function(parameters) {
-    parameter_blocks <- parameter_blocks_from_optimizer(
-      parameters = parameters,
-      specs = parametric_specs
-    )
-    parametric_data <- aggregate_parametric_specs(
-      parametric_specs = parametric_specs,
-      parameter_blocks = parameter_blocks
-    )
+  evaluate <- function(parameters) {
+    cache_key <- paste(signif(parameters, 16), collapse = "\r")
+    if (exists(cache_key, envir = evaluation_cache, inherits = FALSE)) {
+      return(get(cache_key, envir = evaluation_cache, inherits = FALSE))
+    }
 
-    estimation_set <- build_bridge_estimation_set(
+    result <- evaluate_parametric_objective(
+      parameters = parameters,
+      parametric_specs = parametric_specs,
+      fixed_aggregated = fixed_aggregated,
       target_tbl = target_tbl,
       target_name = target_name,
-      feature_long = dplyr::bind_rows(
-        fixed_aggregated,
-        parametric_data$aggregated
-      ),
       indic_lags = indic_lags,
-      estimation_times = estimation_times
+      target_lags = target_lags
     )
-
-    compute_bridge_loss(
-      estimation_set = estimation_set,
-      target_name = target_name,
-      target_lags = target_lags,
-      call = call
-    )
+    assign(cache_key, result, envir = evaluation_cache)
+    result
   }
+  objective <- function(parameters) evaluate(parameters)$value
+  gradient <- function(parameters) evaluate(parameters)$gradient
 
   results <- bridgr_with_seed(solver_options$seed, {
     lapply(
@@ -2125,6 +2315,7 @@ optimize_parametric_weights <- function(
         }
         run_parametric_optimizer(
           objective = objective,
+          gradient = gradient,
           start = current_start,
           lower = lower,
           upper = upper,
@@ -3106,6 +3297,7 @@ bootstrap_bridge_system <- function(
   h,
   frequency_conversions,
   config,
+  coefficient_names,
   point_forecast,
   call = rlang::caller_env()
 ) {
@@ -3115,6 +3307,9 @@ bootstrap_bridge_system <- function(
       N = config$bootstrap$N,
       valid_N = 0L,
       block_length = config$bootstrap$block_length,
+      coefficient_draws = NULL,
+      coefficient_covariance = NULL,
+      coefficient_se = NULL,
       prediction_draws = NULL,
       models = NULL,
       target_histories = NULL
@@ -3130,6 +3325,12 @@ bootstrap_bridge_system <- function(
     NA_real_,
     nrow = config$bootstrap$N,
     ncol = length(point_forecast)
+  )
+  coefficient_draws <- matrix(
+    NA_real_,
+    nrow = config$bootstrap$N,
+    ncol = length(coefficient_names),
+    dimnames = list(NULL, coefficient_names)
   )
   models <- vector("list", config$bootstrap$N)
   target_histories <- vector("list", config$bootstrap$N)
@@ -3186,6 +3387,10 @@ bootstrap_bridge_system <- function(
     }
 
     prediction_draws[draw_index, ] <- as.numeric(draw_forecast[1, ])
+    coefficient_draws[draw_index, ] <- extract_model_coefficients(
+      model = draw_fit$model,
+      coefficient_names = coefficient_names
+    )
     models[[draw_index]] <- draw_fit$model
     target_histories[[draw_index]] <- if (draw_fit$target_lags > 0) {
       utils::tail(
@@ -3211,6 +3416,9 @@ bootstrap_bridge_system <- function(
       N = config$bootstrap$N,
       valid_N = 0L,
       block_length = block_length,
+      coefficient_draws = NULL,
+      coefficient_covariance = NULL,
+      coefficient_se = NULL,
       prediction_draws = NULL,
       models = NULL,
       target_histories = NULL
@@ -3230,11 +3438,32 @@ bootstrap_bridge_system <- function(
     )
   }
 
+  coefficient_draws <- coefficient_draws[valid, , drop = FALSE]
+  coefficient_covariance <- if (nrow(coefficient_draws) < 2) {
+    matrix(
+      NA_real_,
+      nrow = length(coefficient_names),
+      ncol = length(coefficient_names),
+      dimnames = list(coefficient_names, coefficient_names)
+    )
+  } else {
+    stats::cov(coefficient_draws, use = "pairwise.complete.obs")
+  }
+  coefficient_se <- if (nrow(coefficient_draws) < 2) {
+    rep(NA_real_, length(coefficient_names))
+  } else {
+    apply(coefficient_draws, 2, stats::sd, na.rm = TRUE)
+  }
+  names(coefficient_se) <- coefficient_names
+
   list(
     enabled = TRUE,
     N = config$bootstrap$N,
     valid_N = sum(valid),
     block_length = block_length,
+    coefficient_draws = coefficient_draws,
+    coefficient_covariance = coefficient_covariance,
+    coefficient_se = coefficient_se,
     prediction_draws = prediction_draws[valid, , drop = FALSE],
     models = models[valid],
     target_histories = target_histories[valid]

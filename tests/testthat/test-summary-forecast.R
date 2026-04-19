@@ -160,6 +160,36 @@ test_that("forecast.bridge prints a standardized forecast table", {
   )))
 })
 
+test_that("summary.bridge reports bootstrap SEs under full-system bootstrap", {
+  indic <- make_monthly_indicator(n = 36)
+  target <- make_quarter_target(indic, n_quarters = 12)
+
+  model <- bridge(
+    target = target,
+    indic = indic,
+    indic_predict = "last",
+    target_lags = 1,
+    se = TRUE,
+    full_system_bootstrap = TRUE,
+    bootstrap = list(N = 8, block_length = 3),
+    h = 1
+  )
+
+  output <- capture.output(summary(model))
+
+  expect_true(any(grepl("Bootstrap SE", output, fixed = TRUE)))
+  expect_true(any(grepl(
+    "Coefficient SEs: block_bootstrap",
+    output,
+    fixed = TRUE
+  )))
+  expect_true(any(grepl(
+    "Prediction intervals: full-system block bootstrap",
+    output,
+    fixed = TRUE
+  )))
+})
+
 test_that("forecast.bridge omits uncertainty columns when se is FALSE", {
   indic <- make_monthly_indicator(n = 36)
   target <- make_quarter_target(indic, n_quarters = 12)

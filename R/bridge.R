@@ -7,8 +7,8 @@
 #'
 #' Supported indicator forecasting methods are `"mean"`, `"last"`,
 #' `"auto.arima"`, `"ets"`, and `"direct"`. Supported aggregation methods are
-#' `"mean"`, `"last"`, `"sum"`, `"unrestricted"`, `"expalmon"`, `"beta"`,
-#' `"legendre"`, or a numeric weight vector supplied inside a `list()`.
+#' `"mean"`, `"last"`, `"sum"`, `"unrestricted"`, `"expalmon"`, `"beta"`, or
+#' a numeric weight vector supplied inside a `list()`.
 #' `"unrestricted"` expands each high-frequency observation within a target
 #' period into its own bridge regressor, which corresponds to a U-MIDAS style
 #' specification when the frequency gap is small. When one or more indicators
@@ -60,10 +60,8 @@
 #' the inferred target-period block size. `"unrestricted"` keeps one separate
 #' coefficient per high-frequency observation within the target period. The
 #' parametric aggregators use two coefficients each: `"expalmon"` uses
-#' `(linear, quadratic)`, `"beta"` uses `(left_shape, right_shape)` as the
-#' normalized beta shape parameters, and `"legendre"` uses
-#' `(first_order, second_order)` as coefficients on the first two shifted
-#' orthonormal Legendre basis functions. When `indic_predict = "direct"`,
+#' `(linear, quadratic)`, and `"beta"` uses `(left_shape, right_shape)` as the
+#' normalized beta shape parameters. When `indic_predict = "direct"`,
 #' `indic_aggregators` is ignored and direct blocks are averaged within each
 #' target period.
 #' @param indic_lags A non-negative integer giving the number of target-period
@@ -87,11 +85,12 @@
 #' `block_length` is `NULL`, `bridge()` uses `ceiling(n^(1/3))` based on the
 #' final target-period sample size.
 #' @param full_system_bootstrap Logical flag indicating whether prediction
-#' intervals should be based on a full-system target-period block bootstrap
-#' instead of residual resampling from the fitted target equation. This option
-#' is only used when `se = TRUE`. Because it refits the full bridge workflow
-#' on every draw, `full_system_bootstrap = TRUE` can be substantially slower
-#' than the default residual-resampling intervals.
+#' intervals and coefficient standard errors should be based on a full-system
+#' target-period block bootstrap instead of residual resampling and HAC /
+#' Delta-HAC uncertainty from the fitted target equation. This option is only
+#' used when `se = TRUE`. Because it refits the full bridge workflow on every
+#' draw, `full_system_bootstrap = TRUE` can be substantially slower than the
+#' default residual-resampling intervals.
 #' @param solver_options A list of optional controls for joint parametric-weight
 #' optimization. Supported entries are:
 #' `method` for the optimizer (`"L-BFGS-B"`, `"BFGS"`, `"Nelder-Mead"`, or
@@ -101,11 +100,11 @@
 #' user-supplied initial parameter values. `start_values` can be either a
 #' numeric vector or a named list. For a numeric vector, values are concatenated
 #' in indicator order across the parametric aggregators. Within each indicator,
-#' the parameter order is `(linear, quadratic)` for `"expalmon"`,
-#' `(left_shape, right_shape)` for `"beta"`, and `(first_order, second_order)`
-#' for `"legendre"`. Named-list `start_values` must provide exactly the
-#' required number of values for each parametric indicator. These controls are
-#' ignored unless at least one indicator uses a parametric aggregator.
+#' the parameter order is `(linear, quadratic)` for `"expalmon"` and
+#' `(left_shape, right_shape)` for `"beta"`. Named-list `start_values` must
+#' provide exactly the required number of values for each parametric
+#' indicator. These controls are ignored unless at least one indicator uses a
+#' parametric aggregator.
 #' @param ... Reserved for future extensions.
 #'
 #' @return An object of class `"bridge"` containing the standardized input
@@ -396,6 +395,7 @@ fit_bridge_model <- function(
       h = config$h,
       frequency_conversions = config$frequency_conversions,
       config = config,
+      coefficient_names = names(stats::coef(model_fit)),
       point_forecast = point_path$mean,
       call = rlang::caller_env()
     )
@@ -405,6 +405,9 @@ fit_bridge_model <- function(
       N = config$bootstrap$N,
       valid_N = 0L,
       block_length = config$bootstrap$block_length,
+      coefficient_draws = NULL,
+      coefficient_covariance = NULL,
+      coefficient_se = NULL,
       prediction_draws = NULL,
       models = NULL,
       target_histories = NULL
@@ -424,6 +427,17 @@ fit_bridge_model <- function(
     full_system_bootstrap = isTRUE(config$full_system_bootstrap),
     full_bootstrap = full_bootstrap
   )
+  if (isTRUE(config$full_system_bootstrap)) {
+    coefficient_uncertainty <- if (isTRUE(full_bootstrap$enabled)) {
+      list(
+        method = "block_bootstrap",
+        covariance = full_bootstrap$coefficient_covariance,
+        se = full_bootstrap$coefficient_se
+      )
+    } else {
+      list(method = NULL, covariance = NULL, se = NULL)
+    }
+  }
 
   structure(
     list(

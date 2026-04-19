@@ -133,11 +133,22 @@ test_that("parametric starting values must have the exact required length", {
         value = c(indic$value, indic$value + 5)
       ),
       indic_predict = c("last", "last"),
-      indic_aggregators = c("expalmon", "legendre"),
+      indic_aggregators = c("expalmon", "beta"),
       solver_options = list(start_values = list(a = c(0, 0))),
       h = 1
     ),
     "must provide exactly 2 parametric indicator start vectors"
+  )
+
+  expect_error(
+    bridge(
+      target = target,
+      indic = indic,
+      indic_predict = "last",
+      indic_aggregators = "legendre",
+      h = 1
+    ),
+    "Character values in `indic_aggregators` must be one of"
   )
 })
 

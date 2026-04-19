@@ -27,6 +27,10 @@ summary.bridge <- function(object, ...) {
       identical(object$uncertainty$coefficient_method, "delta_hac")
     ) {
       "Delta-HAC SE"
+    } else if (
+      identical(object$uncertainty$coefficient_method, "block_bootstrap")
+    ) {
+      "Bootstrap SE"
     } else {
       "HAC SE"
     }

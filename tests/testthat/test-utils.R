@@ -62,7 +62,7 @@ test_that("bootstrap controls are normalized and validated", {
 test_that("parametric start values are validated", {
   parametric_specs <- list(
     a = list(aggregator = "beta"),
-    b = list(aggregator = "legendre")
+    b = list(aggregator = "expalmon")
   )
 
   expect_error(
@@ -217,4 +217,167 @@ test_that("beta parameters are mapped to and from optimizer scale positively", {
     bridgr:::from_optimizer_scale(log(c(2, 3)), "beta"),
     c(2, 3)
   )
+})
+
+finite_difference_jacobian <- function(fun, x, eps = 1e-6) {
+  baseline <- fun(x)
+  jacobian <- matrix(NA_real_, nrow = length(baseline), ncol = length(x))
+
+  for (index in seq_along(x)) {
+    step <- rep(0, length(x))
+    step[[index]] <- eps
+    jacobian[, index] <- (
+      fun(x + step) - fun(x - step)
+    ) / (2 * eps)
+  }
+
+  jacobian
+}
+
+finite_difference_gradient <- function(fun, x, eps = 1e-6) {
+  gradient <- numeric(length(x))
+
+  for (index in seq_along(x)) {
+    step <- rep(0, length(x))
+    step[[index]] <- eps
+    gradient[[index]] <- (fun(x + step) - fun(x - step)) / (2 * eps)
+  }
+
+  gradient
+}
+
+parametric_gradient_fixture <- function(aggregator) {
+  indicator <- make_monthly_indicator(n = 36)
+  target <- make_quarter_target(indicator, n_quarters = 12)
+  target_tbl <- bridgr:::as_bridge_tbl(
+    target,
+    arg = "target",
+    default_id = "target"
+  )
+  indicator_tbl <- bridgr:::as_bridge_tbl(
+    indicator,
+    arg = "indic",
+    default_id = "indic"
+  )
+  target_meta <- bridgr:::infer_frequency_table(target_tbl)$target
+  indicator_meta <- bridgr:::infer_frequency_table(indicator_tbl)$indicators
+  aligned <- bridgr:::align_bridge_inputs(
+    target_tbl = target_tbl,
+    indic_tbl = indicator_tbl,
+    target_meta = target_meta,
+    indic_meta = indicator_meta
+  )
+  obs_per_target <- bridgr:::observations_per_target_period(
+    indicator_meta = indicator_meta,
+    target_meta = target_meta,
+    frequency_conversions = bridgr:::default_frequency_conversions()
+  )
+  period_blocks <- bridgr:::prepare_indicator_period_blocks(
+    indicator_tbl = aligned$indic,
+    indicator_id = "indic",
+    target_meta = target_meta,
+    target_anchor = aligned$target_anchor,
+    obs_per_target = obs_per_target
+  )
+  parametric_specs <- list(
+    indic = list(
+      indicator_id = "indic",
+      aggregator = aggregator,
+      periods = period_blocks$periods,
+      blocks = period_blocks$blocks,
+      obs_per_target = obs_per_target
+    )
+  )
+  fixed_aggregated <- dplyr::tibble(
+    id = character(),
+    time = aligned$target$time[0],
+    values = numeric()
+  )
+  parameters <- switch(
+    aggregator,
+    expalmon = c(0.25, -0.15),
+    beta = bridgr:::to_optimizer_scale(c(2.2, 3.4), "beta")
+  )
+
+  list(
+    parameters = parameters,
+    parametric_specs = parametric_specs,
+    fixed_aggregated = fixed_aggregated,
+    target_tbl = aligned$target,
+    target_name = "target",
+    indic_lags = 1L,
+    target_lags = 1L
+  )
+}
+
+test_that("parametric weight gradients match finite differences", {
+  cases <- list(
+    expalmon = list(parameters = c(0.3, -0.2), n_weights = 5L),
+    beta = list(parameters = c(2.4, 3.1), n_weights = 5L)
+  )
+
+  for (aggregator in names(cases)) {
+    params <- cases[[aggregator]]$parameters
+    n_weights <- cases[[aggregator]]$n_weights
+
+    analytic <- bridgr:::parametric_weight_gradient(
+      aggregator = aggregator,
+      parameters = params,
+      n_weights = n_weights
+    )
+    numeric <- finite_difference_jacobian(
+      fun = function(current_parameters) {
+        bridgr:::parametric_weights(
+          aggregator = aggregator,
+          parameters = current_parameters,
+          n_weights = n_weights
+        )
+      },
+      x = params
+    )
+
+    expect_equal(
+      analytic,
+      numeric,
+      tolerance = 1e-5,
+      info = paste("aggregator =", aggregator)
+    )
+  }
+})
+
+test_that("parametric objective gradients match finite differences", {
+  for (aggregator in c("expalmon", "beta")) {
+    fixture <- parametric_gradient_fixture(aggregator)
+
+    analytic <- bridgr:::evaluate_parametric_objective(
+      parameters = fixture$parameters,
+      parametric_specs = fixture$parametric_specs,
+      fixed_aggregated = fixture$fixed_aggregated,
+      target_tbl = fixture$target_tbl,
+      target_name = fixture$target_name,
+      indic_lags = fixture$indic_lags,
+      target_lags = fixture$target_lags
+    )
+    numeric <- finite_difference_gradient(
+      fun = function(current_parameters) {
+        bridgr:::evaluate_parametric_objective(
+          parameters = current_parameters,
+          parametric_specs = fixture$parametric_specs,
+          fixed_aggregated = fixture$fixed_aggregated,
+          target_tbl = fixture$target_tbl,
+          target_name = fixture$target_name,
+          indic_lags = fixture$indic_lags,
+          target_lags = fixture$target_lags
+        )$value
+      },
+      x = fixture$parameters
+    )
+
+    expect_equal(
+      analytic$gradient,
+      numeric,
+      tolerance = 1e-4,
+      info = paste("aggregator =", aggregator)
+    )
+  }
 })

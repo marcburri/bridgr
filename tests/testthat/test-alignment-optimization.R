@@ -189,6 +189,7 @@ test_that("optimizer warning keeps the best non-converged start", {
 
   testthat::local_mocked_bindings(
     run_parametric_optimizer = function(objective,
+                                        gradient,
                                         start,
                                         lower,
                                         upper,
@@ -254,6 +255,7 @@ test_that("optimizer aborts when every candidate is non-finite", {
 
   testthat::local_mocked_bindings(
     run_parametric_optimizer = function(objective,
+                                        gradient,
                                         start,
                                         lower,
                                         upper,
@@ -344,21 +346,16 @@ test_that("named start_values flow through mixed aggregators", {
       id = "b",
       time = base_indicator$time,
       value = base_indicator$value + 10
-    ),
-    dplyr::tibble(
-      id = "c",
-      time = base_indicator$time,
-      value = base_indicator$value - 5
     )
   )
   start_values <- list(
     a = c(0.1, 0.2),
-    b = c(2, 3),
-    c = c(-0.4, 0.6)
+    b = c(2, 3)
   )
 
   testthat::local_mocked_bindings(
     run_parametric_optimizer = function(objective,
+                                        gradient,
                                         start,
                                         lower,
                                         upper,
@@ -377,8 +374,8 @@ test_that("named start_values flow through mixed aggregators", {
   model <- bridge(
     target = target,
     indic = indic,
-    indic_predict = c("last", "last", "last"),
-    indic_aggregators = c("expalmon", "beta", "legendre"),
+    indic_predict = c("last", "last"),
+    indic_aggregators = c("expalmon", "beta"),
     solver_options = list(
       start_values = start_values,
       method = "BFGS",
@@ -390,9 +387,8 @@ test_that("named start_values flow through mixed aggregators", {
 
   expect_equal(model$parametric_parameters$a, start_values$a)
   expect_equal(model$parametric_parameters$b, start_values$b)
-  expect_equal(model$parametric_parameters$c, start_values$c)
   expect_equal(model$parametric_optimization$best_start, 1L)
-  expect_true(all(c("a", "b", "c") %in% names(model$parametric_weights)))
+  expect_true(all(c("a", "b") %in% names(model$parametric_weights)))
 })
 
 test_that("beta aggregation stays positive under BFGS", {
