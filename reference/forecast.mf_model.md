@@ -53,3 +53,26 @@ regressors used for forecasting, and optional full-system bootstrap
 metadata.
 
 `x`, invisibly.
+
+## Examples
+
+``` r
+gdp_growth <- suppressMessages(tsbox::ts_na_omit(tsbox::ts_pc(gdp)))
+model <- mf_model(
+  target = gdp_growth,
+  indic = baro,
+  indic_predict = "auto.arima",
+  indic_aggregators = "mean",
+  h = 1
+)
+
+forecast(model)
+#> Mixed-frequency forecast
+#> -----------------------------------
+#> Target series: gdp_growth
+#> Forecast horizon: 1
+#> Uncertainty: point forecast only
+#> -----------------------------------
+#>   time       mean 
+#> 1 2023-01-01 0.161
+```

@@ -45,3 +45,15 @@ scale_fill_bridgr(...)
 ## Value
 
 A ggplot2 theme, color palette, or scale.
+
+## Examples
+
+``` r
+ggplot2::ggplot(mtcars, ggplot2::aes(wt, mpg, color = factor(cyl))) +
+  ggplot2::geom_point() +
+  theme_bridgr()
+
+
+colors_bridgr()[1:3]
+#> [1] "#4D4D4D" "#0072B2" "#D55E00"
+```

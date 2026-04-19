@@ -58,3 +58,18 @@ plot(
 ## Value
 
 A ggplot2 object.
+
+## Examples
+
+``` r
+gdp_growth <- suppressMessages(tsbox::ts_na_omit(tsbox::ts_pc(gdp)))
+model <- mf_model(
+  target = gdp_growth,
+  indic = baro,
+  indic_predict = "auto.arima",
+  indic_aggregators = "mean",
+  h = 1
+)
+
+plot(model, type = "fit")
+```
