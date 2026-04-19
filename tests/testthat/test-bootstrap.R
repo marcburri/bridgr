@@ -73,10 +73,25 @@ test_that("predictive_target_model_draw adds forecast shocks", {
   forecast_set <- dplyr::tibble(x = c(7, 8))
 
   testthat::local_mocked_bindings(
-    rnorm = function(n, mean = 0, sd = 1) {
-      mean + rep(0.5, n)
+    simulate_target_model_draws = function(model,
+                                           forecast_set,
+                                           target_name,
+                                           regressor_names,
+                                           target_lags = 0,
+                                           target_history = NULL,
+                                           n_paths = 100L,
+                                           innovations = NULL) {
+      matrix(
+        bridgr:::forecast_target_model_mean(
+          model = model,
+          forecast_set = forecast_set,
+          target_name = target_name,
+          regressor_names = regressor_names
+        ) + 0.5,
+        nrow = 1
+      )
     },
-    .package = "stats"
+    .package = "bridgr"
   )
 
   draw <- bridgr:::predictive_target_model_draw(
@@ -142,7 +157,7 @@ test_that(
       regressor_names = "x",
       formula = y ~ x,
       target_lags = 0,
-      bootstrap = list(type = "block", N = 3L, block_length = 2L)
+      bootstrap = list(N = 3L, block_length = 2L)
     ),
     "produced 2 valid draws out of 3"
   )
@@ -194,7 +209,7 @@ test_that(
       regressor_names = "x",
       formula = y ~ x,
       target_lags = 0,
-      bootstrap = list(type = "block", N = 4L, block_length = NULL)
+      bootstrap = list(N = 4L, block_length = NULL)
     ),
     "failed for every resample"
   )
@@ -208,7 +223,7 @@ test_that(
   }
 )
 
-test_that("bridge stores default bootstrap metadata for direct forecasts", {
+test_that("bridge keeps full bootstrap opt-in for direct forecasts", {
   indic <- make_monthly_indicator(n = 36)
   target <- make_quarter_target(indic, n_quarters = 12)
 
@@ -217,19 +232,22 @@ test_that("bridge stores default bootstrap metadata for direct forecasts", {
     indic = indic,
     indic_predict = "direct",
     se = TRUE,
+    full_system_bootstrap = TRUE,
     bootstrap = list(N = 5),
     h = 1
   )
   fc <- forecast(model)
 
   expect_true(model$bootstrap$enabled)
-  expect_equal(model$bootstrap$type, "block")
   expect_equal(model$bootstrap$N, 5L)
   expect_equal(
     model$bootstrap$block_length,
-    ceiling(nrow(model$estimation_set)^(1 / 3))
+    ceiling(nrow(model$target)^(1 / 3))
   )
   expect_equal(fc$bootstrap$block_length, model$bootstrap$block_length)
+  expect_true(fc$uncertainty$enabled)
+  expect_equal(fc$uncertainty$prediction_method, "block_bootstrap")
+  expect_equal(fc$uncertainty$simulation_paths, model$bootstrap$valid_N)
   expect_equal(length(fc$se), nrow(fc$forecast_set))
   expect_false(any(grepl(
     "Indicator handling: direct alignment",

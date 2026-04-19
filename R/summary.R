@@ -12,16 +12,28 @@ summary.bridge <- function(object, ...) {
   }
 
   coefficient_estimates <- stats::coef(object$model)
-  uncertainty_enabled <- isTRUE(object$bootstrap$enabled)
+  coefficient_uncertainty_enabled <-
+    !is.null(object$uncertainty$coefficient_se)
+  prediction_uncertainty_enabled <-
+    !is.null(object$uncertainty$prediction_method)
   coefficient_table <- data.frame(
     Estimate = format_number(as.numeric(coefficient_estimates)),
     check.names = FALSE
   )
   rownames(coefficient_table) <- names(coefficient_estimates)
 
-  if (uncertainty_enabled) {
-    coefficient_table$`Bootstrap SE` <- format_number(
-      as.numeric(object$bootstrap$coefficient_se[names(coefficient_estimates)])
+  if (coefficient_uncertainty_enabled) {
+    coefficient_label <- if (
+      identical(object$uncertainty$coefficient_method, "delta_hac")
+    ) {
+      "Delta-HAC SE"
+    } else {
+      "HAC SE"
+    }
+    coefficient_table[[coefficient_label]] <- format_number(
+      as.numeric(
+        object$uncertainty$coefficient_se[names(coefficient_estimates)]
+      )
     )
   }
 
@@ -137,24 +149,42 @@ summary.bridge <- function(object, ...) {
     }
   }
 
-  if (uncertainty_enabled) {
+  if (coefficient_uncertainty_enabled || prediction_uncertainty_enabled) {
     cat("-----------------------------------\n")
     cat("Uncertainty:\n")
-    cat(
-      "Method: conditional ",
-      object$bootstrap$type,
-      " bootstrap with predictive forecast draws\n",
-      sep = ""
-    )
-    cat(
-      "Bootstrap draws: ",
-      object$bootstrap$valid_N,
-      " / ",
-      object$bootstrap$N,
-      "\n",
-      sep = ""
-    )
-    cat("Block length: ", object$bootstrap$block_length, "\n", sep = "")
+    if (coefficient_uncertainty_enabled) {
+      cat(
+        "Coefficient SEs: ",
+        object$uncertainty$coefficient_method,
+        "\n",
+        sep = ""
+      )
+    }
+    if (identical(object$uncertainty$prediction_method, "block_bootstrap")) {
+      cat("Prediction intervals: full-system block bootstrap\n")
+      cat(
+        "Bootstrap draws: ",
+        object$bootstrap$valid_N,
+        " / ",
+        object$bootstrap$N,
+        "\n",
+        sep = ""
+      )
+      cat("Block length: ", object$bootstrap$block_length, "\n", sep = "")
+    } else if (identical(
+      object$uncertainty$prediction_method,
+      "residual_resampling"
+    )) {
+      cat("Prediction intervals: residual resampling\n")
+      cat(
+        "Simulation paths: ",
+        object$uncertainty$simulation_paths,
+        "\n",
+        sep = ""
+      )
+    } else if (isTRUE(object$bootstrap$requested)) {
+      cat("Prediction intervals: unavailable\n")
+    }
   }
 
   if (!is.null(object$parametric_optimization)) {

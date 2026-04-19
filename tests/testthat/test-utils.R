@@ -39,20 +39,15 @@ test_that("solver option normalization validates controls", {
 
 test_that("bootstrap controls are normalized and validated", {
   options <- bridgr:::normalize_bridge_bootstrap(
-    list(type = "block", N = 25.2, block_length = 4.8)
+    list(N = 25.2, block_length = 4.8)
   )
 
-  expect_equal(options$type, "block")
   expect_equal(options$N, 25L)
   expect_equal(options$block_length, 5L)
 
   expect_error(
     bridgr:::normalize_bridge_bootstrap("bad"),
     "`bootstrap` must be a list"
-  )
-  expect_error(
-    bridgr:::normalize_bridge_bootstrap(list(type = "wild")),
-    "'arg' should be \"block\""
   )
   expect_error(
     bridgr:::normalize_bridge_bootstrap(list(N = 0)),

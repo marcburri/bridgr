@@ -177,8 +177,15 @@ test_that("forecast.bridge uses stored regressors and accepts xreg", {
   expect_s3_class(default_forecast, "forecast")
   expect_equal(nrow(default_forecast$forecast_set), 2)
   expect_equal(length(default_forecast$se), 2)
-  expect_gt(default_forecast$bootstrap$valid_N, 0L)
-  expect_lte(default_forecast$bootstrap$valid_N, 8L)
+  expect_false(default_forecast$bootstrap$enabled)
+  expect_equal(
+    default_forecast$uncertainty$prediction_method,
+    "residual_resampling"
+  )
+  expect_equal(
+    default_forecast$uncertainty$simulation_paths,
+    8L
+  )
 
   custom_xreg <- dplyr::tibble(
     id = rep(c("indic", "indic_lag1"), each = 2),
@@ -226,6 +233,20 @@ test_that("se = FALSE leaves bootstrap inactive", {
   expect_true(all(is.na(fc$se)))
   expect_true(all(is.na(fc$lower)))
   expect_true(all(is.na(fc$upper)))
+})
+
+test_that("full_system_bootstrap is validated as logical", {
+  indic <- make_monthly_indicator()
+  target <- make_quarter_target(indic, n_quarters = 6)
+
+  expect_error(
+    bridge(
+      target = target,
+      indic = indic,
+      full_system_bootstrap = "yes"
+    ),
+    "`full_system_bootstrap` must be either `TRUE` or `FALSE`"
+  )
 })
 
 test_that("bridge validates duplicate timestamps and missing values", {

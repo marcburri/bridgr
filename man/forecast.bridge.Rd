@@ -13,14 +13,13 @@
 \item{object}{A \code{"bridge"} object returned by \code{\link[=bridge]{bridge()}}.}
 
 \item{xreg}{Optional future regressors in a \code{\link[tsbox:ts_boxable]{tsbox::ts_boxable()}} format.
-When omitted, the forecast set stored inside \code{object} is used. When
-supplied, \code{xreg} must contain the same regressor names used when fitting the
-bridge equation.}
+When omitted, the forecast regressor set stored inside \code{object} is used.
+When supplied, \code{xreg} must contain the same non-target regressors used when
+fitting the bridge equation.}
 
-\item{level}{Confidence levels used for bootstrap predictive intervals when
-the model was estimated with \code{se = TRUE}. When uncertainty is unavailable,
-\code{forecast()} still returns the \code{se}, \code{lower}, and \code{upper} components, filled
-with \code{NA}.}
+\item{level}{Prediction interval levels used when the model was estimated
+with \code{se = TRUE}. When uncertainty is unavailable, \code{forecast()} still
+returns the \code{se}, \code{lower}, and \code{upper} components, filled with \code{NA}.}
 
 \item{...}{Unused.}
 
@@ -28,8 +27,9 @@ with \code{NA}.}
 }
 \value{
 An object of class \code{"bridge_forecast"} and \code{"forecast"} containing
-point forecasts, bootstrap predictive uncertainty summaries, the
-target-period regressors used for forecasting, and bootstrap metadata.
+point forecasts, predictive uncertainty summaries, the
+target-period regressors used for forecasting, and optional full-system
+bootstrap metadata.
 
 \code{x}, invisibly.
 }

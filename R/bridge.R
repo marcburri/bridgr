@@ -74,18 +74,24 @@
 #' @param frequency_conversions A named numeric vector used to customize the
 #' regular frequency ladder. Supported names are `spm`, `mph`, `hpd`, `dpw`,
 #' `wpm`, `mpq`, and `qpy`.
-#' @param se Logical flag indicating whether bootstrap coefficient standard
-#' errors and predictive forecast intervals should be computed. When `FALSE`,
-#' `bootstrap` is ignored.
-#' @param bootstrap A list of bootstrap controls. Currently only
-#' `list(type = "block", N = 100, block_length = NULL)` is supported.
-#' `type` must be `"block"`, `N` is the number of bootstrap replications, and
-#' `block_length` is the target-frequency block length. When `block_length` is
-#' `NULL`, `bridge()` uses `ceiling(n^(1/3))` based on the final target-period
-#' estimation sample size. The bootstrap is conditional on the aligned
-#' low-frequency design matrix and therefore does not re-estimate indicator
-#' forecasts or aggregation weights, but the stored forecast draws include
-#' simulated future target shocks so `forecast()` returns predictive intervals.
+#' @param se Logical flag indicating whether coefficient standard errors and
+#' prediction intervals should be computed. When `TRUE`, `bridge()` reports HAC
+#' standard errors for the linear target equation, or Delta-HAC standard errors
+#' when parametric aggregation weights are estimated jointly.
+#' @param bootstrap A list of uncertainty controls. Currently only
+#' `list(N = 100, block_length = NULL)` is supported. `N` is the number of
+#' predictive simulation paths used when `se = TRUE`. If
+#' `full_system_bootstrap = TRUE`, the same `N` controls the number of
+#' full-system target-period block-bootstrap replications used for prediction
+#' intervals. `block_length` is only used by the full-system bootstrap. When
+#' `block_length` is `NULL`, `bridge()` uses `ceiling(n^(1/3))` based on the
+#' final target-period sample size.
+#' @param full_system_bootstrap Logical flag indicating whether prediction
+#' intervals should be based on a full-system target-period block bootstrap
+#' instead of residual resampling from the fitted target equation. This option
+#' is only used when `se = TRUE`. Because it refits the full bridge workflow
+#' on every draw, `full_system_bootstrap = TRUE` can be substantially slower
+#' than the default residual-resampling intervals.
 #' @param solver_options A list of optional controls for joint parametric-weight
 #' optimization. Supported entries are:
 #' `method` for the optimizer (`"L-BFGS-B"`, `"BFGS"`, `"Nelder-Mead"`, or
@@ -164,6 +170,7 @@ bridge <- function(
   frequency_conversions = NULL,
   se = FALSE,
   bootstrap = NULL,
+  full_system_bootstrap = FALSE,
   solver_options = NULL,
   ...
 ) {
@@ -195,18 +202,33 @@ bridge <- function(
     frequency_conversions = frequency_conversions,
     se = se,
     bootstrap = bootstrap,
+    full_system_bootstrap = full_system_bootstrap,
     solver_options = solver_options
   )
 
   # Carry the target symbol into the final model formula and output.
   target_tbl <- target_tbl |>
     dplyr::mutate(id = target_name)
+  fit_bridge_model(
+    target_tbl = target_tbl,
+    indic_tbl = indic_tbl,
+    target_name = target_name,
+    config = config
+  )
+}
 
+#' @keywords internal
+#' @noRd
+fit_bridge_model <- function(
+  target_tbl,
+  indic_tbl,
+  target_name,
+  config
+) {
   target_meta <- infer_frequency_table(target_tbl)$target
   indic_meta <- infer_frequency_table(indic_tbl)$indicators |>
     dplyr::arrange(match(.data$id, unique(indic_tbl$id)))
 
-  # Keep only the shared sample and record the target-period anchor.
   aligned <- align_bridge_inputs(
     target_tbl = target_tbl,
     indic_tbl = indic_tbl,
@@ -217,17 +239,14 @@ bridge <- function(
   indic_tbl <- aligned$indic
   target_anchor <- aligned$target_anchor
 
-  # Build the future target index once so indicator extension can fill it.
   last_target_time <- max(target_tbl$time)
   future_target_times <- target_future_times(
     last_time = last_target_time,
     target_meta = target_meta,
-    h = h
+    h = config$h
   )
   all_target_times <- c(unique(target_tbl$time), future_target_times)
 
-  # Aggregate each indicator to target frequency, with optional
-  # parametric weights.
   indicator_results <- build_indicator_features(
     indic_tbl = indic_tbl,
     indic_meta = indic_meta,
@@ -239,20 +258,17 @@ bridge <- function(
     indic_predict = config$indic_predict,
     indic_aggregators = config$indic_aggregators,
     frequency_conversions = config$frequency_conversions,
-    indic_lags = indic_lags,
-    target_lags = target_lags,
+    indic_lags = config$indic_lags,
+    target_lags = config$target_lags,
     solver_options = config$solver_options
   )
 
   target_long <- target_tbl |>
     dplyr::select("id", "time", "values")
-
   feature_long <- add_indicator_lags(
     indicator_results$aggregated,
-    indic_lags = indic_lags
+    indic_lags = config$indic_lags
   )
-
-  # Split the combined design matrix into estimation and forecast windows.
   full_long <- dplyr::bind_rows(target_long, feature_long) |>
     dplyr::filter(.data$time %in% all_target_times)
 
@@ -261,10 +277,13 @@ bridge <- function(
   forecast_long <- full_long |>
     dplyr::filter(.data$time %in% future_target_times)
 
-  # Drop incomplete rows introduced by lagging before fitting the model.
   estimation_set <- suppressMessages(tsbox::ts_wide(estimation_long)) |>
-    stats::na.omit()
-  forecast_set <- suppressMessages(tsbox::ts_wide(forecast_long)) |>
+    stats::na.omit() |>
+    add_target_lagged_regressors(
+      target_name = target_name,
+      target_lags = config$target_lags
+    )
+  forecast_base_set <- suppressMessages(tsbox::ts_wide(forecast_long)) |>
     stats::na.omit()
 
   if (nrow(estimation_set) == 0) {
@@ -277,8 +296,13 @@ bridge <- function(
     )
   }
 
+  target_lag_names <- target_lag_regressor_names(
+    target_name = target_name,
+    target_lags = config$target_lags
+  )
   regressor_names <- setdiff(colnames(estimation_set), c("time", target_name))
-  if (length(regressor_names) == 0) {
+  xreg_names <- setdiff(regressor_names, target_lag_names)
+  if (length(xreg_names) == 0) {
     rlang::abort(
       paste(
         "At least one aggregated indicator is required to estimate",
@@ -321,26 +345,84 @@ bridge <- function(
     )
   )
 
-  # Fit a linear bridge equation unless target AR dynamics are requested.
   model_fit <- fit_target_model(
     estimation_set = estimation_set,
     target_name = target_name,
     regressor_names = regressor_names,
     formula = formula,
-    target_lags = target_lags
+    target_lags = config$target_lags
   )
 
-  bootstrap_fit <- bootstrap_target_equation(
-    enabled = config$se,
+  target_history <- if (config$target_lags > 0) {
+    utils::tail(estimation_set[[target_name]], config$target_lags)
+  } else {
+    NULL
+  }
+  point_path <- recursive_lm_forecast(
     model = model_fit,
-    estimation_set = estimation_set,
-    forecast_set = forecast_set,
+    forecast_set = forecast_base_set,
+    target_name = target_name,
+    target_lags = config$target_lags,
+    target_history = target_history
+  )
+
+  coefficient_uncertainty <- if (isTRUE(config$se)) {
+    compute_bridge_coefficient_uncertainty(
+      model = model_fit,
+      formula = formula,
+      target_tbl = target_tbl,
+      target_name = target_name,
+      fixed_aggregated = indicator_results$fixed_aggregated,
+      parametric_specs = indicator_results$parametric_specs,
+      parameter_blocks = indicator_results$parametric_parameters,
+      indic_lags = config$indic_lags,
+      target_lags = config$target_lags
+    )
+  } else {
+    list(method = NULL, covariance = NULL, se = NULL)
+  }
+
+  full_bootstrap <- if (
+    isTRUE(config$se) && isTRUE(config$full_system_bootstrap)
+  ) {
+    bootstrap_bridge_system(
+      enabled = TRUE,
+      target_tbl = target_tbl,
+      indic_tbl = indic_tbl,
+      target_name = target_name,
+      target_meta = target_meta,
+      indic_meta = indic_meta,
+      target_anchor = target_anchor,
+      h = config$h,
+      frequency_conversions = config$frequency_conversions,
+      config = config,
+      point_forecast = point_path$mean,
+      call = rlang::caller_env()
+    )
+  } else {
+    list(
+      enabled = FALSE,
+      N = config$bootstrap$N,
+      valid_N = 0L,
+      block_length = config$bootstrap$block_length,
+      prediction_draws = NULL,
+      models = NULL,
+      target_histories = NULL
+    )
+  }
+  full_bootstrap$requested <- isTRUE(config$se) &&
+    isTRUE(config$full_system_bootstrap)
+  prediction_uncertainty <- build_prediction_uncertainty(
+    enabled = isTRUE(config$se),
+    model = model_fit,
+    forecast_set = forecast_base_set,
     target_name = target_name,
     regressor_names = regressor_names,
-    formula = formula,
-    target_lags = target_lags,
+    target_lags = config$target_lags,
+    target_history = target_history,
     bootstrap = config$bootstrap,
-    call = rlang::caller_env()
+    full_system_bootstrap = isTRUE(config$full_system_bootstrap),
+    full_bootstrap = full_bootstrap
   )
 
   structure(
@@ -354,26 +436,41 @@ bridge <- function(
       indic_predict = config$indic_predict,
       indic_aggregators_requested = config$indic_aggregators_requested,
       indic_aggregators = config$indic_aggregators,
-      indic_lags = indic_lags,
-      target_lags = target_lags,
-      h = h,
+      indic_lags = config$indic_lags,
+      target_lags = config$target_lags,
+      target_lag_names = target_lag_names,
+      h = config$h,
       frequency_conversions = config$frequency_conversions,
       se = config$se,
-      bootstrap = bootstrap_fit,
+      full_system_bootstrap = config$full_system_bootstrap,
+      bootstrap = full_bootstrap,
+      uncertainty = list(
+        enabled = isTRUE(config$se),
+        coefficient_method = coefficient_uncertainty$method,
+        coefficient_covariance = coefficient_uncertainty$covariance,
+        coefficient_se = coefficient_uncertainty$se,
+        prediction_method = prediction_uncertainty$method,
+        prediction_draws = prediction_uncertainty$draws,
+        simulation_paths = prediction_uncertainty$N
+      ),
       solver_options = config$solver_options,
       formula = formula,
       estimation_set = estimation_set,
-      forecast_set = forecast_set,
+      forecast_base_set = forecast_base_set,
+      forecast_set = point_path$forecast_set,
       model = model_fit,
       indic_models = indicator_results$models,
       parametric_weights = indicator_results$parametric_weights,
       parametric_parameters = indicator_results$parametric_parameters,
+      parametric_specs = indicator_results$parametric_specs,
+      fixed_aggregated = indicator_results$fixed_aggregated,
       parametric_optimization = indicator_results$parametric_optimization,
       expalmon_weights = indicator_results$expalmon_weights,
       expalmon_parameters = indicator_results$expalmon_parameters,
       expalmon_optimization = indicator_results$expalmon_optimization,
       truncation_info = indicator_results$truncation_info,
       regressor_names = regressor_names,
+      xreg_names = xreg_names,
       target_anchor = target_anchor,
       future_target_times = future_target_times
     ),
@@ -394,6 +491,7 @@ validate_bridge_inputs <- function(
   frequency_conversions,
   se = FALSE,
   bootstrap = NULL,
+  full_system_bootstrap = FALSE,
   solver_options = NULL,
   call = rlang::caller_env()
 ) {
@@ -437,6 +535,14 @@ validate_bridge_inputs <- function(
   }
   if (!is.logical(se) || length(se) != 1 || is.na(se)) {
     rlang::abort("`se` must be either `TRUE` or `FALSE`.", call = call)
+  }
+  if (!is.logical(full_system_bootstrap) ||
+    length(full_system_bootstrap) != 1 ||
+    is.na(full_system_bootstrap)) {
+    rlang::abort(
+      "`full_system_bootstrap` must be either `TRUE` or `FALSE`.",
+      call = call
+    )
   }
 
   frequency_conversions <- normalize_frequency_conversions(
@@ -537,8 +643,12 @@ validate_bridge_inputs <- function(
     indic_predict = indic_predict,
     indic_aggregators_requested = indic_aggregators_requested,
     indic_aggregators = indic_aggregators,
+    indic_lags = as.integer(indic_lags),
+    target_lags = as.integer(target_lags),
+    h = as.integer(h),
     frequency_conversions = frequency_conversions,
     se = isTRUE(se),
+    full_system_bootstrap = isTRUE(full_system_bootstrap),
     bootstrap = bootstrap,
     solver_options = solver_options
   )
@@ -663,6 +773,7 @@ build_indicator_features <- function(
       values = numeric()
     )
   }
+  fixed_aggregated_base <- fixed_aggregated
   if (length(parametric_specs) > 0) {
     parametric_fit <- optimize_parametric_weights(
       parametric_specs = parametric_specs,
@@ -734,9 +845,11 @@ build_indicator_features <- function(
 
   list(
     aggregated = fixed_aggregated,
+    fixed_aggregated = fixed_aggregated_base,
     models = stats::setNames(models, indic_meta$id),
     parametric_weights = parametric_weights,
     parametric_parameters = parametric_parameters,
+    parametric_specs = parametric_specs,
     parametric_optimization = parametric_optimization,
     expalmon_weights = expalmon_weights,
     expalmon_parameters = expalmon_parameters,

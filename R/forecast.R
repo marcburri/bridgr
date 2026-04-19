@@ -4,18 +4,18 @@
 #'
 #' @param object A `"bridge"` object returned by [bridge()].
 #' @param xreg Optional future regressors in a [tsbox::ts_boxable()] format.
-#' When omitted, the forecast set stored inside `object` is used. When
-#' supplied, `xreg` must contain the same regressor names used when fitting the
-#' bridge equation.
-#' @param level Confidence levels used for bootstrap predictive intervals when
-#' the model was estimated with `se = TRUE`. When uncertainty is unavailable,
-#' `forecast()` still returns the `se`, `lower`, and `upper` components, filled
-#' with `NA`.
+#' When omitted, the forecast regressor set stored inside `object` is used.
+#' When supplied, `xreg` must contain the same non-target regressors used when
+#' fitting the bridge equation.
+#' @param level Prediction interval levels used when the model was estimated
+#' with `se = TRUE`. When uncertainty is unavailable, `forecast()` still
+#' returns the `se`, `lower`, and `upper` components, filled with `NA`.
 #' @param ... Reserved for future extensions.
 #'
 #' @return An object of class `"bridge_forecast"` and `"forecast"` containing
-#' point forecasts, bootstrap predictive uncertainty summaries, the
-#' target-period regressors used for forecasting, and bootstrap metadata.
+#' point forecasts, predictive uncertainty summaries, the
+#' target-period regressors used for forecasting, and optional full-system
+#' bootstrap metadata.
 #' @method forecast bridge
 #' @export
 forecast.bridge <- function(
@@ -24,43 +24,65 @@ forecast.bridge <- function(
   level = c(80, 95),
   ...
 ) {
-  forecast_set <- if (is.null(xreg)) {
-    object$forecast_set
+  forecast_base_set <- if (is.null(xreg)) {
+    object$forecast_base_set
   } else {
     as_forecast_xreg(
       xreg = xreg,
-      regressor_names = object$regressor_names,
+      regressor_names = object$xreg_names,
       call = rlang::caller_env()
     )
   }
+  target_history <- if (object$target_lags > 0) {
+    utils::tail(object$estimation_set[[object$target_name]], object$target_lags)
+  } else {
+    NULL
+  }
 
-  point_forecast <- forecast_target_model_mean(
+  point_path <- recursive_lm_forecast(
     model = object$model,
-    forecast_set = forecast_set,
+    forecast_set = forecast_base_set,
     target_name = object$target_name,
-    regressor_names = object$regressor_names
+    target_lags = object$target_lags,
+    target_history = target_history
   )
+  point_forecast <- point_path$mean
 
-  bootstrap_draws <- NULL
-  if (isTRUE(object$bootstrap$enabled)) {
-    if (is.null(xreg)) {
-      bootstrap_draws <- object$bootstrap$forecast_draws
-    } else {
-      bootstrap_draws <- bootstrap_forecast_draws(
-        models = object$bootstrap$models,
-        forecast_set = forecast_set,
-        target_name = object$target_name,
-        regressor_names = object$regressor_names
-      )
-    }
+  prediction_draws <- NULL
+  prediction_method <- object$uncertainty$prediction_method
+  if (is.null(xreg)) {
+    prediction_draws <- object$uncertainty$prediction_draws
+  } else if (identical(prediction_method, "block_bootstrap") &&
+    isTRUE(object$bootstrap$enabled)) {
+    prediction_draws <- bootstrap_forecast_draws(
+      models = object$bootstrap$models,
+      forecast_set = forecast_base_set,
+      target_name = object$target_name,
+      regressor_names = object$regressor_names,
+      target_lags = object$target_lags,
+      target_histories = object$bootstrap$target_histories
+    )
+  } else if (identical(prediction_method, "residual_resampling")) {
+    prediction_draws <- simulate_target_model_draws(
+      model = object$model,
+      forecast_set = forecast_base_set,
+      target_name = object$target_name,
+      regressor_names = object$regressor_names,
+      target_lags = object$target_lags,
+      target_history = target_history,
+      n_paths = object$bootstrap$N
+    )
+  } else {
+    prediction_draws <- NULL
   }
 
   intervals <- bootstrap_interval_matrices(
-    draws = bootstrap_draws,
+    draws = prediction_draws,
     level = level,
     horizon = length(point_forecast)
   )
 
+  forecast_set <- point_path$forecast_set
   forecast_set[[object$target_name]] <- as.numeric(point_forecast)
   structure(
     list(
@@ -72,13 +94,22 @@ forecast.bridge <- function(
       time = forecast_set$time,
       target_name = object$target_name,
       forecast_set = forecast_set,
+      uncertainty = list(
+        enabled = isTRUE(object$uncertainty$enabled),
+        coefficient_method = object$uncertainty$coefficient_method,
+        prediction_method = prediction_method,
+        simulation_paths = if (is.null(prediction_draws)) {
+          0L
+        } else {
+          nrow(prediction_draws)
+        }
+      ),
       bootstrap = list(
+        requested = isTRUE(object$bootstrap$requested),
         enabled = isTRUE(object$bootstrap$enabled),
-        type = object$bootstrap$type,
         N = object$bootstrap$N,
         valid_N = object$bootstrap$valid_N,
-        block_length = object$bootstrap$block_length,
-        conditional = isTRUE(object$bootstrap$conditional)
+        block_length = object$bootstrap$block_length
       ),
       direct = identical(unique(object$indic_predict), "direct"),
       model_class = class(object$model)[[1]]
@@ -106,13 +137,8 @@ print.bridge_forecast <- function(x, ...) {
   cat("Target series: ", x$target_name, "\n", sep = "")
   cat("Forecast horizon: ", length(x$mean), "\n", sep = "")
 
-  if (isTRUE(x$bootstrap$enabled)) {
-    cat(
-      "Uncertainty: predictive intervals from conditional ",
-      x$bootstrap$type,
-      " bootstrap\n",
-      sep = ""
-    )
+  if (identical(x$uncertainty$prediction_method, "block_bootstrap")) {
+    cat("Uncertainty: prediction intervals from full-system block bootstrap\n")
     cat(
       "Bootstrap draws: ",
       x$bootstrap$valid_N,
@@ -122,6 +148,13 @@ print.bridge_forecast <- function(x, ...) {
       sep = ""
     )
     cat("Block length: ", x$bootstrap$block_length, "\n", sep = "")
+  } else if (
+    identical(x$uncertainty$prediction_method, "residual_resampling")
+  ) {
+    cat("Uncertainty: prediction intervals from residual resampling\n")
+    cat("Simulation paths: ", x$uncertainty$simulation_paths, "\n", sep = "")
+  } else if (isTRUE(x$bootstrap$requested)) {
+    cat("Uncertainty: prediction intervals unavailable\n")
   } else {
     cat("Uncertainty: point forecast only\n")
   }
@@ -133,7 +166,7 @@ print.bridge_forecast <- function(x, ...) {
     check.names = FALSE
   )
 
-  if (isTRUE(x$bootstrap$enabled)) {
+  if (!is.null(x$uncertainty$prediction_method)) {
     output$se <- as.numeric(x$se)
 
     for (level_index in seq_along(x$level)) {

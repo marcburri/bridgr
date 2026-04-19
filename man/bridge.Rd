@@ -15,6 +15,7 @@ bridge(
   frequency_conversions = NULL,
   se = FALSE,
   bootstrap = NULL,
+  full_system_bootstrap = FALSE,
   solver_options = NULL,
   ...
 )
@@ -61,19 +62,26 @@ the target equation.}
 regular frequency ladder. Supported names are \code{spm}, \code{mph}, \code{hpd}, \code{dpw},
 \code{wpm}, \code{mpq}, and \code{qpy}.}
 
-\item{se}{Logical flag indicating whether bootstrap coefficient standard
-errors and predictive forecast intervals should be computed. When \code{FALSE},
-\code{bootstrap} is ignored.}
+\item{se}{Logical flag indicating whether coefficient standard errors and
+prediction intervals should be computed. When \code{TRUE}, \code{bridge()} reports HAC
+standard errors for the linear target equation, or Delta-HAC standard errors
+when parametric aggregation weights are estimated jointly.}
 
-\item{bootstrap}{A list of bootstrap controls. Currently only
-\code{list(type = "block", N = 100, block_length = NULL)} is supported.
-\code{type} must be \code{"block"}, \code{N} is the number of bootstrap replications, and
-\code{block_length} is the target-frequency block length. When \code{block_length} is
-\code{NULL}, \code{bridge()} uses \code{ceiling(n^(1/3))} based on the final target-period
-estimation sample size. The bootstrap is conditional on the aligned
-low-frequency design matrix and therefore does not re-estimate indicator
-forecasts or aggregation weights, but the stored forecast draws include
-simulated future target shocks so \code{forecast()} returns predictive intervals.}
+\item{bootstrap}{A list of uncertainty controls. Currently only
+\code{list(N = 100, block_length = NULL)} is supported. \code{N} is the number of
+predictive simulation paths used when \code{se = TRUE}. If
+\code{full_system_bootstrap = TRUE}, the same \code{N} controls the number of
+full-system target-period block-bootstrap replications used for prediction
+intervals. \code{block_length} is only used by the full-system bootstrap. When
+\code{block_length} is \code{NULL}, \code{bridge()} uses \code{ceiling(n^(1/3))} based on the
+final target-period sample size.}
+
+\item{full_system_bootstrap}{Logical flag indicating whether prediction
+intervals should be based on a full-system target-period block bootstrap
+instead of residual resampling from the fitted target equation. This option
+is only used when \code{se = TRUE}. Because it refits the full bridge workflow
+on every draw, \code{full_system_bootstrap = TRUE} can be substantially slower
+than the default residual-resampling intervals.}
 
 \item{solver_options}{A list of optional controls for joint parametric-weight
 optimization. Supported entries are:

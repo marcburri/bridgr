@@ -82,7 +82,6 @@ normalize_bridge_bootstrap <- function(
   call = rlang::caller_env()
 ) {
   defaults <- list(
-    type = "block",
     N = 100L,
     block_length = NULL
   )
@@ -107,7 +106,6 @@ normalize_bridge_bootstrap <- function(
   }
 
   defaults[names(bootstrap)] <- bootstrap
-  defaults$type <- match.arg(defaults$type, c("block"))
 
   if (!is.numeric(defaults$N) ||
     length(defaults$N) != 1 ||
@@ -921,37 +919,19 @@ predictive_target_model_draw <- function(
   model,
   forecast_set,
   target_name,
-  regressor_names
+  regressor_names,
+  target_lags = 0,
+  target_history = NULL
 ) {
-  if (inherits(model, "lm")) {
-    forecast_mean <- forecast_target_model_mean(
-      model = model,
-      forecast_set = forecast_set,
-      target_name = target_name,
-      regressor_names = regressor_names
-    )
-    sigma <- suppressWarnings(try(
-      as.numeric(summary(model)$sigma),
-      silent = TRUE
-    ))
-    if (inherits(sigma, "try-error") || !is.finite(sigma)) {
-      sigma <- 0
-    }
-    return(forecast_mean + stats::rnorm(length(forecast_mean), sd = sigma))
-  }
-
-  xreg_values <- if (length(regressor_names) == 0) {
-    NULL
-  } else {
-    as.matrix(forecast_set[, regressor_names, drop = FALSE])
-  }
-
-  as.numeric(stats::simulate(
+  as.numeric(simulate_target_model_draws(
     model,
-    nsim = nrow(forecast_set),
-    xreg = xreg_values,
-    future = TRUE
-  ))
+    forecast_set = forecast_set,
+    target_name = target_name,
+    regressor_names = regressor_names,
+    target_lags = target_lags,
+    target_history = target_history,
+    n_paths = 1L
+  )[1, ])
 }
 
 #' @keywords internal
@@ -960,20 +940,28 @@ bootstrap_forecast_draws <- function(
   models,
   forecast_set,
   target_name,
-  regressor_names
+  regressor_names,
+  target_lags = 0,
+  target_histories = NULL
 ) {
   if (length(models) == 0) {
     return(NULL)
   }
 
+  if (is.null(target_histories)) {
+    target_histories <- rep(list(NULL), length(models))
+  }
+
   draws <- vapply(
-    models,
-    function(model) {
+    seq_along(models),
+    function(index) {
       predictive_target_model_draw(
-        model = model,
+        model = models[[index]],
         forecast_set = forecast_set,
         target_name = target_name,
-        regressor_names = regressor_names
+        regressor_names = regressor_names,
+        target_lags = target_lags,
+        target_history = target_histories[[index]]
       )
     },
     FUN.VALUE = numeric(nrow(forecast_set))
@@ -2278,5 +2266,1067 @@ exp_almon <- function(parameters, n_weights) {
     aggregator = "expalmon",
     parameters = parameters,
     n_weights = n_weights
+  )
+}
+
+#' @keywords internal
+#' @noRd
+normalize_bridge_bootstrap <- function(
+  bootstrap,
+  call = rlang::caller_env()
+) {
+  defaults <- list(
+    N = 100L,
+    block_length = NULL
+  )
+
+  if (is.null(bootstrap)) {
+    return(defaults)
+  }
+  if (!is.list(bootstrap)) {
+    rlang::abort("`bootstrap` must be a list.", call = call)
+  }
+
+  invalid <- setdiff(names(bootstrap), names(defaults))
+  if (length(invalid) > 0) {
+    rlang::abort(
+      paste0(
+        "Invalid `bootstrap` entries: ",
+        paste(invalid, collapse = ", "),
+        "."
+      ),
+      call = call
+    )
+  }
+
+  defaults[names(bootstrap)] <- bootstrap
+
+  if (!is.numeric(defaults$N) ||
+    length(defaults$N) != 1 ||
+    !is.finite(defaults$N) ||
+    defaults$N < 1) {
+    rlang::abort(
+      "`bootstrap$N` must be a single integer >= 1.",
+      call = call
+    )
+  }
+  defaults$N <- as.integer(round(defaults$N))
+
+  if (!is.null(defaults$block_length)) {
+    if (!is.numeric(defaults$block_length) ||
+      length(defaults$block_length) != 1 ||
+      !is.finite(defaults$block_length) ||
+      defaults$block_length < 1) {
+      rlang::abort(
+        "`bootstrap$block_length` must be `NULL` or a single integer >= 1.",
+        call = call
+      )
+    }
+    defaults$block_length <- as.integer(round(defaults$block_length))
+  }
+
+  defaults
+}
+
+#' @keywords internal
+#' @noRd
+target_lag_regressor_names <- function(target_name, target_lags) {
+  if (target_lags < 1) {
+    return(character())
+  }
+
+  paste0(target_name, "_lag", seq_len(target_lags))
+}
+
+#' @keywords internal
+#' @noRd
+add_target_lagged_regressors <- function(
+  data,
+  target_name,
+  target_lags
+) {
+  if (target_lags < 1 || nrow(data) == 0) {
+    return(data)
+  }
+
+  out <- data
+  for (lag_index in seq_len(target_lags)) {
+    out[[paste0(target_name, "_lag", lag_index)]] <-
+      dplyr::lag(out[[target_name]], n = lag_index)
+  }
+
+  stats::na.omit(out)
+}
+
+#' @keywords internal
+#' @noRd
+build_bridge_estimation_set <- function(
+  target_tbl,
+  target_name,
+  feature_long,
+  indic_lags,
+  estimation_times,
+  target_lags = 0
+) {
+  target_long <- target_tbl |>
+    dplyr::select("id", "time", "values")
+
+  features_with_lags <- add_indicator_lags(
+    feature_long,
+    indic_lags = indic_lags
+  )
+  full_long <- dplyr::bind_rows(target_long, features_with_lags) |>
+    dplyr::filter(.data$time %in% estimation_times)
+
+  suppressMessages(tsbox::ts_wide(full_long)) |>
+    stats::na.omit() |>
+    add_target_lagged_regressors(
+      target_name = target_name,
+      target_lags = target_lags
+    )
+}
+
+#' @keywords internal
+#' @noRd
+fit_target_model <- function(
+  estimation_set,
+  target_name,
+  regressor_names,
+  formula,
+  target_lags
+) {
+  stats::lm(formula = formula, data = estimation_set)
+}
+
+#' @keywords internal
+#' @noRd
+recursive_lm_forecast <- function(
+  model,
+  forecast_set,
+  target_name,
+  target_lags = 0,
+  target_history = NULL,
+  innovations = NULL
+) {
+  horizon <- nrow(forecast_set)
+  if (horizon == 0) {
+    return(list(
+      mean = numeric(),
+      values = numeric(),
+      forecast_set = forecast_set
+    ))
+  }
+
+  lag_names <- target_lag_regressor_names(target_name, target_lags)
+  direct_predict <- target_lags == 0 || all(lag_names %in% names(forecast_set))
+  augmented <- forecast_set
+  mean_values <- numeric(horizon)
+  response_values <- numeric(horizon)
+
+  if (direct_predict) {
+    mean_values <- suppressWarnings(
+      as.numeric(stats::predict(model, newdata = forecast_set))
+    )
+    response_values <- mean_values
+    if (!is.null(innovations)) {
+      response_values <- response_values + as.numeric(innovations)
+    }
+    return(list(
+      mean = mean_values,
+      values = response_values,
+      forecast_set = augmented
+    ))
+  }
+
+  if (is.null(target_history) || length(target_history) < target_lags) {
+    rlang::abort(
+      paste0(
+        "Need at least ",
+        target_lags,
+        " lagged target observation",
+        if (target_lags == 1) "" else "s",
+        " to forecast recursively."
+      ),
+      call = rlang::caller_env()
+    )
+  }
+
+  history <- as.numeric(target_history)
+  for (step_index in seq_len(horizon)) {
+    row_data <- augmented[step_index, , drop = FALSE]
+    for (lag_index in seq_len(target_lags)) {
+      lag_name <- lag_names[[lag_index]]
+      row_data[[lag_name]] <- history[[length(history) - lag_index + 1]]
+      augmented[[lag_name]][[step_index]] <- row_data[[lag_name]][[1]]
+    }
+
+    mean_values[[step_index]] <- suppressWarnings(
+      as.numeric(stats::predict(model, newdata = row_data))
+    )
+    response_values[[step_index]] <- mean_values[[step_index]]
+    if (!is.null(innovations)) {
+      response_values[[step_index]] <- response_values[[step_index]] +
+        innovations[[step_index]]
+    }
+    history <- c(history, response_values[[step_index]])
+  }
+
+  list(
+    mean = mean_values,
+    values = response_values,
+    forecast_set = augmented
+  )
+}
+
+#' @keywords internal
+#' @noRd
+forecast_target_model_mean <- function(
+  model,
+  forecast_set,
+  target_name,
+  regressor_names,
+  target_lags = 0,
+  target_history = NULL
+) {
+  recursive_lm_forecast(
+    model = model,
+    forecast_set = forecast_set,
+    target_name = target_name,
+    target_lags = target_lags,
+    target_history = target_history
+  )$mean
+}
+
+#' @keywords internal
+#' @noRd
+center_model_residuals <- function(model) {
+  residuals <- stats::residuals(model)
+  residuals - mean(residuals, na.rm = TRUE)
+}
+
+#' @keywords internal
+#' @noRd
+simulate_target_model_draws <- function(
+  model,
+  forecast_set,
+  target_name,
+  regressor_names,
+  target_lags = 0,
+  target_history = NULL,
+  n_paths = 100L,
+  innovations = NULL
+) {
+  horizon <- nrow(forecast_set)
+  if (horizon == 0) {
+    return(matrix(numeric(), nrow = n_paths, ncol = 0))
+  }
+
+  centered_residuals <- center_model_residuals(model)
+  if (length(centered_residuals) == 0) {
+    centered_residuals <- 0
+  }
+
+  if (is.null(innovations)) {
+    innovations <- matrix(
+      sample(centered_residuals, size = n_paths * horizon, replace = TRUE),
+      nrow = n_paths,
+      ncol = horizon
+    )
+  } else {
+    innovations <- as.matrix(innovations)
+    n_paths <- nrow(innovations)
+    if (ncol(innovations) != horizon) {
+      rlang::abort(
+        paste0(
+          "Innovation draws must have ",
+          horizon,
+          " column",
+          if (horizon == 1) "" else "s",
+          "."
+        ),
+        call = rlang::caller_env()
+      )
+    }
+  }
+
+  draws <- matrix(NA_real_, nrow = n_paths, ncol = horizon)
+  for (path_index in seq_len(n_paths)) {
+    path <- recursive_lm_forecast(
+      model = model,
+      forecast_set = forecast_set,
+      target_name = target_name,
+      target_lags = target_lags,
+      target_history = target_history,
+      innovations = innovations[path_index, ]
+    )
+    draws[path_index, ] <- path$values
+  }
+
+  draws
+}
+
+#' @keywords internal
+#' @noRd
+hac_lag_order <- function(n_obs) {
+  if (n_obs <= 1) {
+    return(0L)
+  }
+
+  as.integer(min(n_obs - 1L, floor(4 * (n_obs / 100)^(2 / 9))))
+}
+
+#' @keywords internal
+#' @noRd
+hac_long_run_covariance <- function(scores, lag = NULL) {
+  scores <- as.matrix(scores)
+  n_obs <- nrow(scores)
+  if (n_obs == 0) {
+    return(matrix(NA_real_, nrow = ncol(scores), ncol = ncol(scores)))
+  }
+
+  lag <- lag %||% hac_lag_order(n_obs)
+  lag <- max(0L, min(as.integer(lag), n_obs - 1L))
+  covariance <- crossprod(scores) / n_obs
+
+  if (lag == 0L) {
+    return(covariance)
+  }
+
+  for (lag_index in seq_len(lag)) {
+    weight <- 1 - lag_index / (lag + 1)
+    gamma <- crossprod(
+      scores[(lag_index + 1):n_obs, , drop = FALSE],
+      scores[seq_len(n_obs - lag_index), , drop = FALSE]
+    ) / n_obs
+    covariance <- covariance + weight * (gamma + t(gamma))
+  }
+
+  covariance
+}
+
+#' @keywords internal
+#' @noRd
+vcov_from_jacobian <- function(jacobian, residuals, lag = NULL) {
+  jacobian <- as.matrix(jacobian)
+  n_obs <- nrow(jacobian)
+  if (n_obs < 2 || ncol(jacobian) == 0) {
+    return(matrix(NA_real_, nrow = ncol(jacobian), ncol = ncol(jacobian)))
+  }
+
+  bread <- crossprod(jacobian) / n_obs
+  bread_inv <- tryCatch(
+    solve(bread),
+    error = function(...) {
+      tryCatch(
+        qr.solve(bread),
+        error = function(...) {
+          decomposition <- svd(bread)
+          positive <- decomposition$d >
+            max(decomposition$d) * .Machine$double.eps
+          if (!any(positive)) {
+            return(matrix(NA_real_, nrow = ncol(bread), ncol = ncol(bread)))
+          }
+          decomposition$v[, positive, drop = FALSE] %*%
+            diag(1 / decomposition$d[positive], nrow = sum(positive)) %*%
+            t(decomposition$u[, positive, drop = FALSE])
+        }
+      )
+    }
+  )
+  scores <- residuals * jacobian
+  meat <- hac_long_run_covariance(scores = scores, lag = lag)
+  bread_inv %*% meat %*% bread_inv / n_obs
+}
+
+#' @keywords internal
+#' @noRd
+coefficient_vcov_hac <- function(model) {
+  model_matrix <- stats::model.matrix(model)
+  covariance <- vcov_from_jacobian(
+    jacobian = model_matrix,
+    residuals = stats::residuals(model)
+  )
+  dimnames(covariance) <- list(
+    names(stats::coef(model)),
+    names(stats::coef(model))
+  )
+  covariance
+}
+
+#' @keywords internal
+#' @noRd
+bridge_mean_from_parameters <- function(
+  coefficient_values,
+  formula,
+  estimation_set
+) {
+  model_matrix <- stats::model.matrix(
+    object = stats::terms(formula),
+    data = estimation_set
+  )
+  as.numeric(model_matrix %*% coefficient_values[colnames(model_matrix)])
+}
+
+#' @keywords internal
+#' @noRd
+parametric_parameter_labels <- function(parametric_specs) {
+  unlist(
+    lapply(
+      names(parametric_specs),
+      function(indicator_id) {
+        paste0(
+          indicator_id,
+          "::",
+          parametric_parameter_names(
+            parametric_specs[[indicator_id]]$aggregator
+          )
+        )
+      }
+    ),
+    use.names = FALSE
+  )
+}
+
+#' @keywords internal
+#' @noRd
+rebuild_parametric_estimation_set <- function(
+  target_tbl,
+  target_name,
+  fixed_aggregated,
+  parametric_specs,
+  parameter_blocks,
+  indic_lags,
+  target_lags
+) {
+  parametric_data <- aggregate_parametric_specs(
+    parametric_specs = parametric_specs,
+    parameter_blocks = parameter_blocks
+  )
+
+  build_bridge_estimation_set(
+    target_tbl = target_tbl,
+    target_name = target_name,
+    feature_long = dplyr::bind_rows(
+      fixed_aggregated,
+      parametric_data$aggregated
+    ),
+    indic_lags = indic_lags,
+    estimation_times = unique(target_tbl$time),
+    target_lags = target_lags
+  )
+}
+
+#' @keywords internal
+#' @noRd
+coefficient_vcov_delta_hac <- function(
+  model,
+  formula,
+  target_tbl,
+  target_name,
+  fixed_aggregated,
+  parametric_specs,
+  parameter_blocks,
+  indic_lags,
+  target_lags,
+  epsilon = 1e-6
+) {
+  coefficient_values <- stats::coef(model)
+  baseline_set <- rebuild_parametric_estimation_set(
+    target_tbl = target_tbl,
+    target_name = target_name,
+    fixed_aggregated = fixed_aggregated,
+    parametric_specs = parametric_specs,
+    parameter_blocks = parameter_blocks,
+    indic_lags = indic_lags,
+    target_lags = target_lags
+  )
+  baseline_matrix <- stats::model.matrix(
+    object = stats::terms(model),
+    data = baseline_set
+  )
+  theta_labels <- parametric_parameter_labels(parametric_specs)
+  jacobian <- matrix(
+    NA_real_,
+    nrow = nrow(baseline_matrix),
+    ncol = length(coefficient_values) + length(theta_labels),
+    dimnames = list(NULL, c(names(coefficient_values), theta_labels))
+  )
+  jacobian[, names(coefficient_values)] <- baseline_matrix
+
+  theta_vector <- flatten_parameter_blocks(
+    parameter_blocks = parameter_blocks,
+    specs = parametric_specs
+  )
+
+  for (theta_index in seq_along(theta_vector)) {
+    plus_theta <- theta_vector
+    minus_theta <- theta_vector
+    plus_theta[[theta_index]] <- plus_theta[[theta_index]] + epsilon
+    minus_theta[[theta_index]] <- minus_theta[[theta_index]] - epsilon
+
+    plus_blocks <- split_parameter_vector(
+      parameters = plus_theta,
+      specs = parametric_specs
+    )
+    minus_blocks <- split_parameter_vector(
+      parameters = minus_theta,
+      specs = parametric_specs
+    )
+    names(plus_blocks) <- names(parametric_specs)
+    names(minus_blocks) <- names(parametric_specs)
+
+    mean_plus <- bridge_mean_from_parameters(
+      coefficient_values = coefficient_values,
+      formula = formula,
+      estimation_set = rebuild_parametric_estimation_set(
+        target_tbl = target_tbl,
+        target_name = target_name,
+        fixed_aggregated = fixed_aggregated,
+        parametric_specs = parametric_specs,
+        parameter_blocks = plus_blocks,
+        indic_lags = indic_lags,
+        target_lags = target_lags
+      )
+    )
+    mean_minus <- bridge_mean_from_parameters(
+      coefficient_values = coefficient_values,
+      formula = formula,
+      estimation_set = rebuild_parametric_estimation_set(
+        target_tbl = target_tbl,
+        target_name = target_name,
+        fixed_aggregated = fixed_aggregated,
+        parametric_specs = parametric_specs,
+        parameter_blocks = minus_blocks,
+        indic_lags = indic_lags,
+        target_lags = target_lags
+      )
+    )
+    jacobian[, length(coefficient_values) + theta_index] <-
+      (mean_plus - mean_minus) / (2 * epsilon)
+  }
+
+  covariance <- vcov_from_jacobian(
+    jacobian = jacobian,
+    residuals = stats::residuals(model)
+  )
+  dimnames(covariance) <- list(colnames(jacobian), colnames(jacobian))
+  covariance
+}
+
+#' @keywords internal
+#' @noRd
+compute_bridge_coefficient_uncertainty <- function(
+  model,
+  formula,
+  target_tbl,
+  target_name,
+  fixed_aggregated,
+  parametric_specs,
+  parameter_blocks,
+  indic_lags,
+  target_lags
+) {
+  coefficient_names <- names(stats::coef(model))
+  if (length(parametric_specs) == 0) {
+    covariance <- coefficient_vcov_hac(model)
+    return(list(
+      method = "hac",
+      covariance = covariance,
+      se = sqrt(diag(covariance))[coefficient_names]
+    ))
+  }
+
+  full_covariance <- coefficient_vcov_delta_hac(
+    model = model,
+    formula = formula,
+    target_tbl = target_tbl,
+    target_name = target_name,
+    fixed_aggregated = fixed_aggregated,
+    parametric_specs = parametric_specs,
+    parameter_blocks = parameter_blocks,
+    indic_lags = indic_lags,
+    target_lags = target_lags
+  )
+  covariance <- full_covariance[
+    coefficient_names,
+    coefficient_names,
+    drop = FALSE
+  ]
+
+  list(
+    method = "delta_hac",
+    covariance = covariance,
+    se = sqrt(diag(covariance))[coefficient_names],
+    full_covariance = full_covariance
+  )
+}
+
+#' @keywords internal
+#' @noRd
+compute_bridge_loss <- function(
+  estimation_set,
+  target_name,
+  target_lags,
+  call = rlang::caller_env()
+) {
+  if (nrow(estimation_set) == 0) {
+    return(Inf)
+  }
+
+  regressor_names <- setdiff(colnames(estimation_set), c("time", target_name))
+  if (length(regressor_names) == 0) {
+    return(Inf)
+  }
+
+  fit <- suppressWarnings(try(
+    stats::lm.fit(
+      x = cbind(
+        "(Intercept)" = 1,
+        as.matrix(estimation_set[, regressor_names, drop = FALSE])
+      ),
+      y = estimation_set[[target_name]]
+    ),
+    silent = TRUE
+  ))
+
+  if (inherits(fit, "try-error")) {
+    return(Inf)
+  }
+
+  rss <- sum(stats::residuals(fit)^2, na.rm = TRUE)
+  if (!is.finite(rss)) {
+    return(Inf)
+  }
+
+  rss
+}
+
+#' @keywords internal
+#' @noRd
+build_forecast_target_times <- function(
+  last_target_time,
+  target_meta,
+  h
+) {
+  target_future_times(
+    last_time = last_target_time,
+    target_meta = target_meta,
+    h = h
+  )
+}
+
+#' @keywords internal
+#' @noRd
+within_target_period_times <- function(period_start, indicator_meta, n_obs) {
+  shift_time_vec(
+    time = period_start,
+    n = (seq_len(n_obs) - 1) * indicator_meta$step[[1]],
+    unit = indicator_meta$unit[[1]]
+  )
+}
+
+#' @keywords internal
+#' @noRd
+as_indicator_period_long <- function(
+  indicator_id,
+  target_times,
+  blocks,
+  indicator_meta
+) {
+  rows <- lapply(
+    seq_len(nrow(blocks)),
+    function(period_index) {
+      dplyr::tibble(
+        id = indicator_id,
+        time = within_target_period_times(
+          period_start = target_times[[period_index]],
+          indicator_meta = indicator_meta,
+          n_obs = ncol(blocks)
+        ),
+        values = as.numeric(blocks[period_index, ])
+      )
+    }
+  )
+
+  dplyr::bind_rows(rows)
+}
+
+#' @keywords internal
+#' @noRd
+prepare_future_indicator_blocks <- function(
+  indicator_tbl,
+  target_meta,
+  target_anchor,
+  future_target_times
+) {
+  if (length(future_target_times) == 0) {
+    return(list(
+      periods = future_target_times,
+      values = list()
+    ))
+  }
+
+  periods <- compute_target_periods(
+    indicator_tbl$time,
+    target_anchor = target_anchor,
+    target_meta = target_meta
+  )
+  future_tbl <- indicator_tbl |>
+    dplyr::mutate(period = periods) |>
+    dplyr::filter(.data$period %in% future_target_times) |>
+    dplyr::group_by(.data$period) |>
+    dplyr::arrange(.data$time, .by_group = TRUE) |>
+    dplyr::summarise(values = list(.data$values), .groups = "drop")
+
+  list(
+    periods = future_tbl$period,
+    values = future_tbl$values
+  )
+}
+
+#' @keywords internal
+#' @noRd
+resample_bridge_inputs <- function(
+  target_tbl,
+  indic_tbl,
+  target_meta,
+  indic_meta,
+  target_anchor,
+  h,
+  frequency_conversions,
+  block_length
+) {
+  n_periods <- nrow(target_tbl)
+  sampled_indices <- circular_block_bootstrap_indices(
+    n_rows = n_periods,
+    block_length = block_length
+  )
+
+  boot_target <- dplyr::tibble(
+    id = target_tbl$id[[1]],
+    time = target_tbl$time,
+    values = target_tbl$values[sampled_indices]
+  )
+
+  future_target_times <- build_forecast_target_times(
+    last_target_time = max(target_tbl$time),
+    target_meta = target_meta,
+    h = h
+  )
+
+  boot_indic <- lapply(
+    seq_len(nrow(indic_meta)),
+    function(index) {
+      indicator_id <- indic_meta$id[[index]]
+      indicator_tbl <- indic_tbl |>
+        dplyr::filter(.data$id == indicator_id)
+
+      obs_per_target <- observations_per_target_period(
+        indicator_meta = indic_meta[index, , drop = FALSE],
+        target_meta = target_meta,
+        frequency_conversions = frequency_conversions
+      )
+      periods <- compute_target_periods(
+        indicator_tbl$time,
+        target_anchor = target_anchor,
+        target_meta = target_meta
+      )
+      observed_indicator <- indicator_tbl |>
+        dplyr::mutate(period = periods) |>
+        dplyr::filter(.data$period %in% target_tbl$time) |>
+        dplyr::select(-"period")
+
+      observed_blocks <- prepare_indicator_period_blocks(
+        indicator_tbl = observed_indicator,
+        indicator_id = indicator_id,
+        target_meta = target_meta,
+        target_anchor = target_anchor,
+        obs_per_target = obs_per_target
+      )
+      observed_period_index <- match(target_tbl$time, observed_blocks$periods)
+      resampled_blocks <- observed_blocks$blocks[
+        observed_period_index[sampled_indices],
+        ,
+        drop = FALSE
+      ]
+      observed_long <- as_indicator_period_long(
+        indicator_id = indicator_id,
+        target_times = target_tbl$time,
+        blocks = resampled_blocks,
+        indicator_meta = indic_meta[index, , drop = FALSE]
+      )
+
+      future_blocks <- prepare_future_indicator_blocks(
+        indicator_tbl = indicator_tbl,
+        target_meta = target_meta,
+        target_anchor = target_anchor,
+        future_target_times = future_target_times
+      )
+      if (length(future_blocks$values) == 0) {
+        return(observed_long)
+      }
+
+      future_long <- dplyr::bind_rows(
+        lapply(
+          seq_along(future_blocks$values),
+          function(future_index) {
+            dplyr::tibble(
+              id = indicator_id,
+              time = within_target_period_times(
+                period_start = future_blocks$periods[[future_index]],
+                indicator_meta = indic_meta[index, , drop = FALSE],
+                n_obs = length(future_blocks$values[[future_index]])
+              ),
+              values = as.numeric(future_blocks$values[[future_index]])
+            )
+          }
+        )
+      )
+
+      dplyr::bind_rows(observed_long, future_long)
+    }
+  )
+
+  list(
+    target = boot_target,
+    indic = dplyr::bind_rows(boot_indic)
+  )
+}
+
+#' @keywords internal
+#' @noRd
+bootstrap_bridge_system <- function(
+  enabled,
+  target_tbl,
+  indic_tbl,
+  target_name,
+  target_meta,
+  indic_meta,
+  target_anchor,
+  h,
+  frequency_conversions,
+  config,
+  point_forecast,
+  call = rlang::caller_env()
+) {
+  if (!enabled) {
+    return(list(
+      enabled = FALSE,
+      N = config$bootstrap$N,
+      valid_N = 0L,
+      block_length = config$bootstrap$block_length,
+      prediction_draws = NULL,
+      models = NULL,
+      target_histories = NULL
+    ))
+  }
+
+  block_length <- resolve_bootstrap_block_length(
+    n_rows = nrow(target_tbl),
+    block_length = config$bootstrap$block_length
+  )
+
+  prediction_draws <- matrix(
+    NA_real_,
+    nrow = config$bootstrap$N,
+    ncol = length(point_forecast)
+  )
+  models <- vector("list", config$bootstrap$N)
+  target_histories <- vector("list", config$bootstrap$N)
+  valid <- rep(FALSE, config$bootstrap$N)
+
+  bootstrap_config <- config
+  bootstrap_config$se <- FALSE
+
+  for (draw_index in seq_len(config$bootstrap$N)) {
+    resampled_inputs <- resample_bridge_inputs(
+      target_tbl = target_tbl,
+      indic_tbl = indic_tbl,
+      target_meta = target_meta,
+      indic_meta = indic_meta,
+      target_anchor = target_anchor,
+      h = h,
+      frequency_conversions = frequency_conversions,
+      block_length = block_length
+    )
+
+    draw_fit <- suppressWarnings(try(
+      fit_bridge_model(
+        target_tbl = resampled_inputs$target,
+        indic_tbl = resampled_inputs$indic,
+        target_name = target_name,
+        config = bootstrap_config
+      ),
+      silent = TRUE
+    ))
+    if (inherits(draw_fit, "try-error")) {
+      next
+    }
+
+    draw_forecast <- suppressWarnings(try(
+      simulate_target_model_draws(
+        model = draw_fit$model,
+        forecast_set = draw_fit$forecast_base_set,
+        target_name = draw_fit$target_name,
+        regressor_names = draw_fit$regressor_names,
+        target_lags = draw_fit$target_lags,
+        target_history = utils::tail(
+          draw_fit$estimation_set[[draw_fit$target_name]],
+          max(1L, draw_fit$target_lags)
+        ),
+        n_paths = 1L
+      ),
+      silent = TRUE
+    ))
+    if (
+      inherits(draw_forecast, "try-error") ||
+        any(!is.finite(draw_forecast))
+    ) {
+      next
+    }
+
+    prediction_draws[draw_index, ] <- as.numeric(draw_forecast[1, ])
+    models[[draw_index]] <- draw_fit$model
+    target_histories[[draw_index]] <- if (draw_fit$target_lags > 0) {
+      utils::tail(
+        draw_fit$estimation_set[[draw_fit$target_name]],
+        draw_fit$target_lags
+      )
+    } else {
+      NULL
+    }
+    valid[[draw_index]] <- TRUE
+  }
+
+  if (!any(valid)) {
+    rlang::warn(
+      paste(
+        "Full-system block bootstrap failed for every resample.",
+        "Prediction intervals will be unavailable."
+      ),
+      call = call
+    )
+    return(list(
+      enabled = FALSE,
+      N = config$bootstrap$N,
+      valid_N = 0L,
+      block_length = block_length,
+      prediction_draws = NULL,
+      models = NULL,
+      target_histories = NULL
+    ))
+  }
+
+  if (sum(valid) < config$bootstrap$N) {
+    rlang::warn(
+      paste0(
+        "Full-system block bootstrap produced ",
+        sum(valid),
+        " valid draws out of ",
+        config$bootstrap$N,
+        "."
+      ),
+      call = call
+    )
+  }
+
+  list(
+    enabled = TRUE,
+    N = config$bootstrap$N,
+    valid_N = sum(valid),
+    block_length = block_length,
+    prediction_draws = prediction_draws[valid, , drop = FALSE],
+    models = models[valid],
+    target_histories = target_histories[valid]
+  )
+}
+
+#' @keywords internal
+#' @noRd
+build_prediction_uncertainty <- function(
+  enabled,
+  model = NULL,
+  forecast_set = NULL,
+  target_name = NULL,
+  regressor_names = NULL,
+  target_lags = 0,
+  target_history = NULL,
+  bootstrap = NULL,
+  full_system_bootstrap = FALSE,
+  full_bootstrap = NULL
+) {
+  if (!enabled) {
+    return(list(
+      enabled = FALSE,
+      method = NULL,
+      draws = NULL,
+      N = 0L
+    ))
+  }
+
+  if (isTRUE(full_system_bootstrap)) {
+    if (
+      isTRUE(full_bootstrap$enabled) &&
+        !is.null(full_bootstrap$prediction_draws)
+    ) {
+      return(list(
+        enabled = TRUE,
+        method = "block_bootstrap",
+        draws = full_bootstrap$prediction_draws,
+        N = full_bootstrap$valid_N
+      ))
+    }
+
+    return(list(
+      enabled = FALSE,
+      method = NULL,
+      draws = NULL,
+      N = 0L
+    ))
+  }
+
+  prediction_draws <- suppressWarnings(try(
+    simulate_target_model_draws(
+      model = model,
+      forecast_set = forecast_set,
+      target_name = target_name,
+      regressor_names = regressor_names,
+      target_lags = target_lags,
+      target_history = target_history,
+      n_paths = bootstrap$N
+    ),
+    silent = TRUE
+  ))
+
+  if (inherits(prediction_draws, "try-error")) {
+    rlang::warn(
+      paste(
+        "Residual-resampling prediction intervals could not be simulated.",
+        "Prediction intervals will be unavailable."
+      ),
+      call = rlang::caller_env()
+    )
+    return(list(
+      enabled = FALSE,
+      method = NULL,
+      draws = NULL,
+      N = 0L
+    ))
+  }
+
+  if (!is.null(prediction_draws) && nrow(prediction_draws) > 0) {
+    return(list(
+      enabled = TRUE,
+      method = "residual_resampling",
+      draws = prediction_draws,
+      N = nrow(prediction_draws)
+    ))
+  }
+
+  list(
+    enabled = FALSE,
+    method = NULL,
+    draws = NULL,
+    N = 0L
   )
 }

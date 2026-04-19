@@ -82,7 +82,7 @@ test_that("summary.bridge omits aggregation details for direct alignment", {
   expect_false(any(grepl(parametric_label, output, fixed = TRUE)))
 })
 
-test_that("forecast.bridge accepts custom xreg for ARIMA bridge models", {
+test_that("forecast.bridge accepts custom xreg for lm bridge models", {
   indic <- make_monthly_indicator(n = 36)
   target <- make_quarter_target(indic, n_quarters = 12)
 
@@ -99,20 +99,27 @@ test_that("forecast.bridge accepts custom xreg for ARIMA bridge models", {
 
   default_forecast <- forecast(model)
   custom_xreg <- dplyr::tibble(
-    id = rep(model$regressor_names, each = nrow(model$forecast_set)),
-    time = rep(model$forecast_set$time, times = length(model$regressor_names)),
-    value = c(model$forecast_set$indic + 10, model$forecast_set$indic_lag1 + 10)
+    id = rep(model$xreg_names, each = nrow(model$forecast_base_set)),
+    time = rep(model$forecast_base_set$time, times = length(model$xreg_names)),
+    value = c(
+      model$forecast_base_set$indic + 10,
+      model$forecast_base_set$indic_lag1 + 10
+    )
   )
   scenario_forecast <- forecast(model, xreg = custom_xreg)
 
-  expect_s3_class(model$model, "Arima")
+  expect_s3_class(model$model, "lm")
   expect_s3_class(scenario_forecast, "bridge_forecast")
   expect_s3_class(scenario_forecast, "forecast")
   expect_equal(nrow(scenario_forecast$forecast_set), 2)
   expect_equal(length(scenario_forecast$se), 2)
   expect_equal(ncol(scenario_forecast$lower), 2)
   expect_equal(ncol(scenario_forecast$upper), 2)
-  expect_equal(scenario_forecast$bootstrap$type, "block")
+  expect_false(scenario_forecast$bootstrap$enabled)
+  expect_equal(
+    scenario_forecast$uncertainty$prediction_method,
+    "residual_resampling"
+  )
   expect_gt(
     max(abs(as.numeric(scenario_forecast$mean - default_forecast$mean))),
     1e-6
@@ -147,7 +154,7 @@ test_that("forecast.bridge prints a standardized forecast table", {
   expect_false(any(grepl("# A tibble", output, fixed = TRUE)))
   expect_false(any(grepl("Target model:", output, fixed = TRUE)))
   expect_true(any(grepl(
-    "Uncertainty: predictive intervals from conditional block bootstrap",
+    "Uncertainty: prediction intervals from residual resampling",
     output,
     fixed = TRUE
   )))
