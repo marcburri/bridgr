@@ -10,14 +10,14 @@
 <url><loc>https://marcburri.github.io/bridgr/authors.html</loc></url>
 <url><loc>https://marcburri.github.io/bridgr/index.html</loc></url>
 <url><loc>https://marcburri.github.io/bridgr/news/index.html</loc></url>
-<url><loc>https://marcburri.github.io/bridgr/reference/bridge.html</loc></url>
 <url><loc>https://marcburri.github.io/bridgr/reference/bridgr-package.html</loc></url>
-<url><loc>https://marcburri.github.io/bridgr/reference/forecast.bridge.html</loc></url>
+<url><loc>https://marcburri.github.io/bridgr/reference/forecast.mf_model.html</loc></url>
 <url><loc>https://marcburri.github.io/bridgr/reference/gdp.html</loc></url>
 <url><loc>https://marcburri.github.io/bridgr/reference/index.html</loc></url>
-<url><loc>https://marcburri.github.io/bridgr/reference/plot.bridge.html</loc></url>
+<url><loc>https://marcburri.github.io/bridgr/reference/mf_model.html</loc></url>
+<url><loc>https://marcburri.github.io/bridgr/reference/plot.mf_model.html</loc></url>
 <url><loc>https://marcburri.github.io/bridgr/reference/reexports.html</loc></url>
-<url><loc>https://marcburri.github.io/bridgr/reference/summary.bridge.html</loc></url>
+<url><loc>https://marcburri.github.io/bridgr/reference/summary.mf_model.html</loc></url>
 <url><loc>https://marcburri.github.io/bridgr/reference/theme_bridgr.html</loc></url>
 </urlset>
 

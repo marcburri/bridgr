@@ -84,7 +84,7 @@ predict_methods <- c("last", "mean", "auto.arima", "ets")
 models <- lapply(
   predict_methods,
   function(method) {
-    bridge(
+    mf_model(
       target = gdp_nowcast,
       indic = baro_ragged,
       indic_predict = method,
@@ -160,7 +160,7 @@ backward to the target periods and averages them within each target
 period.
 
 ``` r
-direct_model <- bridge(
+direct_model <- mf_model(
   target = gdp_nowcast,
   indic = baro_ragged,
   indic_predict = "direct",
@@ -168,7 +168,7 @@ direct_model <- bridge(
 )
 
 forecast(direct_model)
-#> Bridge forecast
+#> Mixed-frequency forecast
 #> -----------------------------------
 #> Target series: gdp_nowcast
 #> Forecast horizon: 1

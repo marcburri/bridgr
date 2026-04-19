@@ -100,8 +100,8 @@ higher-frequency indicators.</li>
 <code>indic_predict</code>.</li>
 <li>Decide how indicators should be aligned to the target frequency with
 <code>indic_aggregators</code>.</li>
-<li>Fit the target equation with <code><a href="../reference/bridge.html">bridge()</a></code>, inspect it with
-<code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code>, and produce target-period forecasts with
+<li>Fit the target equation with <code><a href="../reference/mf_model.html">mf_model()</a></code>, inspect it
+with <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code>, and produce target-period forecasts with
 <code><a href="https://generics.r-lib.org/reference/forecast.html" class="external-link">forecast()</a></code>.</li>
 </ol>
 <p>This vignette walks through that workflow with the package’s built-in
@@ -134,7 +134,7 @@ Swiss GDP and barometer data.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> 2004-05-01   109.</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> 2004-06-01   105.</span></span></code></pre></div>
 <p><code>gdp_growth</code> is quarterly, while <code>baro</code> is
-monthly. <code><a href="../reference/bridge.html">bridge()</a></code> recognizes the frequency mismatch
+monthly. <code><a href="../reference/mf_model.html">mf_model()</a></code> recognizes the frequency mismatch
 automatically and aligns the indicator to the target frequency before
 fitting the target equation.</p>
 </div>
@@ -142,7 +142,7 @@ fitting the target equation.</p>
 <h2 id="a-basic-bridge-model">A Basic Bridge Model<a class="anchor" aria-label="anchor" href="#a-basic-bridge-model"></a>
 </h2>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">bridge_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/bridge.html">bridge</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">bridge_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/mf_model.html">mf_model</a></span><span class="op">(</span></span>
 <span>  target <span class="op">=</span> <span class="va">gdp_growth</span>,</span>
 <span>  indic <span class="op">=</span> <span class="va">baro</span>,</span>
 <span>  indic_predict <span class="op">=</span> <span class="st">"auto.arima"</span>,</span>
@@ -153,7 +153,7 @@ fitting the target equation.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://generics.r-lib.org/reference/forecast.html" class="external-link">forecast</a></span><span class="op">(</span><span class="va">bridge_model</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Bridge forecast</span></span>
+<span><span class="co">#&gt; Mixed-frequency forecast</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Target series: gdp_growth</span></span>
 <span><span class="co">#&gt; Forecast horizon: 2</span></span>
@@ -195,7 +195,7 @@ details, such as optimization summaries or uncertainty settings, are
 appended only when they are relevant.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">bridge_model</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Bridge model summary</span></span>
+<span><span class="co">#&gt; Mixed-frequency model summary</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Target series: gdp_growth</span></span>
 <span><span class="co">#&gt; Target frequency: quarter</span></span>
@@ -236,7 +236,7 @@ complete blocks are assigned backward to target periods instead of being
 forecast forward first, and they are averaged within each target
 period.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">direct_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/bridge.html">bridge</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">direct_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/mf_model.html">mf_model</a></span><span class="op">(</span></span>
 <span>  target <span class="op">=</span> <span class="va">gdp_growth</span>,</span>
 <span>  indic <span class="op">=</span> <span class="va">baro</span>,</span>
 <span>  indic_predict <span class="op">=</span> <span class="st">"direct"</span>,</span>
@@ -244,7 +244,7 @@ period.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://generics.r-lib.org/reference/forecast.html" class="external-link">forecast</a></span><span class="op">(</span><span class="va">direct_model</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Bridge forecast</span></span>
+<span><span class="co">#&gt; Mixed-frequency forecast</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Target series: gdp_growth</span></span>
 <span><span class="co">#&gt; Forecast horizon: 1</span></span>
@@ -264,7 +264,7 @@ want uncertainty output, request it at estimation time with
 <code>se = TRUE</code> and, if needed, custom simulation or full-system
 bootstrap controls through <code>bootstrap</code>.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">uncertainty_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/bridge.html">bridge</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">uncertainty_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/mf_model.html">mf_model</a></span><span class="op">(</span></span>
 <span>  target <span class="op">=</span> <span class="va">gdp_growth</span>,</span>
 <span>  indic <span class="op">=</span> <span class="va">baro</span>,</span>
 <span>  indic_predict <span class="op">=</span> <span class="st">"auto.arima"</span>,</span>
@@ -276,7 +276,7 @@ bootstrap controls through <code>bootstrap</code>.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://generics.r-lib.org/reference/forecast.html" class="external-link">forecast</a></span><span class="op">(</span><span class="va">uncertainty_model</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Bridge forecast</span></span>
+<span><span class="co">#&gt; Mixed-frequency forecast</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Target series: gdp_growth</span></span>
 <span><span class="co">#&gt; Forecast horizon: 4</span></span>
@@ -289,7 +289,7 @@ bootstrap controls through <code>bootstrap</code>.</p>
 <span><span class="co">#&gt; 3 2023-07-01 0.500 0.827 -0.441   1.370    -1.174   2.638   </span></span>
 <span><span class="co">#&gt; 4 2023-10-01 0.521 0.884 -0.532   1.731    -1.030   2.191</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">uncertainty_model</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Bridge model summary</span></span>
+<span><span class="co">#&gt; Mixed-frequency model summary</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Target series: gdp_growth</span></span>
 <span><span class="co">#&gt; Target frequency: quarter</span></span>

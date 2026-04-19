@@ -147,7 +147,7 @@ coefficients.</p>
 <h2 id="deterministic-bridge-aggregation">Deterministic Bridge Aggregation<a class="anchor" aria-label="anchor" href="#deterministic-bridge-aggregation"></a>
 </h2>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">mean_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/bridge.html">bridge</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">mean_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/mf_model.html">mf_model</a></span><span class="op">(</span></span>
 <span>  target <span class="op">=</span> <span class="va">quarter_target</span>,</span>
 <span>  indic <span class="op">=</span> <span class="va">monthly_indicator</span>,</span>
 <span>  indic_predict <span class="op">=</span> <span class="st">"last"</span>,</span>
@@ -155,7 +155,7 @@ coefficients.</p>
 <span>  h <span class="op">=</span> <span class="fl">1</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">last_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/bridge.html">bridge</a></span><span class="op">(</span></span>
+<span><span class="va">last_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/mf_model.html">mf_model</a></span><span class="op">(</span></span>
 <span>  target <span class="op">=</span> <span class="va">quarter_target</span>,</span>
 <span>  indic <span class="op">=</span> <span class="va">monthly_indicator</span>,</span>
 <span>  indic_predict <span class="op">=</span> <span class="st">"last"</span>,</span>
@@ -164,7 +164,7 @@ coefficients.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">mean_model</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Bridge model summary</span></span>
+<span><span class="co">#&gt; Mixed-frequency model summary</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Target series: quarter_target</span></span>
 <span><span class="co">#&gt; Target frequency: quarter</span></span>
@@ -182,7 +182,7 @@ coefficients.</p>
 <span><span class="co">#&gt; monthly_indicator month     last    mean       </span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">last_model</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Bridge model summary</span></span>
+<span><span class="co">#&gt; Mixed-frequency model summary</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Target series: quarter_target</span></span>
 <span><span class="co">#&gt; Target frequency: quarter</span></span>
@@ -207,7 +207,7 @@ aggregation.</p>
 <h2 id="unrestricted-mixed-frequency-regression">Unrestricted Mixed-Frequency Regression<a class="anchor" aria-label="anchor" href="#unrestricted-mixed-frequency-regression"></a>
 </h2>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">unrestricted_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/bridge.html">bridge</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">unrestricted_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/mf_model.html">mf_model</a></span><span class="op">(</span></span>
 <span>  target <span class="op">=</span> <span class="va">quarter_target</span>,</span>
 <span>  indic <span class="op">=</span> <span class="va">monthly_indicator</span>,</span>
 <span>  indic_predict <span class="op">=</span> <span class="st">"last"</span>,</span>
@@ -216,7 +216,7 @@ aggregation.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">unrestricted_model</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Bridge model summary</span></span>
+<span><span class="co">#&gt; Mixed-frequency model summary</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Target series: quarter_target</span></span>
 <span><span class="co">#&gt; Target frequency: quarter</span></span>
@@ -251,7 +251,7 @@ blocks.</p>
 estimate the within-period shape from the data while keeping the number
 of free parameters small.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">expalmon_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/bridge.html">bridge</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">expalmon_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/mf_model.html">mf_model</a></span><span class="op">(</span></span>
 <span>  target <span class="op">=</span> <span class="va">quarter_target</span>,</span>
 <span>  indic <span class="op">=</span> <span class="va">monthly_indicator</span>,</span>
 <span>  indic_predict <span class="op">=</span> <span class="st">"last"</span>,</span>
@@ -260,7 +260,7 @@ of free parameters small.</p>
 <span>  h <span class="op">=</span> <span class="fl">1</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">beta_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/bridge.html">bridge</a></span><span class="op">(</span></span>
+<span><span class="va">beta_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/mf_model.html">mf_model</a></span><span class="op">(</span></span>
 <span>  target <span class="op">=</span> <span class="va">quarter_target</span>,</span>
 <span>  indic <span class="op">=</span> <span class="va">monthly_indicator</span>,</span>
 <span>  indic_predict <span class="op">=</span> <span class="st">"last"</span>,</span>

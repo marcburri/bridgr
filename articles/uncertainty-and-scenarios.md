@@ -28,7 +28,7 @@ The relevant estimation arguments are:
 ``` r
 gdp_growth <- suppressMessages(tsbox::ts_na_omit(tsbox::ts_pc(gdp)))
 
-boot_model <- bridge(
+boot_model <- mf_model(
   target = gdp_growth,
   indic = baro,
   indic_predict = "auto.arima",
@@ -63,7 +63,7 @@ returns a standardized forecast object with:
 fc <- forecast(boot_model)
 
 fc
-#> Bridge forecast
+#> Mixed-frequency forecast
 #> -----------------------------------
 #> Target series: gdp_growth
 #> Forecast horizon: 2
@@ -100,7 +100,7 @@ The same uncertainty configuration also feeds into
 
 ``` r
 summary(boot_model)
-#> Bridge model summary
+#> Mixed-frequency model summary
 #> -----------------------------------
 #> Target series: gdp_growth
 #> Target frequency: quarter
@@ -179,7 +179,7 @@ coefficient standard errors and the forecast intervals are based on the
 bootstrap draws.
 
 ``` r
-full_model <- bridge(
+full_model <- mf_model(
   target = gdp_growth,
   indic = baro,
   indic_predict = "auto.arima",
@@ -217,7 +217,7 @@ that case, `bootstrap` is ignored and
 returns the same object shape, with `NA` uncertainty fields.
 
 ``` r
-point_model <- bridge(
+point_model <- mf_model(
   target = gdp_growth,
   indic = baro,
   indic_predict = "auto.arima",
@@ -230,7 +230,7 @@ point_model <- bridge(
 )
 
 forecast(point_model)
-#> Bridge forecast
+#> Mixed-frequency forecast
 #> -----------------------------------
 #> Target series: gdp_growth
 #> Forecast horizon: 1

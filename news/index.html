@@ -52,8 +52,56 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="bridgr-development-version">bridgr (development version)<a class="anchor" aria-label="anchor" href="#bridgr-development-version"></a></h2>
-<ul><li><p>Remove the <code>legendre</code> parametric aggregation option.</p></li>
-<li><p>Use analytic gradients for parametric aggregation optimization with <code>expalmon</code> weights, and improve the normalized beta polynomial gradient used in the optimizer.</p></li>
+<ul><li><p>Rename the main model-construction entry point to <code><a href="../reference/mf_model.html">mf_model()</a></code>, rename the fitted-model class and S3 methods to <code>mf_model</code>, and keep <code><a href="../reference/mf_model.html">bridge()</a></code> as a deprecated compatibility wrapper.</p></li>
+<li>
+<p>Extend <code><a href="../reference/mf_model.html">mf_model()</a></code> beyond classic bridge aggregation:</p>
+<ul><li>add unrestricted mixed-frequency regressors via <code>indic_aggregators = "unrestricted"</code>
+</li>
+<li>add parametric <code>"beta"</code> weighting alongside <code>"expalmon"</code>
+</li>
+<li>add direct high-frequency alignment via <code>indic_predict = "direct"</code>
+</li>
+<li>support fixed numeric aggregation weights supplied in a <code><a href="https://rdrr.io/r/base/list.html" class="external-link">list()</a></code>
+</li>
+</ul></li>
+<li>
+<p>Improve mixed-frequency input handling:</p>
+<ul><li>infer regular frequencies from <code>second</code> through <code>year</code>
+</li>
+<li>allow custom <code>frequency_conversions</code>
+</li>
+<li>standardize month-, quarter-, and year-end dates to period starts when needed for frequency recognition</li>
+<li>keep the most recent observations in overfilled target periods with a summarized warning</li>
+<li>fail when target periods contain too few high-frequency observations</li>
+</ul></li>
+<li><p>Add joint parametric aggregation optimization controls through <code>solver_options</code>, including optimizer choice, multi-start runs, seeds, iteration limits, and user-supplied starting values.</p></li>
+<li>
+<p>Add uncertainty support:</p>
+<ul><li>
+<code>se = TRUE</code> for coefficient uncertainty and prediction intervals</li>
+<li>HAC standard errors for linear bridge equations</li>
+<li>Delta-HAC standard errors when parametric aggregation weights are estimated jointly</li>
+<li>residual-resampling prediction intervals by default</li>
+<li>optional full-system block bootstrap uncertainty via <code>full_system_bootstrap = TRUE</code>
+</li>
+</ul></li>
+<li><p>Add scenario forecasting support in <code><a href="../reference/forecast.mf_model.html">forecast.mf_model()</a></code> through custom future <code>xreg</code> paths and standardized forecast objects with uncertainty metadata.</p></li>
+<li>
+<p>Add plotting methods and helpers:</p>
+<ul><li>
+<code><a href="../reference/plot.mf_model.html">plot.mf_model()</a></code> for fit and forecast plots</li>
+<li>
+<code><a href="../reference/theme_bridgr.html">theme_bridgr()</a></code>, <code><a href="../reference/theme_bridgr.html">colors_bridgr()</a></code>, <code><a href="../reference/theme_bridgr.html">scale_color_bridgr()</a></code>, and <code><a href="../reference/theme_bridgr.html">scale_fill_bridgr()</a></code>
+</li>
+</ul></li>
+<li>
+<p>Expand printed output and documentation:</p>
+<ul><li>standardize <code><a href="../reference/summary.mf_model.html">summary.mf_model()</a></code> and <code><a href="../reference/forecast.mf_model.html">forecast.mf_model()</a></code> output</li>
+<li>add vignettes on mixed-frequency modeling, ragged-edge nowcasting, and uncertainty / scenario analysis</li>
+<li>refresh the README examples and package references</li>
+</ul></li>
+<li><p>Remove the <code>legendre</code> parametric aggregation option.</p></li>
+<li><p>Use analytic gradients for <code>expalmon</code> optimization and improve the normalized beta polynomial gradient used in the optimizer.</p></li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.2" id="bridgr-012">bridgr 0.1.2<a class="anchor" aria-label="anchor" href="#bridgr-012"></a></h2><p class="text-muted">CRAN release: 2026-02-18</p>
@@ -63,7 +111,7 @@
 <h2 class="pkg-version" data-toc-text="0.1.1" id="bridgr-011">bridgr 0.1.1<a class="anchor" aria-label="anchor" href="#bridgr-011"></a></h2><p class="text-muted">CRAN release: 2024-12-13</p>
 <ul><li>Initial CRAN submission:
 <ul><li><p>Added <code>gdp</code>,<code>baro</code>, <code>wea</code> and <code>fcurve</code> datasets.</p></li>
-<li><p>Added <code><a href="../reference/bridge.html">bridge()</a></code>, <code><a href="https://generics.r-lib.org/reference/forecast.html" class="external-link">forecast()</a></code> and <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> functions.</p></li>
+<li><p>Added <code><a href="../reference/mf_model.html">bridge()</a></code>, <code><a href="https://generics.r-lib.org/reference/forecast.html" class="external-link">forecast()</a></code> and <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> functions.</p></li>
 <li><p>Supports target variables on monthly, quarterly and yearly frequency, and indicator variables on daily, weekly, monthly, quarterly and yearly frequency.</p></li>
 <li><p>Supports <code>auto.arima</code>, <code>ets</code> and other methods for indicator variable forecasting.</p></li>
 <li><p>Supports aggregation of indicator variables to match the target’s frequency using custom weighting functions, exponential Almon polynomials and other methods.</p></li>

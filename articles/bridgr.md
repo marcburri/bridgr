@@ -15,7 +15,7 @@ The core workflow is always the same:
 3.  Decide how indicators should be aligned to the target frequency with
     `indic_aggregators`.
 4.  Fit the target equation with
-    [`bridge()`](https://marcburri.github.io/bridgr/reference/bridge.md),
+    [`mf_model()`](https://marcburri.github.io/bridgr/reference/mf_model.md),
     inspect it with [`summary()`](https://rdrr.io/r/base/summary.html),
     and produce target-period forecasts with
     [`forecast()`](https://generics.r-lib.org/reference/forecast.html).
@@ -51,14 +51,14 @@ head(baro)
 ```
 
 `gdp_growth` is quarterly, while `baro` is monthly.
-[`bridge()`](https://marcburri.github.io/bridgr/reference/bridge.md)
+[`mf_model()`](https://marcburri.github.io/bridgr/reference/mf_model.md)
 recognizes the frequency mismatch automatically and aligns the indicator
 to the target frequency before fitting the target equation.
 
 ## A Basic Bridge Model
 
 ``` r
-bridge_model <- bridge(
+bridge_model <- mf_model(
   target = gdp_growth,
   indic = baro,
   indic_predict = "auto.arima",
@@ -69,7 +69,7 @@ bridge_model <- bridge(
 )
 
 forecast(bridge_model)
-#> Bridge forecast
+#> Mixed-frequency forecast
 #> -----------------------------------
 #> Target series: gdp_growth
 #> Forecast horizon: 2
@@ -117,7 +117,7 @@ appended only when they are relevant.
 
 ``` r
 summary(bridge_model)
-#> Bridge model summary
+#> Mixed-frequency model summary
 #> -----------------------------------
 #> Target series: gdp_growth
 #> Target frequency: quarter
@@ -159,7 +159,7 @@ assigned backward to target periods instead of being forecast forward
 first, and they are averaged within each target period.
 
 ``` r
-direct_model <- bridge(
+direct_model <- mf_model(
   target = gdp_growth,
   indic = baro,
   indic_predict = "direct",
@@ -167,7 +167,7 @@ direct_model <- bridge(
 )
 
 forecast(direct_model)
-#> Bridge forecast
+#> Mixed-frequency forecast
 #> -----------------------------------
 #> Target series: gdp_growth
 #> Forecast horizon: 1
@@ -189,7 +189,7 @@ if needed, custom simulation or full-system bootstrap controls through
 `bootstrap`.
 
 ``` r
-uncertainty_model <- bridge(
+uncertainty_model <- mf_model(
   target = gdp_growth,
   indic = baro,
   indic_predict = "auto.arima",
@@ -201,7 +201,7 @@ uncertainty_model <- bridge(
 )
 
 forecast(uncertainty_model)
-#> Bridge forecast
+#> Mixed-frequency forecast
 #> -----------------------------------
 #> Target series: gdp_growth
 #> Forecast horizon: 4
@@ -214,7 +214,7 @@ forecast(uncertainty_model)
 #> 3 2023-07-01 0.500 0.827 -0.441   1.370    -1.174   2.638   
 #> 4 2023-10-01 0.521 0.884 -0.532   1.731    -1.030   2.191
 summary(uncertainty_model)
-#> Bridge model summary
+#> Mixed-frequency model summary
 #> -----------------------------------
 #> Target series: gdp_growth
 #> Target frequency: quarter

@@ -106,7 +106,7 @@
 <span></span>
 <span><span class="va">gdp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">suppressMessages</a></span><span class="op">(</span><span class="fu">tsbox</span><span class="fu">::</span><span class="fu"><a href="https://docs.ropensci.org/tsbox/reference/ts_na_omit.html" class="external-link">ts_na_omit</a></span><span class="op">(</span><span class="fu">tsbox</span><span class="fu">::</span><span class="fu"><a href="https://docs.ropensci.org/tsbox/reference/ts_pc.html" class="external-link">ts_pc</a></span><span class="op">(</span><span class="fu">bridgr</span><span class="fu">::</span><span class="va"><a href="reference/gdp.html">gdp</a></span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">bridge_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/bridge.html">bridge</a></span><span class="op">(</span></span>
+<span><span class="va">bridge_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/mf_model.html">mf_model</a></span><span class="op">(</span></span>
 <span>  target <span class="op">=</span> <span class="va">gdp</span>,</span>
 <span>  indic <span class="op">=</span> <span class="va">baro</span>,</span>
 <span>  indic_predict <span class="op">=</span> <span class="st">"auto.arima"</span>,</span>
@@ -118,7 +118,7 @@
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://generics.r-lib.org/reference/forecast.html" class="external-link">forecast</a></span><span class="op">(</span><span class="va">bridge_model</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Bridge forecast</span></span>
+<span><span class="co">#&gt; Mixed-frequency forecast</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Target series: gdp</span></span>
 <span><span class="co">#&gt; Forecast horizon: 2</span></span>
@@ -126,11 +126,12 @@
 <span><span class="co">#&gt; Simulation paths: 100</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt;   time       mean  se    lower_80 upper_80 lower_95 upper_95</span></span>
-<span><span class="co">#&gt; 1 2023-01-01 0.808 0.785 -0.342   1.605    -0.515   2.388   </span></span>
-<span><span class="co">#&gt; 2 2023-04-01 0.468 0.821 -0.552   1.449    -1.335   2.213</span></span>
-<span></span>
+<span><span class="co">#&gt; 1 2023-01-01 0.808 0.681 -0.191   1.621    -0.757   2.046   </span></span>
+<span><span class="co">#&gt; 2 2023-04-01 0.468 0.771 -0.469   1.300    -1.158   2.763</span></span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">bridge_model</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Bridge model summary</span></span>
+<span><span class="co">#&gt; Mixed-frequency model summary</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Target series: gdp</span></span>
 <span><span class="co">#&gt; Target frequency: quarter</span></span>
@@ -157,8 +158,8 @@
 <span><span class="co">#&gt; -----------------------------------</span></span></code></pre></div>
 <p>With <code>se = TRUE</code>, <code>bridgr</code> reports HAC or Delta-HAC coefficient standard errors and residual-resampling prediction intervals.</p>
 <p>If you want data-driven within-period weights instead of a simple deterministic aggregator, you can switch the indicator aggregator to <code>expalmon</code>. The corresponding weights are estimated jointly within the bridge model, and <code>solver_options</code> let you control the optimization.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">expalmon_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/bridge.html">bridge</a></span><span class="op">(</span></span>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">expalmon_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/mf_model.html">mf_model</a></span><span class="op">(</span></span>
 <span>  target <span class="op">=</span> <span class="va">gdp</span>,</span>
 <span>  indic <span class="op">=</span> <span class="va">baro</span>,</span>
 <span>  indic_predict <span class="op">=</span> <span class="st">"auto.arima"</span>,</span>
@@ -168,7 +169,7 @@
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">expalmon_model</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Bridge model summary</span></span>
+<span><span class="co">#&gt; Mixed-frequency model summary</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Target series: gdp</span></span>
 <span><span class="co">#&gt; Target frequency: quarter</span></span>

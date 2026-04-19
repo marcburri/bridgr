@@ -178,7 +178,7 @@ nowcast.</p>
 <span><span class="va">models</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span></span>
 <span>  <span class="va">predict_methods</span>,</span>
 <span>  <span class="kw">function</span><span class="op">(</span><span class="va">method</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="fu"><a href="../reference/bridge.html">bridge</a></span><span class="op">(</span></span>
+<span>    <span class="fu"><a href="../reference/mf_model.html">mf_model</a></span><span class="op">(</span></span>
 <span>      target <span class="op">=</span> <span class="va">gdp_nowcast</span>,</span>
 <span>      indic <span class="op">=</span> <span class="va">baro_ragged</span>,</span>
 <span>      indic_predict <span class="op">=</span> <span class="va">method</span>,</span>
@@ -250,7 +250,7 @@ forecasted. Instead, <code>bridgr</code> assigns the latest complete
 high-frequency blocks backward to the target periods and averages them
 within each target period.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">direct_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/bridge.html">bridge</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">direct_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/mf_model.html">mf_model</a></span><span class="op">(</span></span>
 <span>  target <span class="op">=</span> <span class="va">gdp_nowcast</span>,</span>
 <span>  indic <span class="op">=</span> <span class="va">baro_ragged</span>,</span>
 <span>  indic_predict <span class="op">=</span> <span class="st">"direct"</span>,</span>
@@ -258,7 +258,7 @@ within each target period.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://generics.r-lib.org/reference/forecast.html" class="external-link">forecast</a></span><span class="op">(</span><span class="va">direct_model</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Bridge forecast</span></span>
+<span><span class="co">#&gt; Mixed-frequency forecast</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Target series: gdp_nowcast</span></span>
 <span><span class="co">#&gt; Forecast horizon: 1</span></span>

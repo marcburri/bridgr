@@ -57,7 +57,7 @@ coefficients.
 ## Deterministic Bridge Aggregation
 
 ``` r
-mean_model <- bridge(
+mean_model <- mf_model(
   target = quarter_target,
   indic = monthly_indicator,
   indic_predict = "last",
@@ -65,7 +65,7 @@ mean_model <- bridge(
   h = 1
 )
 
-last_model <- bridge(
+last_model <- mf_model(
   target = quarter_target,
   indic = monthly_indicator,
   indic_predict = "last",
@@ -74,7 +74,7 @@ last_model <- bridge(
 )
 
 summary(mean_model)
-#> Bridge model summary
+#> Mixed-frequency model summary
 #> -----------------------------------
 #> Target series: quarter_target
 #> Target frequency: quarter
@@ -92,7 +92,7 @@ summary(mean_model)
 #> monthly_indicator month     last    mean       
 #> -----------------------------------
 summary(last_model)
-#> Bridge model summary
+#> Mixed-frequency model summary
 #> -----------------------------------
 #> Target series: quarter_target
 #> Target frequency: quarter
@@ -118,7 +118,7 @@ aggregation.
 ## Unrestricted Mixed-Frequency Regression
 
 ``` r
-unrestricted_model <- bridge(
+unrestricted_model <- mf_model(
   target = quarter_target,
   indic = monthly_indicator,
   indic_predict = "last",
@@ -127,7 +127,7 @@ unrestricted_model <- bridge(
 )
 
 summary(unrestricted_model)
-#> Bridge model summary
+#> Mixed-frequency model summary
 #> -----------------------------------
 #> Target series: quarter_target
 #> Target frequency: quarter
@@ -162,7 +162,7 @@ within-period shape from the data while keeping the number of free
 parameters small.
 
 ``` r
-expalmon_model <- bridge(
+expalmon_model <- mf_model(
   target = quarter_target,
   indic = monthly_indicator,
   indic_predict = "last",
@@ -171,7 +171,7 @@ expalmon_model <- bridge(
   h = 1
 )
 
-beta_model <- bridge(
+beta_model <- mf_model(
   target = quarter_target,
   indic = monthly_indicator,
   indic_predict = "last",

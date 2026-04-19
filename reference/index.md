@@ -2,20 +2,21 @@
 
 ## All functions
 
-- [`bridge()`](https://marcburri.github.io/bridgr/reference/bridge.md) :
-  Estimate a Bridge Model
-- [`forecast(`*`<bridge>`*`)`](https://marcburri.github.io/bridgr/reference/forecast.bridge.md)
-  [`print(`*`<bridge_forecast>`*`)`](https://marcburri.github.io/bridgr/reference/forecast.bridge.md)
-  : Forecast a Bridge Model
+- [`forecast(`*`<mf_model>`*`)`](https://marcburri.github.io/bridgr/reference/forecast.mf_model.md)
+  [`print(`*`<mf_model_forecast>`*`)`](https://marcburri.github.io/bridgr/reference/forecast.mf_model.md)
+  : Forecast a Mixed-Frequency Model
 - [`gdp`](https://marcburri.github.io/bridgr/reference/gdp.md)
   [`baro`](https://marcburri.github.io/bridgr/reference/gdp.md)
   [`wea`](https://marcburri.github.io/bridgr/reference/gdp.md)
   [`fcurve`](https://marcburri.github.io/bridgr/reference/gdp.md) :
   Swiss Economic Indicators
-- [`plot(`*`<bridge>`*`)`](https://marcburri.github.io/bridgr/reference/plot.bridge.md)
-  : Plot a Bridge Model
-- [`summary(`*`<bridge>`*`)`](https://marcburri.github.io/bridgr/reference/summary.bridge.md)
-  : Summarize a Bridge Model
+- [`mf_model()`](https://marcburri.github.io/bridgr/reference/mf_model.md)
+  [`bridge()`](https://marcburri.github.io/bridgr/reference/mf_model.md)
+  : Estimate a Mixed-Frequency Model
+- [`plot(`*`<mf_model>`*`)`](https://marcburri.github.io/bridgr/reference/plot.mf_model.md)
+  : Plot a Mixed-Frequency Model
+- [`summary(`*`<mf_model>`*`)`](https://marcburri.github.io/bridgr/reference/summary.mf_model.md)
+  : Summarize a Mixed-Frequency Model
 - [`theme_bridgr()`](https://marcburri.github.io/bridgr/reference/theme_bridgr.md)
   [`colors_bridgr()`](https://marcburri.github.io/bridgr/reference/theme_bridgr.md)
   [`scale_color_bridgr()`](https://marcburri.github.io/bridgr/reference/theme_bridgr.md)
