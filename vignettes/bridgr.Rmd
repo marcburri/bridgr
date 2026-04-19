@@ -30,7 +30,7 @@ The core workflow is always the same:
    `indic_predict`.
 3. Decide how indicators should be aligned to the target frequency with
    `indic_aggregators`.
-4. Fit the target equation with `bridge()`, inspect it with `summary()`, and
+4. Fit the target equation with `mf_model()`, inspect it with `summary()`, and
    produce target-period forecasts with `forecast()`.
 
 This vignette walks through that workflow with the package's built-in Swiss
@@ -45,14 +45,14 @@ head(gdp_growth)
 head(baro)
 ```
 
-`gdp_growth` is quarterly, while `baro` is monthly. `bridge()` recognizes the
+`gdp_growth` is quarterly, while `baro` is monthly. `mf_model()` recognizes the
 frequency mismatch automatically and aligns the indicator to the target
 frequency before fitting the target equation.
 
 # A Basic Bridge Model
 
 ```{r basic-model}
-bridge_model <- bridge(
+bridge_model <- mf_model(
   target = gdp_growth,
   indic = baro,
   indic_predict = "auto.arima",
@@ -107,7 +107,7 @@ backward to target periods instead of being forecast forward first, and they
 are averaged within each target period.
 
 ```{r direct-model}
-direct_model <- bridge(
+direct_model <- mf_model(
   target = gdp_growth,
   indic = baro,
   indic_predict = "direct",
@@ -128,7 +128,7 @@ output, request it at estimation time with `se = TRUE` and, if needed,
 custom simulation or full-system bootstrap controls through `bootstrap`.
 
 ```{r uncertainty-example}
-uncertainty_model <- bridge(
+uncertainty_model <- mf_model(
   target = gdp_growth,
   indic = baro,
   indic_predict = "auto.arima",

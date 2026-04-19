@@ -57,7 +57,7 @@ suppressPackageStartupMessages(library(bridgr))
 
 gdp <- suppressMessages(tsbox::ts_na_omit(tsbox::ts_pc(bridgr::gdp)))
 
-bridge_model <- bridge(
+bridge_model <- mf_model(
   target = gdp,
   indic = baro,
   indic_predict = "auto.arima",
@@ -82,7 +82,7 @@ corresponding weights are estimated jointly within the bridge model, and
 `solver_options` let you control the optimization.
 
 ```{r expalmon-example}
-expalmon_model <- bridge(
+expalmon_model <- mf_model(
   target = gdp,
   indic = baro,
   indic_predict = "auto.arima",

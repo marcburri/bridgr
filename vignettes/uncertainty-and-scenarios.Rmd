@@ -39,7 +39,7 @@ The relevant estimation arguments are:
 ```{r bootstrap-model}
 gdp_growth <- suppressMessages(tsbox::ts_na_omit(tsbox::ts_pc(gdp)))
 
-boot_model <- bridge(
+boot_model <- mf_model(
   target = gdp_growth,
   indic = baro,
   indic_predict = "auto.arima",
@@ -131,7 +131,7 @@ the full bridge pipeline. In that mode, both the reported coefficient
 standard errors and the forecast intervals are based on the bootstrap draws.
 
 ```{r full-system-bootstrap}
-full_model <- bridge(
+full_model <- mf_model(
   target = gdp_growth,
   indic = baro,
   indic_predict = "auto.arima",
@@ -154,7 +154,7 @@ case, `bootstrap` is ignored and `forecast()` still returns the same object
 shape, with `NA` uncertainty fields.
 
 ```{r point-only}
-point_model <- bridge(
+point_model <- mf_model(
   target = gdp_growth,
   indic = baro,
   indic_predict = "auto.arima",
