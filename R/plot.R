@@ -184,6 +184,7 @@ scale_fill_bridgr <- function(...) {
 #' @srrstats {TS5.8} Observed, fitted, and forecast series are visually distinguished by separate layers and colors.
 #' @srrstats {RE6.0} Model objects of class `"mf_model"` implement a default plot method.
 #' @srrstats {RE6.1} The plot interface uses S3 dispatch via `plot.mf_model()`.
+#' @srrstats {RE6.2} The default `plot.mf_model()` view is the in-sample fitted path, while forecast plots remain available through `type = "forecast"`.
 #' @srrstats {RE6.3} Forecast plots distinguish historical model input from forecast output.
 #'
 #' @examples
@@ -197,12 +198,12 @@ scale_fill_bridgr <- function(...) {
 #'   h = 1
 #' )
 #'
-#' plot(model, type = "fit")
+#' plot(model)
 #' @method plot mf_model
 #' @export
 plot.mf_model <- function(
   x,
-  type = c("forecast", "fit"),
+  type = c("fit", "forecast"),
   level = 95,
   history_n = 50,
   xlab = NULL,

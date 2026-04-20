@@ -6,7 +6,7 @@
 \usage{
 \method{plot}{mf_model}(
   x,
-  type = c("forecast", "fit"),
+  type = c("fit", "forecast"),
   level = 95,
   history_n = 50,
   xlab = NULL,
@@ -51,5 +51,5 @@ model <- mf_model(
   h = 1
 )
 
-plot(model, type = "fit")
+plot(model)
 }

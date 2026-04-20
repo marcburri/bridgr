@@ -80,7 +80,6 @@
 #' @srrstatsTODO {RE4.3} *Confidence intervals on those coefficients (via `confint()`)*
 #' @srrstatsTODO {RE4.15} *Sufficient documentation and/or testing should be provided to demonstrate that forecast errors, confidence intervals, or equivalent values increase with forecast horizons.* 
 #' @srrstatsTODO {RE5.0} *Scaling relationships between sizes of input data (numbers of observations, with potential extension to numbers of variables/columns) and speed of algorithm.* 
-#' @srrstatsTODO {RE6.2} *The default `plot` method should produce a plot of the `fitted` values of the model, with optional visualisation of confidence intervals or equivalent.* 
 #' @srrstats {RE7.0} `tests/testthat/test-bridge.R` and `test-method-behaviors.R` use noiseless deterministic mixed-frequency constructions with exact predictor-response structure to verify recovery of known coefficients and weights.
 #' @srrstats {RE7.1} `tests/testthat/test-method-behaviors.R` constructs noiseless mixed-frequency targets and checks recovery of the exact predictor-response relationship within tolerance.
 #' @srrstatsTODO {RE7.1a} *In particular, these tests should confirm that model fitting is at least as fast or (preferably) faster than testing with equivalent noisy data (see RE2.4b).* 

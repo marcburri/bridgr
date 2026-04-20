@@ -504,13 +504,16 @@ test_that("plot.mf_model renders forecast and fit views", {
     bootstrap = list(N = 8, block_length = 4)
   )
 
-  forecast_plot <- plot(interval_model)
+  default_plot <- plot(model)
+  forecast_plot <- plot(interval_model, type = "forecast")
   fit_plot <- plot(model, type = "fit")
   forecast_build <- ggplot2::ggplot_build(forecast_plot)
   expected_start <- as.numeric(fixture$target$time[[11]])
 
+  expect_s3_class(default_plot, "ggplot")
   expect_s3_class(forecast_plot, "ggplot")
   expect_s3_class(fit_plot, "ggplot")
+  expect_equal(default_plot$labels$title, "Mixed-Frequency Model Fit")
   expect_equal(min(forecast_build$data[[1]]$x), expected_start)
   expect_equal(nrow(forecast_build$data[[1]]), 50)
   expect_equal(forecast_plot$labels$x, "Time (week)")
