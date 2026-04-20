@@ -57,7 +57,11 @@ metadata.
 ## Examples
 
 ``` r
-gdp_growth <- suppressMessages(tsbox::ts_na_omit(tsbox::ts_pc(gdp)))
+gdp_growth <- tsbox::ts_pc(gdp)
+#> [value]: 'values' 
+#> [value]: 'values' 
+gdp_growth <- tsbox::ts_na_omit(gdp_growth)
+#> [value]: 'values' 
 model <- mf_model(
   target = gdp_growth,
   indic = baro,

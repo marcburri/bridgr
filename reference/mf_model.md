@@ -20,8 +20,7 @@ mf_model(
   se = FALSE,
   bootstrap = NULL,
   full_system_bootstrap = FALSE,
-  solver_options = NULL,
-  ...
+  solver_options = NULL
 )
 
 bridge(...)
@@ -33,13 +32,16 @@ bridge(...)
 
   A single target series in a
   [`tsbox::ts_boxable()`](https://docs.ropensci.org/tsbox/reference/ts_boxable.html)
-  format.
+  format, such as a data frame or tibble with `time` and
+  `value`/`values` columns, or a regular time-series object supported by
+  tsbox.
 
 - indic:
 
   One or more indicator series in a
   [`tsbox::ts_boxable()`](https://docs.ropensci.org/tsbox/reference/ts_boxable.html)
-  format.
+  format, such as data frames / tibbles with `time` and `value`/`values`
+  columns, or regular time-series objects supported by tsbox.
 
 - indic_predict:
 
@@ -135,10 +137,6 @@ bridge(...)
   indicator. These controls are ignored unless at least one indicator
   uses a parametric aggregator.
 
-- ...:
-
-  Reserved for future extensions.
-
 ## Value
 
 An object of class `"mf_model"` containing the standardized input
@@ -227,63 +225,314 @@ Statistics*, 1-25.
 ## Examples
 
 ``` r
-gdp_growth <- suppressMessages(tsbox::ts_na_omit(tsbox::ts_pc(gdp)))
+gdp_growth <- tsbox::ts_pc(gdp)
+#> [value]: 'values' 
+#> [value]: 'values' 
+gdp_growth <- tsbox::ts_na_omit(gdp_growth)
+#> [value]: 'values' 
+gdp_growth <- dplyr::slice_tail(gdp_growth, n = 12)
+baro_small <- dplyr::slice_tail(baro, n = 36)
 
-model <- mf_model(
+mf_model(
   target = gdp_growth,
-  indic = baro,
+  indic = baro_small,
   indic_predict = "auto.arima",
   indic_aggregators = "mean",
   indic_lags = 1,
   target_lags = 1,
-  h = 2
+  h = 1,
+  frequency_conversions = c(mpq = 3),
+  se = TRUE,
+  bootstrap = list(N = 2),
+  solver_options = list(seed = 123, n_starts = 1)
 )
-
-expalmon_model <- mf_model(
-  target = gdp_growth,
-  indic = baro,
-  indic_predict = "auto.arima",
-  indic_aggregators = "expalmon",
-  solver_options = list(seed = 123, n_starts = 3),
-  h = 1
-)
-
-forecast(model)
-#> Mixed-frequency forecast
-#> -----------------------------------
-#> Target series: gdp_growth
-#> Forecast horizon: 2
-#> Uncertainty: point forecast only
-#> -----------------------------------
-#>   time       mean 
-#> 1 2023-01-01 0.875
-#> 2 2023-04-01 0.678
-summary(expalmon_model)
-#> Mixed-frequency model summary
-#> -----------------------------------
-#> Target series: gdp_growth
-#> Target frequency: quarter
-#> Forecast horizon: 1
-#> Estimation rows: 75
-#> Regressors: baro
-#> -----------------------------------
-#> Target equation coefficients:
-#>             Estimate
-#> (Intercept)   -9.371
-#> baro           0.098
-#> -----------------------------------
-#> Indicator summary:
-#>      Frequency Predict    Aggregation
-#> baro month     auto.arima expalmon   
-#> -----------------------------------
-#> Estimated parametric aggregation:
-#> baro weights: 0.006, 0.994, 0.000
-#> baro parameters: -4.914, -10.000
-#> -----------------------------------
-#> Joint parametric aggregation optimization:
-#> Method: L-BFGS-B
-#> Objective value: 60.832
-#> Convergence code: 0
-#> Best start: 1 / 3
-#> -----------------------------------
+#> $target
+#> # A tibble: 12 × 3
+#>    id         time       values
+#>    <chr>      <date>      <dbl>
+#>  1 gdp_growth 2020-01-01 -1.50 
+#>  2 gdp_growth 2020-04-01 -6.50 
+#>  3 gdp_growth 2020-07-01  6.88 
+#>  4 gdp_growth 2020-10-01  0.369
+#>  5 gdp_growth 2021-01-01  0.442
+#>  6 gdp_growth 2021-04-01  2.47 
+#>  7 gdp_growth 2021-07-01  2.34 
+#>  8 gdp_growth 2021-10-01  0.411
+#>  9 gdp_growth 2022-01-01  0.105
+#> 10 gdp_growth 2022-04-01  1.03 
+#> 11 gdp_growth 2022-07-01  0.255
+#> 12 gdp_growth 2022-10-01  0.102
+#> 
+#> $indic
+#> # A tibble: 36 × 3
+#>    id         time       values
+#>    <chr>      <date>      <dbl>
+#>  1 baro_small 2020-01-01  101. 
+#>  2 baro_small 2020-02-01   99.2
+#>  3 baro_small 2020-03-01   80.8
+#>  4 baro_small 2020-04-01   53.8
+#>  5 baro_small 2020-05-01   54.5
+#>  6 baro_small 2020-06-01   89.6
+#>  7 baro_small 2020-07-01  111. 
+#>  8 baro_small 2020-08-01  117. 
+#>  9 baro_small 2020-09-01  110. 
+#> 10 baro_small 2020-10-01  112. 
+#> # ℹ 26 more rows
+#> 
+#> $target_name
+#> [1] "gdp_growth"
+#> 
+#> $indic_name
+#> [1] "baro_small"
+#> 
+#> $target_frequency
+#> # A tibble: 1 × 3
+#>   id         unit     step
+#>   <chr>      <chr>   <dbl>
+#> 1 gdp_growth quarter     1
+#> 
+#> $indicator_frequencies
+#> # A tibble: 1 × 3
+#>   id         unit   step
+#>   <chr>      <chr> <dbl>
+#> 1 baro_small month     1
+#> 
+#> $indic_predict
+#> [1] "auto.arima"
+#> 
+#> $indic_aggregators_requested
+#> $indic_aggregators_requested[[1]]
+#> [1] "mean"
+#> 
+#> 
+#> $indic_aggregators
+#> $indic_aggregators[[1]]
+#> [1] "mean"
+#> 
+#> 
+#> $indic_lags
+#> [1] 1
+#> 
+#> $target_lags
+#> [1] 1
+#> 
+#> $target_lag_names
+#> [1] "gdp_growth_lag1"
+#> 
+#> $h
+#> [1] 1
+#> 
+#> $frequency_conversions
+#> spm mph hpd dpw wpm mpq qpy 
+#>  60  60  24   7   4   3   4 
+#> 
+#> $se
+#> [1] TRUE
+#> 
+#> $full_system_bootstrap
+#> [1] FALSE
+#> 
+#> $bootstrap
+#> $bootstrap$enabled
+#> [1] FALSE
+#> 
+#> $bootstrap$N
+#> [1] 2
+#> 
+#> $bootstrap$valid_N
+#> [1] 0
+#> 
+#> $bootstrap$block_length
+#> NULL
+#> 
+#> $bootstrap$coefficient_draws
+#> NULL
+#> 
+#> $bootstrap$coefficient_covariance
+#> NULL
+#> 
+#> $bootstrap$coefficient_se
+#> NULL
+#> 
+#> $bootstrap$prediction_draws
+#> NULL
+#> 
+#> $bootstrap$models
+#> NULL
+#> 
+#> $bootstrap$target_histories
+#> NULL
+#> 
+#> $bootstrap$requested
+#> [1] FALSE
+#> 
+#> 
+#> $uncertainty
+#> $uncertainty$enabled
+#> [1] TRUE
+#> 
+#> $uncertainty$coefficient_method
+#> [1] "hac"
+#> 
+#> $uncertainty$coefficient_covariance
+#>                  (Intercept)    baro_small baro_small_lag1 gdp_growth_lag1
+#> (Intercept)      9.120675787  0.0055728578   -0.1008626690     0.355101063
+#> baro_small       0.005572858  0.0006209409   -0.0006854336     0.001638296
+#> baro_small_lag1 -0.100862669 -0.0006854336    0.0017473648    -0.005400566
+#> gdp_growth_lag1  0.355101063  0.0016382956   -0.0054005658     0.018395183
+#> 
+#> $uncertainty$coefficient_se
+#>     (Intercept)      baro_small baro_small_lag1 gdp_growth_lag1 
+#>      3.02004566      0.02491869      0.04180149      0.13562884 
+#> 
+#> $uncertainty$prediction_method
+#> [1] "residual_resampling"
+#> 
+#> $uncertainty$prediction_draws
+#>          [,1]
+#> [1,] 1.047887
+#> [2,] 3.205471
+#> 
+#> $uncertainty$simulation_paths
+#> [1] 2
+#> 
+#> 
+#> $solver_options
+#> $solver_options$method
+#> [1] "L-BFGS-B"
+#> 
+#> $solver_options$maxiter
+#> [1] 1000
+#> 
+#> $solver_options$n_starts
+#> [1] 1
+#> 
+#> $solver_options$seed
+#> [1] 123
+#> 
+#> $solver_options$trace
+#> [1] 0
+#> 
+#> $solver_options$start_values
+#> NULL
+#> 
+#> 
+#> $formula
+#> gdp_growth ~ baro_small + baro_small_lag1 + gdp_growth_lag1
+#> <environment: 0x5589dc6e5948>
+#> 
+#> $estimation_set
+#> # A tibble: 10 × 5
+#>    time       gdp_growth baro_small baro_small_lag1 gdp_growth_lag1
+#>    <date>          <dbl>      <dbl>           <dbl>           <dbl>
+#>  1 2020-07-01      6.88       113.             66.0          -6.50 
+#>  2 2020-10-01      0.369      107.            113.            6.88 
+#>  3 2021-01-01      0.442      109.            107.            0.369
+#>  4 2021-04-01      2.47       125.            109.            0.442
+#>  5 2021-07-01      2.34       112.            125.            2.47 
+#>  6 2021-10-01      0.411      104.            112.            2.34 
+#>  7 2022-01-01      0.105       97.4           104.            0.411
+#>  8 2022-04-01      1.03        94.3            97.4           0.105
+#>  9 2022-07-01      0.255       90.0            94.3           1.03 
+#> 10 2022-10-01      0.102       90.7            90.0           0.255
+#> 
+#> $forecast_base_set
+#> # A tibble: 1 × 3
+#>   time       baro_small baro_small_lag1
+#>   <date>          <dbl>           <dbl>
+#> 1 2023-01-01       98.3            90.7
+#> 
+#> $forecast_set
+#> # A tibble: 1 × 4
+#>   time       baro_small baro_small_lag1 gdp_growth_lag1
+#>   <date>          <dbl>           <dbl> <list>         
+#> 1 2023-01-01       98.3            90.7 <dbl [1]>      
+#> 
+#> $model
+#> 
+#> Call:
+#> stats::lm(formula = formula, data = estimation_set)
+#> 
+#> Coefficients:
+#>     (Intercept)       baro_small  baro_small_lag1  gdp_growth_lag1  
+#>        -4.55613          0.11797         -0.06052         -0.18792  
+#> 
+#> 
+#> $indic_models
+#> $indic_models$baro_small
+#> Series: xts_series 
+#> ARIMA(1,0,2) with non-zero mean 
+#> 
+#> Coefficients:
+#>          ar1     ma1     ma2     mean
+#>       0.4157  0.8900  0.5322  99.9752
+#> s.e.  0.1990  0.1954  0.1624   5.0588
+#> 
+#> sigma^2 = 65.32:  log likelihood = -125.2
+#> AIC=260.41   AICc=262.41   BIC=268.32
+#> 
+#> 
+#> $parametric_weights
+#> list()
+#> 
+#> $parametric_parameters
+#> list()
+#> 
+#> $parametric_specs
+#> list()
+#> 
+#> $fixed_aggregated
+#> # A tibble: 13 × 3
+#>    id         time       values
+#>    <chr>      <date>      <dbl>
+#>  1 baro_small 2020-01-01   93.8
+#>  2 baro_small 2020-04-01   66.0
+#>  3 baro_small 2020-07-01  113. 
+#>  4 baro_small 2020-10-01  107. 
+#>  5 baro_small 2021-01-01  109. 
+#>  6 baro_small 2021-04-01  125. 
+#>  7 baro_small 2021-07-01  112. 
+#>  8 baro_small 2021-10-01  104. 
+#>  9 baro_small 2022-01-01   97.4
+#> 10 baro_small 2022-04-01   94.3
+#> 11 baro_small 2022-07-01   90.0
+#> 12 baro_small 2022-10-01   90.7
+#> 13 baro_small 2023-01-01   98.3
+#> 
+#> $parametric_optimization
+#> NULL
+#> 
+#> $expalmon_weights
+#> list()
+#> 
+#> $expalmon_parameters
+#> list()
+#> 
+#> $expalmon_optimization
+#> NULL
+#> 
+#> $truncation_info
+#> $truncation_info$baro_small
+#> $truncation_info$baro_small$indicator_id
+#> [1] "baro_small"
+#> 
+#> $truncation_info$baro_small$n_periods
+#> [1] 0
+#> 
+#> 
+#> 
+#> $regressor_names
+#> [1] "baro_small"      "baro_small_lag1" "gdp_growth_lag1"
+#> 
+#> $xreg_names
+#> [1] "baro_small"      "baro_small_lag1"
+#> 
+#> $target_anchor
+#> [1] "2020-01-01"
+#> 
+#> $future_target_times
+#> [1] "2023-01-01"
+#> 
+#> attr(,"class")
+#> [1] "mf_model"
 ```
