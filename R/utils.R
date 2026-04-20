@@ -183,6 +183,7 @@ bridge_argument_label <- function(expr, fallback) {
 #' @srrstats {G2.6} Supported one-dimensional time-series inputs are standardized through tsbox regardless of their original supported class.
 #' @srrstats {G2.7} The package accepts multiple ts-boxable tabular and time-series input forms through `tsbox::ts_boxable()`.
 #' @srrstats {G2.8} `as_bridge_tbl()` is the common pre-processing step that converts supported inputs to one standardized internal table form.
+#' @srrstats {G2.12} List-valued value columns are rejected with an informative preprocessing error before the data are standardized for modeling.
 #' @srrstats {TS1.0} Only explicit time-series inputs accepted by `tsbox::ts_boxable()` enter the preprocessing pipeline; generic non-time-series objects are rejected.
 #' @srrstats {TS1.2} `as_bridge_tbl()` validates that submitted series are acceptable ts-boxable time-series inputs.
 #' @srrstats {TS1.3} `as_bridge_tbl()` and downstream normalization convert accepted inputs to one uniform internal table representation.
@@ -203,6 +204,22 @@ as_bridge_tbl <- function(
       call = call
     )
   }
+  if (inherits(x, "data.frame")) {
+    raw_values <- x[["values"]]
+    if (is.null(raw_values)) {
+      raw_values <- x[["value"]]
+    }
+    if (is.list(raw_values)) {
+      rlang::abort(
+        paste0(
+          "`", arg,
+          "` must contain a numeric `value`/`values` column; list columns are ",
+          "not supported."
+        ),
+        call = call
+      )
+    }
+  }
 
   out <- suppressMessages(tsbox::ts_tbl(x)) |>
     standardize_ts_tbl()
@@ -213,7 +230,6 @@ as_bridge_tbl <- function(
       call = call
     )
   }
-
   if (!"id" %in% names(out)) {
     out$id <- rep(default_id, nrow(out))
   }

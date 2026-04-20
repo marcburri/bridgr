@@ -74,6 +74,22 @@ test_that("default series ids are scalarized before assignment", {
   expect_equal(output$id, rep("very long expression", 3))
 })
 
+test_that("list-valued data columns fail with an informative preprocessing error", {
+  input <- dplyr::tibble(
+    time = as.Date("2020-01-01") + 0:2,
+    value = I(list(1, 2, 3))
+  )
+
+  expect_error(
+    bridgr:::as_bridge_tbl(
+      x = input,
+      arg = "target",
+      default_id = "target"
+    ),
+    "list columns are not supported"
+  )
+})
+
 test_that("argument labels fall back cleanly for literal objects", {
   expect_equal(
     bridgr:::bridge_argument_label(quote(example_series), "target"),
