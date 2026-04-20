@@ -42,6 +42,7 @@ Suggests:
     rmarkdown,
     srr,
     testthat (>= 3.0.0),
+    withr,
     xts
 Config/testthat/edition: 3
 Depends: 

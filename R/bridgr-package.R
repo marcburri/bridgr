@@ -22,6 +22,7 @@ utils::globalVariables(c(
 #' @importFrom rlang .data
 #' @importFrom rlang %||%
 #' @importFrom lubridate %m+% %m-%
+#' @importFrom stats nobs
 #' @importFrom utils tail
 #' @importFrom forecast forecast
 NULL
