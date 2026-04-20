@@ -6,6 +6,7 @@
 \alias{formula.mf_model}
 \alias{nobs.mf_model}
 \alias{vcov.mf_model}
+\alias{fitted.mf_model}
 \title{Accessor Methods for Mixed-Frequency Models}
 \usage{
 \method{coef}{mf_model}(object, ...)
@@ -15,6 +16,8 @@
 \method{nobs}{mf_model}(object, ...)
 
 \method{vcov}{mf_model}(object, ...)
+
+\method{fitted}{mf_model}(object, ...)
 }
 \arguments{
 \item{object, x}{A fitted \code{"mf_model"} object returned by \code{\link[=mf_model]{mf_model()}}.}

@@ -75,3 +75,19 @@ test_that("vcov.mf_model returns stored covariance or the model fallback", {
     se_model$uncertainty$coefficient_covariance
   )
 })
+
+test_that("fitted.mf_model returns the in-sample fitted path", {
+  indic <- make_monthly_indicator(n = 36)
+  target <- make_quarter_target(indic, n_quarters = 12)
+
+  model <- mf_model(
+    target = target,
+    indic = indic,
+    indic_predict = "last",
+    target_lags = 1,
+    h = 1
+  )
+
+  expect_equal(stats::fitted(model), stats::fitted(model$model))
+  expect_equal(length(stats::fitted(model)), nrow(model$estimation_set))
+})

@@ -60,3 +60,11 @@ vcov.mf_model <- function(object, ...) {
 
   stats::vcov(object$model, ...)
 }
+
+#' @rdname mf_model-accessors
+#' @srrstats {RE4.9} `fitted.mf_model()` returns the in-sample fitted values from the stored target regression.
+#' @method fitted mf_model
+#' @export
+fitted.mf_model <- function(object, ...) {
+  stats::fitted(object$model, ...)
+}
