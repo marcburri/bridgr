@@ -183,8 +183,10 @@ residual- resampling forecast draws.</p>
 <h2 id="trimming-forecasts-by-error-margin">Trimming Forecasts by Error Margin<a class="anchor" aria-label="anchor" href="#trimming-forecasts-by-error-margin"></a>
 </h2>
 <p>One simple way to trim forecasts is to keep only those horizons whose
-prediction interval width stays below an application-specific
-tolerance.</p>
+prediction interval width stays below an application-specific tolerance.
+For illustration, the example below uses the one-step-ahead 95% interval
+width as the cutoff and keeps only horizons that are no wider than that
+baseline.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">forecast_table</span> <span class="op">&lt;-</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
 <span>  time <span class="op">=</span> <span class="va">fc</span><span class="op">$</span><span class="va">time</span>,</span>
@@ -194,10 +196,14 @@ tolerance.</p>
 <span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>width_95 <span class="op">=</span> <span class="va">.data</span><span class="op">$</span><span class="va">upper_95</span> <span class="op">-</span> <span class="va">.data</span><span class="op">$</span><span class="va">lower_95</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">forecast_table</span>, <span class="va">.data</span><span class="op">$</span><span class="va">width_95</span> <span class="op">&lt;=</span> <span class="fl">2.25</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 0 × 5</span></span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 5 variables: time &lt;date&gt;, mean &lt;dbl&gt;, lower_95 &lt;dbl&gt;, upper_95 &lt;dbl&gt;,</span></span></span>
-<span><span class="co">#&gt; <span style="color: #949494;">#   width_95 &lt;dbl&gt;</span></span></span></code></pre></div>
+<span><span class="va">tolerance_95</span> <span class="op">&lt;-</span> <span class="va">forecast_table</span><span class="op">$</span><span class="va">width_95</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span></span>
+<span></span>
+<span><span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">forecast_table</span>, <span class="va">.data</span><span class="op">$</span><span class="va">width_95</span> <span class="op">&lt;=</span> <span class="va">tolerance_95</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 5</span></span></span>
+<span><span class="co">#&gt;   time        mean lower_95 upper_95 width_95</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;date&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 2023-01-01 0.875    -<span style="color: #BB0000;">1.46</span>     2.94     4.40</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> 2023-04-01 0.678    -<span style="color: #BB0000;">1.67</span>     1.22     2.89</span></span></code></pre></div>
 <p>The threshold can be tightened or relaxed depending on how much
 forecast uncertainty is acceptable in the use case.</p>
 </div>

@@ -94,6 +94,9 @@ residual- resampling forecast draws.
 
 One simple way to trim forecasts is to keep only those horizons whose
 prediction interval width stays below an application-specific tolerance.
+For illustration, the example below uses the one-step-ahead 95% interval
+width as the cutoff and keeps only horizons that are no wider than that
+baseline.
 
 ``` r
 forecast_table <- dplyr::tibble(
@@ -104,10 +107,14 @@ forecast_table <- dplyr::tibble(
 ) |>
   dplyr::mutate(width_95 = .data$upper_95 - .data$lower_95)
 
-dplyr::filter(forecast_table, .data$width_95 <= 2.25)
-#> # A tibble: 0 × 5
-#> # ℹ 5 variables: time <date>, mean <dbl>, lower_95 <dbl>, upper_95 <dbl>,
-#> #   width_95 <dbl>
+tolerance_95 <- forecast_table$width_95[1]
+
+dplyr::filter(forecast_table, .data$width_95 <= tolerance_95)
+#> # A tibble: 2 × 5
+#>   time        mean lower_95 upper_95 width_95
+#>   <date>     <dbl>    <dbl>    <dbl>    <dbl>
+#> 1 2023-01-01 0.875    -1.46     2.94     4.40
+#> 2 2023-04-01 0.678    -1.67     1.22     2.89
 ```
 
 The threshold can be tightened or relaxed depending on how much forecast
