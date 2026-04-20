@@ -6,6 +6,7 @@
 #' @return `object`, invisibly.
 #'
 #' @srrstats {RE4.18} The package provides a dedicated `summary.mf_model()` method for fitted model objects.
+#' @srrstats {RE4.11} `summary.mf_model()` reports goodness-of-fit summaries such as R-squared, adjusted R-squared, and residual standard error alongside the coefficient table.
 #'
 #' @examples
 #' gdp_growth <- tsbox::ts_pc(gdp)
@@ -31,11 +32,25 @@ summary.mf_model <- function(object, ...) {
     !is.null(object$uncertainty$coefficient_se)
   prediction_uncertainty_enabled <-
     !is.null(object$uncertainty$prediction_method)
+  lm_summary <- summary(object$model)
   coefficient_table <- data.frame(
     Estimate = format_number(as.numeric(coefficient_estimates)),
     check.names = FALSE
   )
   rownames(coefficient_table) <- names(coefficient_estimates)
+  gof_table <- data.frame(
+    Statistic = c(
+      "R-squared",
+      "Adjusted R-squared",
+      "Residual standard error"
+    ),
+    Value = format_number(c(
+      unname(lm_summary$r.squared),
+      unname(lm_summary$adj.r.squared),
+      unname(lm_summary$sigma)
+    )),
+    check.names = FALSE
+  )
 
   if (coefficient_uncertainty_enabled) {
     coefficient_label <- if (
@@ -107,6 +122,14 @@ summary.mf_model <- function(object, ...) {
     noquote(format(coefficient_table, justify = "right")),
     quote = FALSE,
     right = TRUE
+  )
+  cat("-----------------------------------\n")
+  cat("Model fit:\n")
+  print(
+    noquote(format(gof_table, justify = "left")),
+    quote = FALSE,
+    right = FALSE,
+    row.names = FALSE
   )
   cat("-----------------------------------\n")
   cat("Indicator summary:\n")

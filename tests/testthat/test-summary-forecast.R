@@ -18,6 +18,10 @@ test_that("summary.mf_model reports deterministic custom weights", {
     fixed = TRUE
   )))
   expect_true(any(grepl("Target equation coefficients:", output, fixed = TRUE)))
+  expect_true(any(grepl("Model fit:", output, fixed = TRUE)))
+  expect_true(any(grepl("R-squared", output, fixed = TRUE)))
+  expect_true(any(grepl("Adjusted R-squared", output, fixed = TRUE)))
+  expect_true(any(grepl("Residual standard error", output, fixed = TRUE)))
   expect_true(any(grepl("Indicator summary:", output, fixed = TRUE)))
   expect_true(any(grepl("custom_weights", output, fixed = TRUE)))
   expect_true(any(grepl("0.2, 0.3, 0.5|0.200, 0.300, 0.500", output)))
