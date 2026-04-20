@@ -78,7 +78,6 @@
 #' @srrstatsTODO {RE3.3} *Allow explicit setting of convergence thresholds, unless reasons against doing so are explicitly documented.* 
 #' @srrstatsTODO {RE4.1} *Regression Software may enable an ability to generate a model object without actually fitting values. This may be useful for controlling batch processing of computationally intensive fitting algorithms.* 
 #' @srrstatsTODO {RE4.3} *Confidence intervals on those coefficients (via `confint()`)*
-#' @srrstatsTODO {RE4.4} *The specification of the model, generally as a formula (via `formula()`)*
 #' @srrstatsTODO {RE4.5} *Numbers of observations submitted to model (via `nobs()`)*
 #' @srrstatsTODO {RE4.6} *The variance-covariance matrix of the model parameters (via `vcov()`)*
 #' @srrstatsTODO {RE4.9} *Modelled values of response variables.*

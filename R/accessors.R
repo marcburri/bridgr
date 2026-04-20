@@ -30,3 +30,11 @@ NULL
 coef.mf_model <- function(object, ...) {
   stats::coef(object$model, ...)
 }
+
+#' @rdname mf_model-accessors
+#' @srrstats {RE4.4} `formula.mf_model()` returns the assembled target-regression formula stored on the fitted model object.
+#' @method formula mf_model
+#' @export
+formula.mf_model <- function(x, ...) {
+  x$formula
+}
