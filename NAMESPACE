@@ -3,6 +3,7 @@
 S3method(coef,mf_model)
 S3method(forecast,mf_model)
 S3method(formula,mf_model)
+S3method(nobs,mf_model)
 S3method(plot,mf_model)
 S3method(print,mf_model_forecast)
 S3method(summary,mf_model)

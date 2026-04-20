@@ -38,3 +38,11 @@ coef.mf_model <- function(object, ...) {
 formula.mf_model <- function(x, ...) {
   x$formula
 }
+
+#' @rdname mf_model-accessors
+#' @srrstats {RE4.5} `nobs.mf_model()` returns the number of rows used in the fitted target regression.
+#' @method nobs mf_model
+#' @export
+nobs.mf_model <- function(object, ...) {
+  stats::nobs(object$model, ...)
+}

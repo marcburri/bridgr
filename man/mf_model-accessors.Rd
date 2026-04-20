@@ -4,11 +4,14 @@
 \alias{mf_model-accessors}
 \alias{coef.mf_model}
 \alias{formula.mf_model}
+\alias{nobs.mf_model}
 \title{Accessor Methods for Mixed-Frequency Models}
 \usage{
 \method{coef}{mf_model}(object, ...)
 
 \method{formula}{mf_model}(x, ...)
+
+\method{nobs}{mf_model}(object, ...)
 }
 \arguments{
 \item{object, x}{A fitted \code{"mf_model"} object returned by \code{\link[=mf_model]{mf_model()}}.}
