@@ -126,10 +126,9 @@
 <span><span class="co">#&gt; Simulation paths: 100</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt;   time       mean  se    lower_80 upper_80 lower_95 upper_95</span></span>
-<span><span class="co">#&gt; 1 2023-01-01 0.808 0.725 -0.149   1.707    -0.358   2.388   </span></span>
-<span><span class="co">#&gt; 2 2023-04-01 0.468 0.708 -0.292   1.629    -0.696   1.892</span></span></code></pre></div>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
+<span><span class="co">#&gt; 1 2023-01-01 0.808 0.608 -0.018   1.390    -0.515   2.044   </span></span>
+<span><span class="co">#&gt; 2 2023-04-01 0.468 0.644 -0.218   1.445    -0.647   1.785</span></span>
+<span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">bridge_model</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Mixed-frequency model summary</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
@@ -158,7 +157,7 @@
 <span><span class="co">#&gt; -----------------------------------</span></span></code></pre></div>
 <p>With <code>se = TRUE</code>, <code>bridgr</code> reports HAC or Delta-HAC coefficient standard errors and residual-resampling prediction intervals.</p>
 <p>If you want data-driven within-period weights instead of a simple deterministic aggregator, you can switch the indicator aggregator to <code>expalmon</code>. The corresponding weights are estimated jointly within the bridge model, and <code>solver_options</code> let you control the optimization.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">expalmon_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/mf_model.html">mf_model</a></span><span class="op">(</span></span>
 <span>  target <span class="op">=</span> <span class="va">gdp</span>,</span>
 <span>  indic <span class="op">=</span> <span class="va">baro</span>,</span>
@@ -197,6 +196,11 @@
 <span><span class="co">#&gt; Best start: 1 / 3</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span></code></pre></div>
 </div>
+<div class="section level2">
+<h2 id="code-of-conduct">Code of Conduct<a class="anchor" aria-label="anchor" href="#code-of-conduct"></a>
+</h2>
+<p>Please note that the bridgr project is released with a <a href="https://marcburri.github.io/bridgr/CODE_OF_CONDUCT.html">Contributor Code of Conduct</a>. By contributing to this project, you agree to abide by its terms.</p>
+</div>
 </div>
   </main><aside class="col-md-3"><div class="links">
 <h2 data-toc-skip>Links</h2>
@@ -219,6 +223,7 @@
 <h2 data-toc-skip>Community</h2>
 <ul class="list-unstyled">
 <li><a href="CONTRIBUTING.html">Contributing guide</a></li>
+<li><a href="CODE_OF_CONDUCT.html">Code of conduct</a></li>
 </ul>
 </div>
 
