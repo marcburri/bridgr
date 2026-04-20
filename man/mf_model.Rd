@@ -174,6 +174,15 @@ numeric values are not preserved in the fitted object unless they are
 re-encoded in those standardized columns.
 }
 
+\section{Stationarity}{
+
+\code{bridgr} assumes that users provide target and indicator series on a scale
+that is appropriate for bridge-style forecasting. In practice this often
+means working with growth rates, differences, or other transformed series
+prepared upstream. The package does not automatically test for or enforce
+stationarity before fitting the bridge regression.
+}
+
 \section{Deprecated \code{bridge()} wrapper}{
 
 \code{\link[=bridge]{bridge()}} is retained for compatibility and forwards to \code{mf_model()} with a

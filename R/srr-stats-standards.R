@@ -51,7 +51,6 @@
 #' @srrstatsTODO {TS2.1b} *warn or ignore missing data, and proceed to analyse irregular data, ensuring that results from function calls with regular yet missing data return identical values to submitting equivalent irregular data with no missing values; or*
 #' @srrstatsTODO {TS2.1c} *replace missing data with appropriately imputed values.* 
 #' @srrstatsTODO {TS2.2} *Consider stationarity of all relevant moments - typically first (mean) and second (variance) order, or otherwise document why such consideration may be restricted to lower orders only.*
-#' @srrstatsTODO {TS2.3} *Explicitly document all assumptions and/or requirements of stationarity*
 #' @srrstatsTODO {TS2.4} *Implement appropriate checks for all relevant forms of stationarity, and either:*
 #' @srrstatsTODO {TS2.4a} *issue diagnostic messages or warnings; or*
 #' @srrstatsTODO {TS2.4b} *enable or advise on appropriate transformations to ensure stationarity.* 
