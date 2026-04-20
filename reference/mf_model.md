@@ -137,6 +137,10 @@ bridge(...)
   indicator. These controls are ignored unless at least one indicator
   uses a parametric aggregator.
 
+- ...:
+
+  Arguments forwarded to `mf_model()`.
+
 ## Value
 
 An object of class `"mf_model"` containing the standardized input
@@ -419,7 +423,7 @@ mf_model(
 #> 
 #> $formula
 #> gdp_growth ~ baro_small + baro_small_lag1 + gdp_growth_lag1
-#> <environment: 0x5589dc6e5948>
+#> <environment: 0x564c5435ab70>
 #> 
 #> $estimation_set
 #> # A tibble: 10 × 5
