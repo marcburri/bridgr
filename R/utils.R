@@ -209,6 +209,12 @@ as_bridge_tbl <- function(
     if (is.null(raw_values)) {
       raw_values <- x[["value"]]
     }
+    if (!is.null(raw_values) && !is.list(raw_values) && !is.numeric(raw_values)) {
+      rlang::abort(
+        paste0("`", arg, "` must contain a numeric `value`/`values` column."),
+        call = call
+      )
+    }
     if (is.list(raw_values)) {
       rlang::abort(
         paste0(
@@ -233,6 +239,12 @@ as_bridge_tbl <- function(
   if (!"time" %in% names(out) || !"values" %in% names(out)) {
     rlang::abort(
       paste0("`", arg, "` must contain `time` and `value`/`values` columns."),
+      call = call
+    )
+  }
+  if (!is.numeric(out$values)) {
+    rlang::abort(
+      paste0("`", arg, "` must contain a numeric `value`/`values` column."),
       call = call
     )
   }

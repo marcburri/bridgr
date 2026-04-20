@@ -157,6 +157,28 @@ test_that("zero-length target or indicator inputs fail early", {
   )
 })
 
+test_that("unsupported value types fail during preprocessing", {
+  char_target <- dplyr::tibble(
+    time = seq(as.Date("2020-01-01"), by = "quarter", length.out = 8),
+    value = rep("bad", 8)
+  )
+  complex_indic <- dplyr::tibble(
+    time = seq(as.Date("2020-01-01"), by = "month", length.out = 24),
+    value = complex(real = seq_len(24), imaginary = 1)
+  )
+  indic <- make_monthly_indicator(n = 24)
+  target <- make_quarter_target(indic, n_quarters = 8)
+
+  expect_error(
+    mf_model(target = char_target, indic = indic, h = 1),
+    "must contain a numeric `value`/`values` column"
+  )
+  expect_error(
+    mf_model(target = target, indic = complex_indic, h = 1),
+    "must contain a numeric `value`/`values` column"
+  )
+})
+
 test_that("invalid or lower-frequency indicators are rejected", {
   indic <- dplyr::tibble(
     time = seq(as.Date("2020-01-01"), by = "quarter", length.out = 4),
