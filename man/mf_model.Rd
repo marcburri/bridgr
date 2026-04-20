@@ -17,16 +17,19 @@ mf_model(
   se = FALSE,
   bootstrap = NULL,
   full_system_bootstrap = FALSE,
-  solver_options = NULL,
-  ...
+  solver_options = NULL
 )
 
 bridge(...)
 }
 \arguments{
-\item{target}{A single target series in a \code{\link[tsbox:ts_boxable]{tsbox::ts_boxable()}} format.}
+\item{target}{A single target series in a \code{\link[tsbox:ts_boxable]{tsbox::ts_boxable()}} format,
+such as a data frame or tibble with \code{time} and \code{value}/\code{values} columns,
+or a regular time-series object supported by tsbox.}
 
-\item{indic}{One or more indicator series in a \code{\link[tsbox:ts_boxable]{tsbox::ts_boxable()}} format.}
+\item{indic}{One or more indicator series in a \code{\link[tsbox:ts_boxable]{tsbox::ts_boxable()}}
+format, such as data frames / tibbles with \code{time} and \code{value}/\code{values}
+columns, or regular time-series objects supported by tsbox.}
 
 \item{indic_predict}{A character vector of indicator forecasting methods.
 Length must be \code{1} or equal to the number of indicator series. Setting
@@ -100,8 +103,6 @@ the parameter order is \verb{(linear, quadratic)} for \code{"expalmon"} and
 provide exactly the required number of values for each parametric
 indicator. These controls are ignored unless at least one indicator uses a
 parametric aggregator.}
-
-\item{...}{Reserved for future extensions.}
 }
 \value{
 An object of class \code{"mf_model"} containing the standardized input
@@ -160,29 +161,24 @@ deprecation warning.
 }
 
 \examples{
-gdp_growth <- suppressMessages(tsbox::ts_na_omit(tsbox::ts_pc(gdp)))
+gdp_growth <- tsbox::ts_pc(gdp)
+gdp_growth <- tsbox::ts_na_omit(gdp_growth)
+gdp_growth <- dplyr::slice_tail(gdp_growth, n = 12)
+baro_small <- dplyr::slice_tail(baro, n = 36)
 
-model <- mf_model(
+mf_model(
   target = gdp_growth,
-  indic = baro,
+  indic = baro_small,
   indic_predict = "auto.arima",
   indic_aggregators = "mean",
   indic_lags = 1,
   target_lags = 1,
-  h = 2
+  h = 1,
+  frequency_conversions = c(mpq = 3),
+  se = TRUE,
+  bootstrap = list(N = 2),
+  solver_options = list(seed = 123, n_starts = 1)
 )
-
-expalmon_model <- mf_model(
-  target = gdp_growth,
-  indic = baro,
-  indic_predict = "auto.arima",
-  indic_aggregators = "expalmon",
-  solver_options = list(seed = 123, n_starts = 3),
-  h = 1
-)
-
-forecast(model)
-summary(expalmon_model)
 
 }
 \references{

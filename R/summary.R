@@ -6,7 +6,8 @@
 #' @return `object`, invisibly.
 #'
 #' @examples
-#' gdp_growth <- suppressMessages(tsbox::ts_na_omit(tsbox::ts_pc(gdp)))
+#' gdp_growth <- tsbox::ts_pc(gdp)
+#' gdp_growth <- tsbox::ts_na_omit(gdp_growth)
 #' model <- mf_model(
 #'   target = gdp_growth,
 #'   indic = baro,

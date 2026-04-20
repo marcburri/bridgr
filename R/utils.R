@@ -136,12 +136,56 @@ normalize_bridge_bootstrap <- function(
 
 #' @keywords internal
 #' @noRd
+normalize_bridge_default_id <- function(default_id) {
+  default_id <- as.character(default_id)
+  default_id <- default_id[nzchar(default_id)]
+
+  if (length(default_id) == 0) {
+    return("series")
+  }
+
+  paste(default_id, collapse = " ")
+}
+
+#' @keywords internal
+#' @noRd
+is_bridge_reference_expr <- function(expr) {
+  if (is.symbol(expr)) {
+    return(TRUE)
+  }
+
+  if (!is.call(expr)) {
+    return(FALSE)
+  }
+
+  head <- expr[[1]]
+  if (!is.symbol(head)) {
+    return(FALSE)
+  }
+
+  as.character(head) %in% c("$", "[[", "@", "::", ":::")
+}
+
+#' @keywords internal
+#' @noRd
+bridge_argument_label <- function(expr, fallback) {
+  if (is_bridge_reference_expr(expr)) {
+    return(normalize_bridge_default_id(rlang::as_label(expr)))
+  }
+
+  normalize_bridge_default_id(fallback)
+}
+
+#' @keywords internal
+#' @noRd
 as_bridge_tbl <- function(
   x,
   arg,
   default_id,
   call = rlang::caller_env()
 ) {
+  default_id <- normalize_bridge_default_id(default_id)
+
   if (!tsbox::ts_boxable(x)) {
     rlang::abort(
       paste0("`", arg, "` must be a ts-boxable object."),
@@ -160,7 +204,7 @@ as_bridge_tbl <- function(
   }
 
   if (!"id" %in% names(out)) {
-    out$id <- default_id
+    out$id <- rep(default_id, nrow(out))
   }
 
   out |>
@@ -430,6 +474,7 @@ normalize_indicator_methods <- function(
     )
   }
 
+  methods <- tolower(unname(methods))
   invalid <- setdiff(methods, valid)
   if (length(invalid) > 0) {
     rlang::abort(
@@ -487,6 +532,17 @@ normalize_indicator_aggregators <- function(
 
   valid_names <- c("mean", "last", "sum", "expalmon", "beta")
   valid_names <- c(valid_names, "unrestricted")
+
+  aggregators <- lapply(
+    aggregators,
+    function(aggregator) {
+      if (is.character(aggregator)) {
+        return(tolower(aggregator))
+      }
+
+      aggregator
+    }
+  )
 
   for (aggregator in aggregators) {
     if (is.character(aggregator)) {

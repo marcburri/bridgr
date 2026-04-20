@@ -59,6 +59,64 @@ test_that("bootstrap controls are normalized and validated", {
   )
 })
 
+test_that("default series ids are scalarized before assignment", {
+  input <- dplyr::tibble(
+    time = as.Date("2020-01-01") + 0:2,
+    value = 1:3
+  )
+
+  output <- bridgr:::as_bridge_tbl(
+    x = input,
+    arg = "target",
+    default_id = c("very", "long", "expression")
+  )
+
+  expect_equal(output$id, rep("very long expression", 3))
+})
+
+test_that("argument labels fall back cleanly for literal objects", {
+  expect_equal(
+    bridgr:::bridge_argument_label(quote(example_series), "target"),
+    "example_series"
+  )
+  expect_equal(
+    bridgr:::bridge_argument_label(quote(pkg::example_series), "target"),
+    "pkg::example_series"
+  )
+  expect_equal(
+    bridgr:::bridge_argument_label(dplyr::tibble(x = 1), "target"),
+    "target"
+  )
+  expect_equal(
+    bridgr:::bridge_argument_label(
+      quote(base::quote(list(time = 1, value = 2))),
+      "target"
+    ),
+    "target"
+  )
+})
+
+test_that("indicator methods and aggregators are matched case-insensitively", {
+  expect_equal(
+    bridgr:::normalize_indicator_methods(
+      methods = c("AUTO.ARIMA", "Direct"),
+      n_series = 2,
+      default = "auto.arima",
+      arg = "indic_predict",
+      valid = c("mean", "last", "auto.arima", "ets", "direct")
+    ),
+    c("auto.arima", "direct")
+  )
+
+  expect_equal(
+    bridgr:::normalize_indicator_aggregators(
+      aggregators = c("MEAN", "BeTa"),
+      n_series = 2
+    ),
+    list("mean", "beta")
+  )
+})
+
 test_that("parametric start values are validated", {
   parametric_specs <- list(
     a = list(aggregator = "beta"),

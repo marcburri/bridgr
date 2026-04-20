@@ -41,8 +41,12 @@
 #' and year-based input dates are standardized to period starts when needed
 #' for frequency recognition.
 #'
-#' @param target A single target series in a [tsbox::ts_boxable()] format.
-#' @param indic One or more indicator series in a [tsbox::ts_boxable()] format.
+#' @param target A single target series in a [tsbox::ts_boxable()] format,
+#' such as a data frame or tibble with `time` and `value`/`values` columns,
+#' or a regular time-series object supported by tsbox.
+#' @param indic One or more indicator series in a [tsbox::ts_boxable()]
+#' format, such as data frames / tibbles with `time` and `value`/`values`
+#' columns, or regular time-series objects supported by tsbox.
 #' @param indic_predict A character vector of indicator forecasting methods.
 #' Length must be `1` or equal to the number of indicator series. Setting
 #' `indic_predict = "direct"` switches to direct MIDAS-style alignment: the
@@ -106,7 +110,6 @@
 #' provide exactly the required number of values for each parametric
 #' indicator. These controls are ignored unless at least one indicator uses a
 #' parametric aggregator.
-#' @param ... Reserved for future extensions.
 #'
 #' @return An object of class `"mf_model"` containing the standardized input
 #' series, inferred frequencies, aligned estimation and forecast datasets, the
@@ -118,29 +121,24 @@
 #' deprecation warning.
 #'
 #' @examples
-#' gdp_growth <- suppressMessages(tsbox::ts_na_omit(tsbox::ts_pc(gdp)))
+#' gdp_growth <- tsbox::ts_pc(gdp)
+#' gdp_growth <- tsbox::ts_na_omit(gdp_growth)
+#' gdp_growth <- dplyr::slice_tail(gdp_growth, n = 12)
+#' baro_small <- dplyr::slice_tail(baro, n = 36)
 #'
-#' model <- mf_model(
+#' mf_model(
 #'   target = gdp_growth,
-#'   indic = baro,
+#'   indic = baro_small,
 #'   indic_predict = "auto.arima",
 #'   indic_aggregators = "mean",
 #'   indic_lags = 1,
 #'   target_lags = 1,
-#'   h = 2
+#'   h = 1,
+#'   frequency_conversions = c(mpq = 3),
+#'   se = TRUE,
+#'   bootstrap = list(N = 2),
+#'   solver_options = list(seed = 123, n_starts = 1)
 #' )
-#'
-#' expalmon_model <- mf_model(
-#'   target = gdp_growth,
-#'   indic = baro,
-#'   indic_predict = "auto.arima",
-#'   indic_aggregators = "expalmon",
-#'   solver_options = list(seed = 123, n_starts = 3),
-#'   h = 1
-#' )
-#'
-#' forecast(model)
-#' summary(expalmon_model)
 #'
 #' @references
 #' Baffigi, A., Golinelli, R., & Parigi, G. (2004). Bridge models to forecast
@@ -175,11 +173,10 @@ mf_model <- function(
   se = FALSE,
   bootstrap = NULL,
   full_system_bootstrap = FALSE,
-  solver_options = NULL,
-  ...
+  solver_options = NULL
 ) {
-  target_name <- deparse(substitute(target))
-  indic_name <- deparse(substitute(indic))
+  target_name <- bridge_argument_label(substitute(target), "target")
+  indic_name <- bridge_argument_label(substitute(indic), "indic")
 
   # Standardize inputs before any frequency or aggregation logic.
   target_tbl <- as_bridge_tbl(

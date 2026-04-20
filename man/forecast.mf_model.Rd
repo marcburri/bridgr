@@ -37,7 +37,8 @@ bootstrap metadata.
 Forecast the target variable from a fitted \code{\link[=mf_model]{mf_model()}} object.
 }
 \examples{
-gdp_growth <- suppressMessages(tsbox::ts_na_omit(tsbox::ts_pc(gdp)))
+gdp_growth <- tsbox::ts_pc(gdp)
+gdp_growth <- tsbox::ts_na_omit(gdp_growth)
 model <- mf_model(
   target = gdp_growth,
   indic = baro,

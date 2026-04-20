@@ -32,6 +32,56 @@ test_that("bridge keeps indicators beyond the forecast horizon", {
   expect_equal(nrow(model$forecast_set), 1)
 })
 
+test_that("mf_model supports do.call with literal ts-boxable objects", {
+  indic <- make_monthly_indicator()
+  target <- make_quarter_target(indic, n_quarters = 6)
+
+  model <- do.call(
+    mf_model,
+    list(
+      target = target,
+      indic = indic,
+      indic_predict = "LAST",
+      indic_aggregators = "MEAN",
+      h = 1L
+    )
+  )
+
+  expect_s3_class(model, "mf_model")
+  expect_equal(model$target_name, "target")
+  expect_equal(model$indic_name, "indic")
+  expect_equal(model$indic_predict, "last")
+  expect_equal(model$indic_aggregators, list("mean"))
+})
+
+test_that("mf_model supports quoted do.call inputs", {
+  indic <- make_monthly_indicator()
+  target <- make_quarter_target(indic, n_quarters = 6)
+
+  model <- do.call(
+    mf_model,
+    list(
+      target = target,
+      indic = indic,
+      indic_predict = "LAST",
+      indic_aggregators = "MEAN",
+      indic_lags = 1L,
+      target_lags = 1L,
+      h = 1L,
+      se = TRUE,
+      bootstrap = list(N = 5),
+      full_system_bootstrap = FALSE
+    ),
+    quote = TRUE
+  )
+
+  expect_s3_class(model, "mf_model")
+  expect_equal(model$target_name, "target")
+  expect_equal(model$indic_name, "indic")
+  expect_equal(model$indic_predict, "last")
+  expect_equal(model$indic_aggregators, list("mean"))
+})
+
 test_that("bridge supports multiple indicators with mixed aggregation", {
   indic <- make_multi_indicator()
   target <- make_quarter_target(
