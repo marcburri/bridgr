@@ -386,6 +386,12 @@ fit_bridge_model <- function(
     regressor_names = regressor_names,
     call = rlang::caller_env()
   )
+  check_target_regressor_collinearity(
+    estimation_set = estimation_set,
+    target_name = target_name,
+    regressor_names = regressor_names,
+    call = rlang::caller_env()
+  )
 
   if (
     any(vapply(

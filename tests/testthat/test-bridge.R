@@ -76,6 +76,7 @@ test_that("mf_model supports do.call with literal ts-boxable objects", {
 test_that("mf_model supports quoted do.call inputs", {
   indic <- make_monthly_indicator()
   target <- make_quarter_target(indic, n_quarters = 6)
+  target$value[[6]] <- target$value[[6]] + 0.1
 
   model <- do.call(
     mf_model,
@@ -85,7 +86,7 @@ test_that("mf_model supports quoted do.call inputs", {
       indic_predict = "LAST",
       indic_aggregators = "MEAN",
       indic_lags = 1L,
-      target_lags = 1L,
+      target_lags = 0L,
       h = 1L,
       se = TRUE,
       bootstrap = list(N = 5),
@@ -507,6 +508,32 @@ test_that("bridge rejects perfectly collinear regressors before fitting", {
     "Perfect collinearity detected among regressors"
   )
 })
+
+test_that(
+  "bridge rejects responses perfectly collinear with finalized regressors",
+  {
+    monthly_time <- seq(as.Date("2020-01-01"), by = "month", length.out = 24)
+    monthly_values <- seq_len(24)
+    indic <- dplyr::tibble(
+      time = monthly_time,
+      value = monthly_values
+    )
+    target <- dplyr::tibble(
+      time = monthly_time[seq(1, 24, 3)],
+      value = monthly_values[seq(2, 24, 3)] + 1
+    )
+
+    expect_error(
+      mf_model(
+        target = target,
+        indic = indic,
+        indic_predict = "last",
+        h = 1
+      ),
+      "Perfect collinearity detected between `target` and the finalized regressors"
+    )
+  }
+)
 
 test_that(
   paste(

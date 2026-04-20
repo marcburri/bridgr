@@ -1046,6 +1046,46 @@ check_regressor_collinearity <- function(
   )
 }
 
+#' @srrstats {RE2.4b} The target column is checked against the finalized
+#' regression design matrix before fitting, so regressions where the response is
+#' exactly determined by the submitted predictors are rejected explicitly.
+#' @keywords internal
+#' @noRd
+check_target_regressor_collinearity <- function(
+  estimation_set,
+  target_name,
+  regressor_names,
+  call = rlang::caller_env()
+) {
+  design_matrix <- cbind(
+    "(Intercept)" = 1,
+    as.matrix(estimation_set[, regressor_names, drop = FALSE])
+  )
+  target_values <- estimation_set[[target_name]]
+  collinearity_tol <- sqrt(.Machine$double.eps) * max(
+    1,
+    abs(target_values),
+    abs(design_matrix)
+  )
+  target_residuals <- qr.resid(
+    qr(design_matrix, tol = sqrt(.Machine$double.eps)),
+    target_values
+  )
+
+  if (max(abs(target_residuals)) > collinearity_tol) {
+    return(invisible(NULL))
+  }
+
+  rlang::abort(
+    paste0(
+      "Perfect collinearity detected between `",
+      target_name,
+      "` and the finalized regressors in the estimation set."
+    ),
+    call = call
+  )
+}
+
 #' @keywords internal
 #' @noRd
 fit_target_model <- function(
