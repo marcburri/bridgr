@@ -146,7 +146,7 @@ test_that("bridge accepts end-of-period dates via fallback", {
       seq(as.Date("2020-01-01"), by = "quarter", length.out = 5),
       unit = "quarter"
     ) - lubridate::days(1),
-    value = c(2, 5, 8, 11, 14)
+    value = c(2, 5.2, 8, 11, 14)
   )
 
   model <- mf_model(

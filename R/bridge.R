@@ -381,12 +381,25 @@ fit_bridge_model <- function(
     )
   }
 
-  check_estimation_set_collinearity(
-    estimation_set = estimation_set,
-    target_name = target_name,
-    regressor_names = regressor_names,
-    call = rlang::caller_env()
-  )
+  skip_collinearity_screening <- any(vapply(
+    config$indic_predict,
+    identical,
+    logical(1),
+    "direct"
+  )) || any(vapply(
+    config$indic_aggregators,
+    identical,
+    logical(1),
+    "unrestricted"
+  ))
+  if (!skip_collinearity_screening) {
+    check_estimation_set_collinearity(
+      estimation_set = estimation_set,
+      target_name = target_name,
+      regressor_names = regressor_names,
+      call = rlang::caller_env()
+    )
+  }
 
   if (
     any(vapply(

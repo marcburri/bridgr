@@ -1000,9 +1000,10 @@ circular_block_bootstrap_indices <- function(n_rows, block_length) {
   indices[seq_len(n_rows)]
 }
 
-#' @srrstats {RE2.4} The finalized estimation set is screened for exact
-#' collinearity before fitting through one dedicated preprocessing routine that
-#' checks both regressor-vs-regressor and target-vs-regressor dependencies.
+#' @srrstats {RE2.4} Bridge regressions that collapse each submitted indicator
+#' to one finalized regressor column are screened for exact collinearity before
+#' fitting through one dedicated preprocessing routine that checks both
+#' regressor-vs-regressor and target-vs-regressor dependencies.
 #' @keywords internal
 #' @noRd
 check_estimation_set_collinearity <- function(
@@ -1024,9 +1025,25 @@ check_estimation_set_collinearity <- function(
   )
 }
 
-#' @srrstats {RE2.4a} The finalized regressor matrix is checked for exact rank
-#' deficiency before fitting, so perfectly collinear predictors are rejected
-#' with an explicit preprocessing error.
+#' @keywords internal
+#' @noRd
+has_perfect_affine_dependence <- function(x, y) {
+  collinearity_tol <- sqrt(.Machine$double.eps) * max(1, abs(x), abs(y))
+  residuals <- qr.resid(
+    qr(
+      cbind("(Intercept)" = 1, x = x),
+      tol = sqrt(.Machine$double.eps)
+    ),
+    y
+  )
+
+  max(abs(residuals)) <= collinearity_tol
+}
+
+#' @srrstats {RE2.4a} Finalized single-column bridge regressors are screened
+#' pairwise for exact affine dependencies before fitting, so duplicated or
+#' perfectly collinear predictor columns are rejected with an explicit
+#' preprocessing error.
 #' @keywords internal
 #' @noRd
 check_regressor_collinearity <- function(
@@ -1038,41 +1055,40 @@ check_regressor_collinearity <- function(
     return(invisible(NULL))
   }
 
-  design_matrix <- cbind(
-    "(Intercept)" = 1,
-    as.matrix(estimation_set[, regressor_names, drop = FALSE])
-  )
-  qr_design <- qr(
-    design_matrix,
-    tol = sqrt(.Machine$double.eps)
-  )
+  regressor_matrix <- as.matrix(estimation_set[, regressor_names, drop = FALSE])
 
-  if (qr_design$rank == ncol(design_matrix)) {
-    return(invisible(NULL))
+  for (left_index in seq_len(length(regressor_names) - 1L)) {
+    for (right_index in seq.int(left_index + 1L, length(regressor_names))) {
+      left_name <- regressor_names[[left_index]]
+      right_name <- regressor_names[[right_index]]
+
+      if (
+        has_perfect_affine_dependence(
+          x = regressor_matrix[, left_index],
+          y = regressor_matrix[, right_index]
+        )
+      ) {
+        rlang::abort(
+          paste0(
+            "Perfect collinearity detected among regressors in the final ",
+            "estimation set: `",
+            left_name,
+            "` and `",
+            right_name,
+            "`."
+          ),
+          call = call
+        )
+      }
+    }
   }
 
-  dependent_columns <- colnames(design_matrix)[
-    qr_design$pivot[seq.int(qr_design$rank + 1L, ncol(design_matrix))]
-  ]
-  dependent_regressors <- setdiff(dependent_columns, "(Intercept)")
-  if (length(dependent_regressors) == 0) {
-    dependent_regressors <- regressor_names
-  }
-
-  rlang::abort(
-    paste0(
-      "Perfect collinearity detected among regressors in the final ",
-      "estimation set: ",
-      paste0("`", dependent_regressors, "`", collapse = ", "),
-      "."
-    ),
-    call = call
-  )
+  invisible(NULL)
 }
 
-#' @srrstats {RE2.4b} The target column is checked against the finalized
-#' regression design matrix before fitting, so regressions where the response is
-#' exactly determined by the submitted predictors are rejected explicitly.
+#' @srrstats {RE2.4b} The target column is screened against each finalized
+#' single-column regressor before fitting, so response variables that are
+#' perfectly collinear with any submitted predictor are rejected explicitly.
 #' @keywords internal
 #' @noRd
 check_target_regressor_collinearity <- function(
@@ -1081,33 +1097,30 @@ check_target_regressor_collinearity <- function(
   regressor_names,
   call = rlang::caller_env()
 ) {
-  design_matrix <- cbind(
-    "(Intercept)" = 1,
-    as.matrix(estimation_set[, regressor_names, drop = FALSE])
-  )
+  regressor_matrix <- as.matrix(estimation_set[, regressor_names, drop = FALSE])
   target_values <- estimation_set[[target_name]]
-  collinearity_tol <- sqrt(.Machine$double.eps) * max(
-    1,
-    abs(target_values),
-    abs(design_matrix)
-  )
-  target_residuals <- qr.resid(
-    qr(design_matrix, tol = sqrt(.Machine$double.eps)),
-    target_values
-  )
 
-  if (max(abs(target_residuals)) > collinearity_tol) {
-    return(invisible(NULL))
+  for (regressor_index in seq_along(regressor_names)) {
+    if (
+      has_perfect_affine_dependence(
+        x = regressor_matrix[, regressor_index],
+        y = target_values
+      )
+    ) {
+      rlang::abort(
+        paste0(
+          "Perfect collinearity detected between `",
+          target_name,
+          "` and regressor `",
+          regressor_names[[regressor_index]],
+          "` in the finalized estimation set."
+        ),
+        call = call
+      )
+    }
   }
 
-  rlang::abort(
-    paste0(
-      "Perfect collinearity detected between `",
-      target_name,
-      "` and the finalized regressors in the estimation set."
-    ),
-    call = call
-  )
+  invisible(NULL)
 }
 
 #' @keywords internal

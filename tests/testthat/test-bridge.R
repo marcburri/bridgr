@@ -530,7 +530,7 @@ test_that(
         indic_predict = "last",
         h = 1
       ),
-      "Perfect collinearity detected between `target` and the finalized regressors"
+      "Perfect collinearity detected between `target` and regressor"
     )
   }
 )
