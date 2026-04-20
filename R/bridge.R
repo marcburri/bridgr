@@ -134,8 +134,10 @@
 #' `bridgr` assumes that users provide target and indicator series on a scale
 #' that is appropriate for bridge-style forecasting. In practice this often
 #' means working with growth rates, differences, or other transformed series
-#' prepared upstream. The package does not automatically test for or enforce
-#' stationarity before fitting the bridge regression.
+#' prepared upstream. This expectation primarily concerns the lower-order
+#' moments that matter most for bridge-style forecasting, typically the mean
+#' and variance of the submitted series. The package does not automatically
+#' test for or enforce stationarity before fitting the bridge regression.
 #'
 #' @section Deprecated `bridge()` wrapper:
 #' [bridge()] is retained for compatibility and forwards to `mf_model()` with a
@@ -198,6 +200,7 @@
 #' @srrstats {RE4.0} `mf_model()` returns a model object of class `"mf_model"`.
 #' @srrstats {RE1.0} The documentation explicitly explains why `bridgr` uses separate mixed-frequency series inputs instead of a formula interface.
 #' @srrstats {RE1.3a} The documentation explicitly states that preprocessing drops arbitrary extra input attributes when data are standardized to the package's common internal table format.
+#' @srrstats {TS2.2} The stationarity documentation explicitly states that users are expected to prepare bridge inputs so the relevant lower-order moments, typically mean and variance, are on an appropriate scale before fitting.
 #' @srrstats {TS2.3} The documentation explicitly states that stationarity-relevant transformations are expected to happen upstream rather than being imposed automatically by the package.
 #' @export
 mf_model <- function(
