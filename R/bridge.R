@@ -123,6 +123,13 @@
 #' align, extend, and aggregate the time-series inputs before the final target
 #' regression formula can be assembled.
 #'
+#' @section Input standardization:
+#' Submitted series are converted to a common internal table with `id`, `time`,
+#' and numeric `values` columns before model fitting. This means that
+#' additional input attributes beyond the series identifier, timestamps, and
+#' numeric values are not preserved in the fitted object unless they are
+#' re-encoded in those standardized columns.
+#'
 #' @section Deprecated `bridge()` wrapper:
 #' [bridge()] is retained for compatibility and forwards to `mf_model()` with a
 #' deprecation warning.
@@ -183,6 +190,7 @@
 #' @srrstats {TS4.7b} The returned model keeps aligned estimation and forecast values in separate list items, `estimation_set` and `forecast_set`.
 #' @srrstats {RE4.0} `mf_model()` returns a model object of class `"mf_model"`.
 #' @srrstats {RE1.0} The documentation explicitly explains why `bridgr` uses separate mixed-frequency series inputs instead of a formula interface.
+#' @srrstats {RE1.3a} The documentation explicitly states that preprocessing drops arbitrary extra input attributes when data are standardized to the package's common internal table format.
 #' @export
 mf_model <- function(
   target,

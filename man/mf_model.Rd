@@ -165,6 +165,15 @@ align, extend, and aggregate the time-series inputs before the final target
 regression formula can be assembled.
 }
 
+\section{Input standardization}{
+
+Submitted series are converted to a common internal table with \code{id}, \code{time},
+and numeric \code{values} columns before model fitting. This means that
+additional input attributes beyond the series identifier, timestamps, and
+numeric values are not preserved in the fitted object unless they are
+re-encoded in those standardized columns.
+}
+
 \section{Deprecated \code{bridge()} wrapper}{
 
 \code{\link[=bridge]{bridge()}} is retained for compatibility and forwards to \code{mf_model()} with a
