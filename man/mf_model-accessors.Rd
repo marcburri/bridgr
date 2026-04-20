@@ -34,7 +34,7 @@
 \item{...}{Unused.}
 
 \item{parm, level}{Passed to \code{\link[=confint]{confint()}}. Confidence intervals are computed
-from the coefficient covariance matrix returned by \code{\link[=vcov.mf_model]{vcov.mf_model()}}.}
+from the coefficient covariance matrix returned by \code{\link[stats:vcov]{stats::vcov()}}.}
 }
 \value{
 The requested model summary, usually delegated from the stored target

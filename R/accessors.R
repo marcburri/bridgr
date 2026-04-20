@@ -33,7 +33,7 @@ coef.mf_model <- function(object, ...) {
 
 #' @rdname mf_model-accessors
 #' @param parm,level Passed to [confint()]. Confidence intervals are computed
-#'   from the coefficient covariance matrix returned by [vcov.mf_model()].
+#'   from the coefficient covariance matrix returned by [stats::vcov()].
 #' @srrstats {RE4.3} `confint.mf_model()` returns coefficient confidence intervals derived from the model's reported covariance matrix.
 #' @method confint mf_model
 #' @export
