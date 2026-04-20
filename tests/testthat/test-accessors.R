@@ -154,3 +154,29 @@ test_that("print.mf_model exposes the package summary layout", {
   expect_true(any(grepl("Target equation coefficients:", output, fixed = TRUE)))
   expect_true(any(grepl("Indicator summary:", output, fixed = TRUE)))
 })
+
+test_that("returned model objects behave consistently across accessor methods", {
+  indic <- make_monthly_indicator(n = 36)
+  target <- make_quarter_target(indic, n_quarters = 12)
+
+  model <- mf_model(
+    target = target,
+    indic = indic,
+    indic_predict = "last",
+    target_lags = 1,
+    se = TRUE,
+    bootstrap = list(N = 8, block_length = 3),
+    h = 1
+  )
+
+  coefficients <- stats::coef(model)
+  intervals <- stats::confint(model)
+
+  expect_identical(rownames(intervals), names(coefficients))
+  expect_identical(stats::formula(model), model$formula)
+  expect_equal(stats::nobs(model), nrow(model$estimation_set))
+  expect_equal(stats::vcov(model), model$uncertainty$coefficient_covariance)
+  expect_equal(stats::fitted(model), stats::fitted(model$model))
+  expect_equal(stats::residuals(model), stats::residuals(model$model))
+  expect_invisible(print(model))
+})
