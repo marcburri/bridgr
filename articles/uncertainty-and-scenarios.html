@@ -182,11 +182,33 @@ target equation.</p>
 residual- resampling forecast draws.</p>
 </div>
 <div class="section level2">
+<h2 id="trimming-forecasts-by-error-margin">Trimming Forecasts by Error Margin<a class="anchor" aria-label="anchor" href="#trimming-forecasts-by-error-margin"></a>
+</h2>
+<p>One simple way to trim forecasts is to keep only those horizons whose
+prediction interval width stays below an application-specific
+tolerance.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">forecast_table</span> <span class="op">&lt;-</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
+<span>  time <span class="op">=</span> <span class="va">fc</span><span class="op">$</span><span class="va">time</span>,</span>
+<span>  mean <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">fc</span><span class="op">$</span><span class="va">mean</span><span class="op">)</span>,</span>
+<span>  lower_95 <span class="op">=</span> <span class="va">fc</span><span class="op">$</span><span class="va">lower</span><span class="op">[</span>, <span class="st">"95%"</span><span class="op">]</span>,</span>
+<span>  upper_95 <span class="op">=</span> <span class="va">fc</span><span class="op">$</span><span class="va">upper</span><span class="op">[</span>, <span class="st">"95%"</span><span class="op">]</span></span>
+<span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>width_95 <span class="op">=</span> <span class="va">.data</span><span class="op">$</span><span class="va">upper_95</span> <span class="op">-</span> <span class="va">.data</span><span class="op">$</span><span class="va">lower_95</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">forecast_table</span>, <span class="va">.data</span><span class="op">$</span><span class="va">width_95</span> <span class="op">&lt;=</span> <span class="fl">2.25</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 0 × 5</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 5 variables: time &lt;date&gt;, mean &lt;dbl&gt;, lower_95 &lt;dbl&gt;, upper_95 &lt;dbl&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   width_95 &lt;dbl&gt;</span></span></span></code></pre></div>
+<p>The threshold can be tightened or relaxed depending on how much
+forecast uncertainty is acceptable in the use case.</p>
+</div>
+<div class="section level2">
 <h2 id="summary-output">Summary Output<a class="anchor" aria-label="anchor" href="#summary-output"></a>
 </h2>
 <p>The same uncertainty configuration also feeds into
 <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code>.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">boot_model</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Mixed-frequency model summary</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
@@ -202,6 +224,12 @@ residual- resampling forecast draws.</p>
 <span><span class="co">#&gt; baro               0.151  0.033</span></span>
 <span><span class="co">#&gt; baro_lag1         -0.084  0.031</span></span>
 <span><span class="co">#&gt; gdp_growth_lag1    0.012  0.073</span></span>
+<span><span class="co">#&gt; -----------------------------------</span></span>
+<span><span class="co">#&gt; Model fit:</span></span>
+<span><span class="co">#&gt;  Statistic               Value</span></span>
+<span><span class="co">#&gt;  R-squared               0.682</span></span>
+<span><span class="co">#&gt;  Adjusted R-squared      0.668</span></span>
+<span><span class="co">#&gt;  Residual standard error 0.773</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Indicator summary:</span></span>
 <span><span class="co">#&gt;      Frequency Predict    Aggregation</span></span>
@@ -223,7 +251,7 @@ available.</p>
 path, pass a custom <code>xreg</code> object to <code><a href="https://generics.r-lib.org/reference/forecast.html" class="external-link">forecast()</a></code>.
 The custom regressor names must match the ones used in the fitted target
 equation.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">scenario_xreg</span> <span class="op">&lt;-</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
 <span>  id <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">boot_model</span><span class="op">$</span><span class="va">xreg_names</span>, each <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">boot_model</span><span class="op">$</span><span class="va">forecast_base_set</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span></span>
@@ -261,7 +289,7 @@ slower than the default residual-resampling intervals because each
 bootstrap draw re-estimates the full bridge pipeline. In that mode, both
 the reported coefficient standard errors and the forecast intervals are
 based on the bootstrap draws.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">full_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/mf_model.html">mf_model</a></span><span class="op">(</span></span>
 <span>  target <span class="op">=</span> <span class="va">gdp_growth</span>,</span>
 <span>  indic <span class="op">=</span> <span class="va">baro</span>,</span>
@@ -298,7 +326,7 @@ based on the bootstrap draws.</p>
 <code>se = FALSE</code>. In that case, <code>bootstrap</code> is ignored
 and <code><a href="https://generics.r-lib.org/reference/forecast.html" class="external-link">forecast()</a></code> still returns the same object shape, with
 <code>NA</code> uncertainty fields.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">point_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/mf_model.html">mf_model</a></span><span class="op">(</span></span>
 <span>  target <span class="op">=</span> <span class="va">gdp_growth</span>,</span>
 <span>  indic <span class="op">=</span> <span class="va">baro</span>,</span>

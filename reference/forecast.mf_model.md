@@ -54,6 +54,17 @@ metadata.
 
 `x`, invisibly.
 
+## Details
+
+In recursive bridge forecasts, uncertainty typically increases with
+horizon because later forecast steps depend on forecasted rather than
+observed target lags and, when needed, completed indicator paths. Under
+the package's residual-resampling and full-system bootstrap workflows,
+those simulated disturbances accumulate across steps, so standard errors
+and interval widths can widen as the forecast horizon extends. The
+`uncertainty-and-scenarios` vignette includes one worked example that
+trims forecast rows by an acceptable prediction-interval width.
+
 ## Examples
 
 ``` r

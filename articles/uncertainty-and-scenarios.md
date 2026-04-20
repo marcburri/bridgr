@@ -93,6 +93,29 @@ fc$bootstrap
 The intervals are empirical prediction intervals based on the stored
 residual- resampling forecast draws.
 
+## Trimming Forecasts by Error Margin
+
+One simple way to trim forecasts is to keep only those horizons whose
+prediction interval width stays below an application-specific tolerance.
+
+``` r
+forecast_table <- dplyr::tibble(
+  time = fc$time,
+  mean = as.numeric(fc$mean),
+  lower_95 = fc$lower[, "95%"],
+  upper_95 = fc$upper[, "95%"]
+) |>
+  dplyr::mutate(width_95 = .data$upper_95 - .data$lower_95)
+
+dplyr::filter(forecast_table, .data$width_95 <= 2.25)
+#> # A tibble: 0 × 5
+#> # ℹ 5 variables: time <date>, mean <dbl>, lower_95 <dbl>, upper_95 <dbl>,
+#> #   width_95 <dbl>
+```
+
+The threshold can be tightened or relaxed depending on how much forecast
+uncertainty is acceptable in the use case.
+
 ## Summary Output
 
 The same uncertainty configuration also feeds into
@@ -114,6 +137,12 @@ summary(boot_model)
 #> baro               0.151  0.033
 #> baro_lag1         -0.084  0.031
 #> gdp_growth_lag1    0.012  0.073
+#> -----------------------------------
+#> Model fit:
+#>  Statistic               Value
+#>  R-squared               0.682
+#>  Adjusted R-squared      0.668
+#>  Residual standard error 0.773
 #> -----------------------------------
 #> Indicator summary:
 #>      Frequency Predict    Aggregation

@@ -3,6 +3,17 @@
 To learn more about bridgr, start with the vignettes:
 `browseVignettes(package = "bridgr")`
 
+## Details
+
+`bridgr` is under active maintenance. The public interface centered on
+[`mf_model()`](https://marcburri.github.io/bridgr/reference/mf_model.md),
+[`forecast()`](https://generics.r-lib.org/reference/forecast.html),
+[`summary()`](https://rdrr.io/r/base/summary.html), and
+[`plot()`](https://rdrr.io/r/graphics/plot.default.html) is considered
+stable for bridge-style nowcasting workflows, while future development
+is expected to expand diagnostics and mixed-frequency model options
+without changing the core target-and-indicator workflow.
+
 ## See also
 
 Useful links:

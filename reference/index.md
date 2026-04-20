@@ -10,6 +10,15 @@
   [`wea`](https://marcburri.github.io/bridgr/reference/gdp.md)
   [`fcurve`](https://marcburri.github.io/bridgr/reference/gdp.md) :
   Swiss Economic Indicators
+- [`coef(`*`<mf_model>`*`)`](https://marcburri.github.io/bridgr/reference/mf_model-accessors.md)
+  [`confint(`*`<mf_model>`*`)`](https://marcburri.github.io/bridgr/reference/mf_model-accessors.md)
+  [`formula(`*`<mf_model>`*`)`](https://marcburri.github.io/bridgr/reference/mf_model-accessors.md)
+  [`nobs(`*`<mf_model>`*`)`](https://marcburri.github.io/bridgr/reference/mf_model-accessors.md)
+  [`vcov(`*`<mf_model>`*`)`](https://marcburri.github.io/bridgr/reference/mf_model-accessors.md)
+  [`fitted(`*`<mf_model>`*`)`](https://marcburri.github.io/bridgr/reference/mf_model-accessors.md)
+  [`residuals(`*`<mf_model>`*`)`](https://marcburri.github.io/bridgr/reference/mf_model-accessors.md)
+  [`print(`*`<mf_model>`*`)`](https://marcburri.github.io/bridgr/reference/mf_model-accessors.md)
+  : Accessor Methods for Mixed-Frequency Models
 - [`mf_model()`](https://marcburri.github.io/bridgr/reference/mf_model.md)
   [`bridge()`](https://marcburri.github.io/bridgr/reference/mf_model.md)
   : Estimate a Mixed-Frequency Model

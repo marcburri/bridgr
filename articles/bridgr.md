@@ -132,6 +132,12 @@ summary(bridge_model)
 #> baro_lag1         -0.084
 #> gdp_growth_lag1    0.012
 #> -----------------------------------
+#> Model fit:
+#>  Statistic               Value
+#>  R-squared               0.682
+#>  Adjusted R-squared      0.668
+#>  Residual standard error 0.773
+#> -----------------------------------
 #> Indicator summary:
 #>      Frequency Predict    Aggregation
 #> baro month     auto.arima mean       
@@ -227,6 +233,12 @@ summary(uncertainty_model)
 #> (Intercept)      -10.988  3.304
 #> baro               0.116  0.033
 #> gdp_growth_lag1   -0.316  0.120
+#> -----------------------------------
+#> Model fit:
+#>  Statistic               Value
+#>  R-squared               0.572
+#>  Adjusted R-squared      0.560
+#>  Residual standard error 0.886
 #> -----------------------------------
 #> Indicator summary:
 #>      Frequency Predict    Aggregation

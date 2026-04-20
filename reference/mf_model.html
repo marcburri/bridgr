@@ -69,6 +69,7 @@ aggregating them within each target period.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">mf_model</span><span class="op">(</span></span>
 <span>  <span class="va">target</span>,</span>
 <span>  <span class="va">indic</span>,</span>
+<span>  missing <span class="op">=</span> <span class="st">"error"</span>,</span>
 <span>  indic_predict <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  indic_aggregators <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  indic_lags <span class="op">=</span> <span class="fl">0</span>,</span>
@@ -78,6 +79,7 @@ aggregating them within each target period.</p>
 <span>  se <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  bootstrap <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  full_system_bootstrap <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  stationarity <span class="op">=</span> <span class="st">"none"</span>,</span>
 <span>  solver_options <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -98,6 +100,17 @@ or a regular time-series object supported by tsbox.</p></dd>
 <dd><p>One or more indicator series in a <code><a href="https://docs.ropensci.org/tsbox/reference/ts_boxable.html" class="external-link">tsbox::ts_boxable()</a></code>
 format, such as data frames / tibbles with <code>time</code> and <code>value</code>/<code>values</code>
 columns, or regular time-series objects supported by tsbox.</p></dd>
+
+
+<dt id="arg-missing">missing<a class="anchor" aria-label="anchor" href="#arg-missing"></a></dt>
+<dd><p>Character string controlling how explicit missing values in
+submitted <code>target</code> or <code>indic</code> series are handled. <code>missing = "error"</code> keeps
+the strict default and aborts on explicit missing values.
+<code>missing = "drop"</code> removes explicit missing values with a warning before
+downstream analysis, which is most useful when they correspond to supported
+ragged-edge gaps at the ends of series. <code>missing = "impute"</code> replaces
+explicit missing values by series-wise linear interpolation with endpoint
+carry before model fitting. Missing timestamps are always an error.</p></dd>
 
 
 <dt id="arg-indic-predict">indic_predict<a class="anchor" aria-label="anchor" href="#arg-indic-predict"></a></dt>
@@ -176,21 +189,36 @@ draw, <code>full_system_bootstrap = TRUE</code> can be substantially slower than
 default residual-resampling intervals.</p></dd>
 
 
+<dt id="arg-stationarity">stationarity<a class="anchor" aria-label="anchor" href="#arg-stationarity"></a></dt>
+<dd><p>Character string controlling optional heuristic
+lower-order stationarity diagnostics. <code>stationarity = "none"</code> skips
+diagnostics. <code>stationarity = "warn"</code> checks submitted target and indicator
+series for a KPSS-style differencing signal and large variance shifts, and
+warns when those heuristics suggest that upstream transformations such as
+differences, growth rates, log changes, or demeaning may be appropriate.</p></dd>
+
+
 <dt id="arg-solver-options">solver_options<a class="anchor" aria-label="anchor" href="#arg-solver-options"></a></dt>
 <dd><p>A list of optional controls for joint parametric-weight
 optimization. Supported entries are:
 <code>method</code> for the optimizer (<code>"L-BFGS-B"</code>, <code>"BFGS"</code>, <code>"Nelder-Mead"</code>, or
 <code>"nlminb"</code>), <code>maxiter</code> for the iteration budget per optimization run,
 <code>n_starts</code> for the number of multi-start attempts, <code>seed</code> for reproducible
-random restarts, <code>trace</code> for optimizer verbosity, and <code>start_values</code> for
-user-supplied initial parameter values. <code>start_values</code> can be either a
-numeric vector or a named list. For a numeric vector, values are concatenated
-in indicator order across the parametric aggregators. Within each indicator,
-the parameter order is <code>(linear, quadratic)</code> for <code>"expalmon"</code> and
-<code>(left_shape, right_shape)</code> for <code>"beta"</code>. Named-list <code>start_values</code> must
-provide exactly the required number of values for each parametric
-indicator. These controls are ignored unless at least one indicator uses a
-parametric aggregator.</p></dd>
+random restarts, <code>trace</code> for optimizer verbosity, <code>warn</code> to control whether
+non-convergence warnings are emitted, <code>reltol</code> for the relative convergence
+tolerance passed through to the selected optimizer backend, and
+<code>start_values</code> for user-supplied initial parameter values. Documented
+defaults are <code>method = "L-BFGS-B"</code>, <code>maxiter = 1000</code>, <code>n_starts = 5</code>,
+<code>trace = 0</code>, <code>warn = TRUE</code>, and <code>reltol = 1e-8</code>. <code>start_values</code> can be
+either a numeric vector or a named list. For a numeric vector, values are
+concatenated in indicator order across the parametric aggregators. Within
+each indicator, the parameter order is <code>(linear, quadratic)</code> for
+<code>"expalmon"</code> and <code>(left_shape, right_shape)</code> for <code>"beta"</code>. Named-list
+<code>start_values</code> must provide exactly the required number of values for each
+parametric indicator. Users can override <code>reltol</code> or suppress convergence
+warnings through <code>solver_options = list(reltol = ..., warn = FALSE)</code>. These
+controls are ignored unless at least one indicator uses a parametric
+aggregator.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
@@ -236,6 +264,68 @@ recent observations and emits a summarized warning. If a target period
 contains fewer observations than required, the call fails. Month-, quarter-,
 and year-based input dates are standardized to period starts when needed
 for frequency recognition.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="model-specification">Model specification<a class="anchor" aria-label="anchor" href="#model-specification"></a></h2>
+
+
+<p><code>bridgr</code> does not use a formula interface. Mixed-frequency bridge models are
+specified through separate <code>target</code> and <code>indic</code> series plus the forecasting,
+aggregation, and lag controls because the package must standardize,
+align, extend, and aggregate the time-series inputs before the final target
+regression formula can be assembled.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="terminology">Terminology<a class="anchor" aria-label="anchor" href="#terminology"></a></h2>
+
+
+<p>Throughout <code>bridgr</code>, a <em>target</em> is the lower-frequency response series to be
+forecasted. An <em>indicator</em> is any higher-frequency predictor series aligned
+to the target frequency before the final regression is fit. <em>Indicator
+forecasting</em> refers to how end-of-sample indicator values are completed when
+the target horizon extends beyond the latest observed indicator block.
+<em>Aggregation</em> refers to how high-frequency indicator values within a target
+period are combined into bridge regressors. <em>Direct</em> prediction skips
+indicator forecasting and aligns the latest complete high-frequency blocks
+backward from the forecast horizon, while <em>unrestricted</em> aggregation keeps
+one separate coefficient per within-period high-frequency observation.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="input-standardization">Input standardization<a class="anchor" aria-label="anchor" href="#input-standardization"></a></h2>
+
+
+<p>Submitted series are converted to a common internal table with <code>id</code>, <code>time</code>,
+and numeric <code>values</code> columns before model fitting. This means that
+additional input attributes beyond the series identifier, timestamps, and
+numeric values are not preserved in the fitted object unless they are
+re-encoded in those standardized columns.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="input-assumptions">Input assumptions<a class="anchor" aria-label="anchor" href="#input-assumptions"></a></h2>
+
+
+<p><code>bridgr</code> assumes that submitted target and indicator series are ordered by
+time within each series, free of duplicate timestamps and explicit missing
+values, and regular enough for the package to infer a supported target and
+indicator frequency. It also assumes that indicator series are at least as
+high-frequency as the target. Violations of these assumptions are rejected
+during preprocessing and validation rather than being silently repaired.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="stationarity">Stationarity<a class="anchor" aria-label="anchor" href="#stationarity"></a></h2>
+
+
+<p><code>bridgr</code> assumes that users provide target and indicator series on a scale
+that is appropriate for bridge-style forecasting. In practice this often
+means working with growth rates, differences, or other transformed series
+prepared upstream. This expectation primarily concerns the lower-order
+moments that matter most for bridge-style forecasting, typically the mean
+and variance of the submitted series. By default the package does not
+automatically enforce stationarity, but <code>stationarity = "warn"</code> enables
+heuristic pre-fit diagnostics for strong linear trends and variance shifts
+and points users toward differences, growth rates, log changes, demeaning,
+or other variance-stabilizing transformations when those heuristics are
+triggered.</p>
     </div>
     <div class="section level2">
     <h2 id="deprecated-bridge-wrapper">Deprecated <code>bridge()</code> wrapper<a class="anchor" aria-label="anchor" href="#deprecated-bridge-wrapper"></a></h2>
@@ -286,295 +376,36 @@ Statistics</em>, 1-25. <a href="https://doi.org/10.1111/obes.70073" class="exter
 <span class="r-in"><span>  bootstrap <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  solver_options <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>seed <span class="op">=</span> <span class="fl">123</span>, n_starts <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $target</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 12 × 3</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    id         time       values</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;date&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 1</span> gdp_growth 2020-01-01 -<span style="color: #BB0000;">1.50</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 2</span> gdp_growth 2020-04-01 -<span style="color: #BB0000;">6.50</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 3</span> gdp_growth 2020-07-01  6.88 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 4</span> gdp_growth 2020-10-01  0.369</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 5</span> gdp_growth 2021-01-01  0.442</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 6</span> gdp_growth 2021-04-01  2.47 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 7</span> gdp_growth 2021-07-01  2.34 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 8</span> gdp_growth 2021-10-01  0.411</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 9</span> gdp_growth 2022-01-01  0.105</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">10</span> gdp_growth 2022-04-01  1.03 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">11</span> gdp_growth 2022-07-01  0.255</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">12</span> gdp_growth 2022-10-01  0.102</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $indic</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 36 × 3</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    id         time       values</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;date&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 1</span> baro_small 2020-01-01  101. </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 2</span> baro_small 2020-02-01   99.2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 3</span> baro_small 2020-03-01   80.8</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 4</span> baro_small 2020-04-01   53.8</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 5</span> baro_small 2020-05-01   54.5</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 6</span> baro_small 2020-06-01   89.6</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 7</span> baro_small 2020-07-01  111. </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 8</span> baro_small 2020-08-01  117. </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 9</span> baro_small 2020-09-01  110. </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">10</span> baro_small 2020-10-01  112. </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 26 more rows</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $target_name</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "gdp_growth"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $indic_name</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "baro_small"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $target_frequency</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 3</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   id         unit     step</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> gdp_growth quarter     1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $indicator_frequencies</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 3</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   id         unit   step</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> baro_small month     1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $indic_predict</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "auto.arima"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $indic_aggregators_requested</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $indic_aggregators_requested[[1]]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "mean"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $indic_aggregators</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $indic_aggregators[[1]]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "mean"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $indic_lags</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $target_lags</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $target_lag_names</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "gdp_growth_lag1"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $h</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $frequency_conversions</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> spm mph hpd dpw wpm mpq qpy </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  60  60  24   7   4   3   4 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $se</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $full_system_bootstrap</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $bootstrap</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $bootstrap$enabled</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $bootstrap$N</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $bootstrap$valid_N</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $bootstrap$block_length</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> NULL</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $bootstrap$coefficient_draws</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> NULL</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $bootstrap$coefficient_covariance</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> NULL</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $bootstrap$coefficient_se</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> NULL</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $bootstrap$prediction_draws</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> NULL</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $bootstrap$models</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> NULL</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $bootstrap$target_histories</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> NULL</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $bootstrap$requested</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $uncertainty</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $uncertainty$enabled</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $uncertainty$coefficient_method</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "hac"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $uncertainty$coefficient_covariance</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                  (Intercept)    baro_small baro_small_lag1 gdp_growth_lag1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> (Intercept)      9.120675787  0.0055728578   -0.1008626690     0.355101063</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> baro_small       0.005572858  0.0006209409   -0.0006854336     0.001638296</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> baro_small_lag1 -0.100862669 -0.0006854336    0.0017473648    -0.005400566</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> gdp_growth_lag1  0.355101063  0.0016382956   -0.0054005658     0.018395183</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $uncertainty$coefficient_se</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     (Intercept)      baro_small baro_small_lag1 gdp_growth_lag1 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      3.02004566      0.02491869      0.04180149      0.13562884 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $uncertainty$prediction_method</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "residual_resampling"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $uncertainty$prediction_draws</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>          [,1]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1,] 1.047887</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [2,] 3.205471</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $uncertainty$simulation_paths</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $solver_options</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $solver_options$method</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "L-BFGS-B"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $solver_options$maxiter</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $solver_options$n_starts</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $solver_options$seed</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 123</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $solver_options$trace</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $solver_options$start_values</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> NULL</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $formula</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> gdp_growth ~ baro_small + baro_small_lag1 + gdp_growth_lag1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;environment: 0x564c5435ab70&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $estimation_set</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 10 × 5</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    time       gdp_growth baro_small baro_small_lag1 gdp_growth_lag1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;date&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 1</span> 2020-07-01      6.88       113.             66.0          -<span style="color: #BB0000;">6.50</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 2</span> 2020-10-01      0.369      107.            113.            6.88 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 3</span> 2021-01-01      0.442      109.            107.            0.369</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 4</span> 2021-04-01      2.47       125.            109.            0.442</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 5</span> 2021-07-01      2.34       112.            125.            2.47 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 6</span> 2021-10-01      0.411      104.            112.            2.34 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 7</span> 2022-01-01      0.105       97.4           104.            0.411</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 8</span> 2022-04-01      1.03        94.3            97.4           0.105</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 9</span> 2022-07-01      0.255       90.0            94.3           1.03 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">10</span> 2022-10-01      0.102       90.7            90.0           0.255</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $forecast_base_set</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 3</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   time       baro_small baro_small_lag1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;date&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> 2023-01-01       98.3            90.7</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $forecast_set</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 4</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   time       baro_small baro_small_lag1 gdp_growth_lag1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;date&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;list&gt;</span>         </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> 2023-01-01       98.3            90.7 <span style="color: #949494;">&lt;dbl [1]&gt;</span>      </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $model</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Call:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> stats::lm(formula = formula, data = estimation_set)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Coefficients:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     (Intercept)       baro_small  baro_small_lag1  gdp_growth_lag1  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>        -4.55613          0.11797         -0.06052         -0.18792  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $indic_models</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $indic_models$baro_small</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Series: xts_series </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ARIMA(1,0,2) with non-zero mean </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Coefficients:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>          ar1     ma1     ma2     mean</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       0.4157  0.8900  0.5322  99.9752</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> s.e.  0.1990  0.1954  0.1624   5.0588</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> sigma^2 = 65.32:  log likelihood = -125.2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> AIC=260.41   AICc=262.41   BIC=268.32</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $parametric_weights</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> list()</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $parametric_parameters</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> list()</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $parametric_specs</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> list()</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $fixed_aggregated</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 13 × 3</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    id         time       values</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;date&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 1</span> baro_small 2020-01-01   93.8</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 2</span> baro_small 2020-04-01   66.0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 3</span> baro_small 2020-07-01  113. </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 4</span> baro_small 2020-10-01  107. </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 5</span> baro_small 2021-01-01  109. </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 6</span> baro_small 2021-04-01  125. </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 7</span> baro_small 2021-07-01  112. </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 8</span> baro_small 2021-10-01  104. </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 9</span> baro_small 2022-01-01   97.4</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">10</span> baro_small 2022-04-01   94.3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">11</span> baro_small 2022-07-01   90.0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">12</span> baro_small 2022-10-01   90.7</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">13</span> baro_small 2023-01-01   98.3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $parametric_optimization</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> NULL</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $expalmon_weights</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> list()</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $expalmon_parameters</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> list()</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $expalmon_optimization</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> NULL</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $truncation_info</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $truncation_info$baro_small</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $truncation_info$baro_small$indicator_id</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "baro_small"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $truncation_info$baro_small$n_periods</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $regressor_names</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "baro_small"      "baro_small_lag1" "gdp_growth_lag1"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $xreg_names</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "baro_small"      "baro_small_lag1"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $target_anchor</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "2020-01-01"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $future_target_times</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "2023-01-01"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"class")</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "mf_model"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Mixed-frequency model summary</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> -----------------------------------</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Target series: gdp_growth</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Target frequency: quarter</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Forecast horizon: 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Estimation rows: 10</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Regressors: baro_small, baro_small_lag1, gdp_growth_lag1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> -----------------------------------</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Target equation coefficients:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                 Estimate HAC SE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> (Intercept)       -4.556  3.020</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> baro_small         0.118  0.025</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> baro_small_lag1   -0.061  0.042</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> gdp_growth_lag1   -0.188  0.136</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> -----------------------------------</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Model fit:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Statistic               Value</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  R-squared               0.820</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Adjusted R-squared      0.730</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Residual standard error 1.093</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> -----------------------------------</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Indicator summary:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>            Frequency Predict    Aggregation</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> baro_small month     auto.arima mean       </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> -----------------------------------</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Uncertainty:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Coefficient SEs: hac</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Prediction intervals: residual resampling</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Simulation paths: 2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> -----------------------------------</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

@@ -11,6 +11,7 @@ observations and aggregating them within each target period.
 mf_model(
   target,
   indic,
+  missing = "error",
   indic_predict = NULL,
   indic_aggregators = NULL,
   indic_lags = 0,
@@ -20,6 +21,7 @@ mf_model(
   se = FALSE,
   bootstrap = NULL,
   full_system_bootstrap = FALSE,
+  stationarity = "none",
   solver_options = NULL
 )
 
@@ -42,6 +44,18 @@ bridge(...)
   [`tsbox::ts_boxable()`](https://docs.ropensci.org/tsbox/reference/ts_boxable.html)
   format, such as data frames / tibbles with `time` and `value`/`values`
   columns, or regular time-series objects supported by tsbox.
+
+- missing:
+
+  Character string controlling how explicit missing values in submitted
+  `target` or `indic` series are handled. `missing = "error"` keeps the
+  strict default and aborts on explicit missing values.
+  `missing = "drop"` removes explicit missing values with a warning
+  before downstream analysis, which is most useful when they correspond
+  to supported ragged-edge gaps at the ends of series.
+  `missing = "impute"` replaces explicit missing values by series-wise
+  linear interpolation with endpoint carry before model fitting. Missing
+  timestamps are always an error.
 
 - indic_predict:
 
@@ -120,6 +134,16 @@ bridge(...)
   draw, `full_system_bootstrap = TRUE` can be substantially slower than
   the default residual-resampling intervals.
 
+- stationarity:
+
+  Character string controlling optional heuristic lower-order
+  stationarity diagnostics. `stationarity = "none"` skips diagnostics.
+  `stationarity = "warn"` checks submitted target and indicator series
+  for a KPSS-style differencing signal and large variance shifts, and
+  warns when those heuristics suggest that upstream transformations such
+  as differences, growth rates, log changes, or demeaning may be
+  appropriate.
+
 - solver_options:
 
   A list of optional controls for joint parametric-weight optimization.
@@ -127,15 +151,22 @@ bridge(...)
   `"BFGS"`, `"Nelder-Mead"`, or `"nlminb"`), `maxiter` for the iteration
   budget per optimization run, `n_starts` for the number of multi-start
   attempts, `seed` for reproducible random restarts, `trace` for
-  optimizer verbosity, and `start_values` for user-supplied initial
-  parameter values. `start_values` can be either a numeric vector or a
-  named list. For a numeric vector, values are concatenated in indicator
-  order across the parametric aggregators. Within each indicator, the
-  parameter order is `(linear, quadratic)` for `"expalmon"` and
-  `(left_shape, right_shape)` for `"beta"`. Named-list `start_values`
-  must provide exactly the required number of values for each parametric
-  indicator. These controls are ignored unless at least one indicator
-  uses a parametric aggregator.
+  optimizer verbosity, `warn` to control whether non-convergence
+  warnings are emitted, `reltol` for the relative convergence tolerance
+  passed through to the selected optimizer backend, and `start_values`
+  for user-supplied initial parameter values. Documented defaults are
+  `method = "L-BFGS-B"`, `maxiter = 1000`, `n_starts = 5`, `trace = 0`,
+  `warn = TRUE`, and `reltol = 1e-8`. `start_values` can be either a
+  numeric vector or a named list. For a numeric vector, values are
+  concatenated in indicator order across the parametric aggregators.
+  Within each indicator, the parameter order is `(linear, quadratic)`
+  for `"expalmon"` and `(left_shape, right_shape)` for `"beta"`.
+  Named-list `start_values` must provide exactly the required number of
+  values for each parametric indicator. Users can override `reltol` or
+  suppress convergence warnings through
+  `solver_options = list(reltol = ..., warn = FALSE)`. These controls
+  are ignored unless at least one indicator uses a parametric
+  aggregator.
 
 - ...:
 
@@ -196,6 +227,60 @@ period contains fewer observations than required, the call fails.
 Month-, quarter-, and year-based input dates are standardized to period
 starts when needed for frequency recognition.
 
+## Model specification
+
+`bridgr` does not use a formula interface. Mixed-frequency bridge models
+are specified through separate `target` and `indic` series plus the
+forecasting, aggregation, and lag controls because the package must
+standardize, align, extend, and aggregate the time-series inputs before
+the final target regression formula can be assembled.
+
+## Terminology
+
+Throughout `bridgr`, a *target* is the lower-frequency response series
+to be forecasted. An *indicator* is any higher-frequency predictor
+series aligned to the target frequency before the final regression is
+fit. *Indicator forecasting* refers to how end-of-sample indicator
+values are completed when the target horizon extends beyond the latest
+observed indicator block. *Aggregation* refers to how high-frequency
+indicator values within a target period are combined into bridge
+regressors. *Direct* prediction skips indicator forecasting and aligns
+the latest complete high-frequency blocks backward from the forecast
+horizon, while *unrestricted* aggregation keeps one separate coefficient
+per within-period high-frequency observation.
+
+## Input standardization
+
+Submitted series are converted to a common internal table with `id`,
+`time`, and numeric `values` columns before model fitting. This means
+that additional input attributes beyond the series identifier,
+timestamps, and numeric values are not preserved in the fitted object
+unless they are re-encoded in those standardized columns.
+
+## Input assumptions
+
+`bridgr` assumes that submitted target and indicator series are ordered
+by time within each series, free of duplicate timestamps and explicit
+missing values, and regular enough for the package to infer a supported
+target and indicator frequency. It also assumes that indicator series
+are at least as high-frequency as the target. Violations of these
+assumptions are rejected during preprocessing and validation rather than
+being silently repaired.
+
+## Stationarity
+
+`bridgr` assumes that users provide target and indicator series on a
+scale that is appropriate for bridge-style forecasting. In practice this
+often means working with growth rates, differences, or other transformed
+series prepared upstream. This expectation primarily concerns the
+lower-order moments that matter most for bridge-style forecasting,
+typically the mean and variance of the submitted series. By default the
+package does not automatically enforce stationarity, but
+`stationarity = "warn"` enables heuristic pre-fit diagnostics for strong
+linear trends and variance shifts and points users toward differences,
+growth rates, log changes, demeaning, or other variance-stabilizing
+transformations when those heuristics are triggered.
+
 ## Deprecated `bridge()` wrapper
 
 `bridge()` is retained for compatibility and forwards to `mf_model()`
@@ -250,293 +335,34 @@ mf_model(
   bootstrap = list(N = 2),
   solver_options = list(seed = 123, n_starts = 1)
 )
-#> $target
-#> # A tibble: 12 × 3
-#>    id         time       values
-#>    <chr>      <date>      <dbl>
-#>  1 gdp_growth 2020-01-01 -1.50 
-#>  2 gdp_growth 2020-04-01 -6.50 
-#>  3 gdp_growth 2020-07-01  6.88 
-#>  4 gdp_growth 2020-10-01  0.369
-#>  5 gdp_growth 2021-01-01  0.442
-#>  6 gdp_growth 2021-04-01  2.47 
-#>  7 gdp_growth 2021-07-01  2.34 
-#>  8 gdp_growth 2021-10-01  0.411
-#>  9 gdp_growth 2022-01-01  0.105
-#> 10 gdp_growth 2022-04-01  1.03 
-#> 11 gdp_growth 2022-07-01  0.255
-#> 12 gdp_growth 2022-10-01  0.102
-#> 
-#> $indic
-#> # A tibble: 36 × 3
-#>    id         time       values
-#>    <chr>      <date>      <dbl>
-#>  1 baro_small 2020-01-01  101. 
-#>  2 baro_small 2020-02-01   99.2
-#>  3 baro_small 2020-03-01   80.8
-#>  4 baro_small 2020-04-01   53.8
-#>  5 baro_small 2020-05-01   54.5
-#>  6 baro_small 2020-06-01   89.6
-#>  7 baro_small 2020-07-01  111. 
-#>  8 baro_small 2020-08-01  117. 
-#>  9 baro_small 2020-09-01  110. 
-#> 10 baro_small 2020-10-01  112. 
-#> # ℹ 26 more rows
-#> 
-#> $target_name
-#> [1] "gdp_growth"
-#> 
-#> $indic_name
-#> [1] "baro_small"
-#> 
-#> $target_frequency
-#> # A tibble: 1 × 3
-#>   id         unit     step
-#>   <chr>      <chr>   <dbl>
-#> 1 gdp_growth quarter     1
-#> 
-#> $indicator_frequencies
-#> # A tibble: 1 × 3
-#>   id         unit   step
-#>   <chr>      <chr> <dbl>
-#> 1 baro_small month     1
-#> 
-#> $indic_predict
-#> [1] "auto.arima"
-#> 
-#> $indic_aggregators_requested
-#> $indic_aggregators_requested[[1]]
-#> [1] "mean"
-#> 
-#> 
-#> $indic_aggregators
-#> $indic_aggregators[[1]]
-#> [1] "mean"
-#> 
-#> 
-#> $indic_lags
-#> [1] 1
-#> 
-#> $target_lags
-#> [1] 1
-#> 
-#> $target_lag_names
-#> [1] "gdp_growth_lag1"
-#> 
-#> $h
-#> [1] 1
-#> 
-#> $frequency_conversions
-#> spm mph hpd dpw wpm mpq qpy 
-#>  60  60  24   7   4   3   4 
-#> 
-#> $se
-#> [1] TRUE
-#> 
-#> $full_system_bootstrap
-#> [1] FALSE
-#> 
-#> $bootstrap
-#> $bootstrap$enabled
-#> [1] FALSE
-#> 
-#> $bootstrap$N
-#> [1] 2
-#> 
-#> $bootstrap$valid_N
-#> [1] 0
-#> 
-#> $bootstrap$block_length
-#> NULL
-#> 
-#> $bootstrap$coefficient_draws
-#> NULL
-#> 
-#> $bootstrap$coefficient_covariance
-#> NULL
-#> 
-#> $bootstrap$coefficient_se
-#> NULL
-#> 
-#> $bootstrap$prediction_draws
-#> NULL
-#> 
-#> $bootstrap$models
-#> NULL
-#> 
-#> $bootstrap$target_histories
-#> NULL
-#> 
-#> $bootstrap$requested
-#> [1] FALSE
-#> 
-#> 
-#> $uncertainty
-#> $uncertainty$enabled
-#> [1] TRUE
-#> 
-#> $uncertainty$coefficient_method
-#> [1] "hac"
-#> 
-#> $uncertainty$coefficient_covariance
-#>                  (Intercept)    baro_small baro_small_lag1 gdp_growth_lag1
-#> (Intercept)      9.120675787  0.0055728578   -0.1008626690     0.355101063
-#> baro_small       0.005572858  0.0006209409   -0.0006854336     0.001638296
-#> baro_small_lag1 -0.100862669 -0.0006854336    0.0017473648    -0.005400566
-#> gdp_growth_lag1  0.355101063  0.0016382956   -0.0054005658     0.018395183
-#> 
-#> $uncertainty$coefficient_se
-#>     (Intercept)      baro_small baro_small_lag1 gdp_growth_lag1 
-#>      3.02004566      0.02491869      0.04180149      0.13562884 
-#> 
-#> $uncertainty$prediction_method
-#> [1] "residual_resampling"
-#> 
-#> $uncertainty$prediction_draws
-#>          [,1]
-#> [1,] 1.047887
-#> [2,] 3.205471
-#> 
-#> $uncertainty$simulation_paths
-#> [1] 2
-#> 
-#> 
-#> $solver_options
-#> $solver_options$method
-#> [1] "L-BFGS-B"
-#> 
-#> $solver_options$maxiter
-#> [1] 1000
-#> 
-#> $solver_options$n_starts
-#> [1] 1
-#> 
-#> $solver_options$seed
-#> [1] 123
-#> 
-#> $solver_options$trace
-#> [1] 0
-#> 
-#> $solver_options$start_values
-#> NULL
-#> 
-#> 
-#> $formula
-#> gdp_growth ~ baro_small + baro_small_lag1 + gdp_growth_lag1
-#> <environment: 0x564c5435ab70>
-#> 
-#> $estimation_set
-#> # A tibble: 10 × 5
-#>    time       gdp_growth baro_small baro_small_lag1 gdp_growth_lag1
-#>    <date>          <dbl>      <dbl>           <dbl>           <dbl>
-#>  1 2020-07-01      6.88       113.             66.0          -6.50 
-#>  2 2020-10-01      0.369      107.            113.            6.88 
-#>  3 2021-01-01      0.442      109.            107.            0.369
-#>  4 2021-04-01      2.47       125.            109.            0.442
-#>  5 2021-07-01      2.34       112.            125.            2.47 
-#>  6 2021-10-01      0.411      104.            112.            2.34 
-#>  7 2022-01-01      0.105       97.4           104.            0.411
-#>  8 2022-04-01      1.03        94.3            97.4           0.105
-#>  9 2022-07-01      0.255       90.0            94.3           1.03 
-#> 10 2022-10-01      0.102       90.7            90.0           0.255
-#> 
-#> $forecast_base_set
-#> # A tibble: 1 × 3
-#>   time       baro_small baro_small_lag1
-#>   <date>          <dbl>           <dbl>
-#> 1 2023-01-01       98.3            90.7
-#> 
-#> $forecast_set
-#> # A tibble: 1 × 4
-#>   time       baro_small baro_small_lag1 gdp_growth_lag1
-#>   <date>          <dbl>           <dbl> <list>         
-#> 1 2023-01-01       98.3            90.7 <dbl [1]>      
-#> 
-#> $model
-#> 
-#> Call:
-#> stats::lm(formula = formula, data = estimation_set)
-#> 
-#> Coefficients:
-#>     (Intercept)       baro_small  baro_small_lag1  gdp_growth_lag1  
-#>        -4.55613          0.11797         -0.06052         -0.18792  
-#> 
-#> 
-#> $indic_models
-#> $indic_models$baro_small
-#> Series: xts_series 
-#> ARIMA(1,0,2) with non-zero mean 
-#> 
-#> Coefficients:
-#>          ar1     ma1     ma2     mean
-#>       0.4157  0.8900  0.5322  99.9752
-#> s.e.  0.1990  0.1954  0.1624   5.0588
-#> 
-#> sigma^2 = 65.32:  log likelihood = -125.2
-#> AIC=260.41   AICc=262.41   BIC=268.32
-#> 
-#> 
-#> $parametric_weights
-#> list()
-#> 
-#> $parametric_parameters
-#> list()
-#> 
-#> $parametric_specs
-#> list()
-#> 
-#> $fixed_aggregated
-#> # A tibble: 13 × 3
-#>    id         time       values
-#>    <chr>      <date>      <dbl>
-#>  1 baro_small 2020-01-01   93.8
-#>  2 baro_small 2020-04-01   66.0
-#>  3 baro_small 2020-07-01  113. 
-#>  4 baro_small 2020-10-01  107. 
-#>  5 baro_small 2021-01-01  109. 
-#>  6 baro_small 2021-04-01  125. 
-#>  7 baro_small 2021-07-01  112. 
-#>  8 baro_small 2021-10-01  104. 
-#>  9 baro_small 2022-01-01   97.4
-#> 10 baro_small 2022-04-01   94.3
-#> 11 baro_small 2022-07-01   90.0
-#> 12 baro_small 2022-10-01   90.7
-#> 13 baro_small 2023-01-01   98.3
-#> 
-#> $parametric_optimization
-#> NULL
-#> 
-#> $expalmon_weights
-#> list()
-#> 
-#> $expalmon_parameters
-#> list()
-#> 
-#> $expalmon_optimization
-#> NULL
-#> 
-#> $truncation_info
-#> $truncation_info$baro_small
-#> $truncation_info$baro_small$indicator_id
-#> [1] "baro_small"
-#> 
-#> $truncation_info$baro_small$n_periods
-#> [1] 0
-#> 
-#> 
-#> 
-#> $regressor_names
-#> [1] "baro_small"      "baro_small_lag1" "gdp_growth_lag1"
-#> 
-#> $xreg_names
-#> [1] "baro_small"      "baro_small_lag1"
-#> 
-#> $target_anchor
-#> [1] "2020-01-01"
-#> 
-#> $future_target_times
-#> [1] "2023-01-01"
-#> 
-#> attr(,"class")
-#> [1] "mf_model"
+#> Mixed-frequency model summary
+#> -----------------------------------
+#> Target series: gdp_growth
+#> Target frequency: quarter
+#> Forecast horizon: 1
+#> Estimation rows: 10
+#> Regressors: baro_small, baro_small_lag1, gdp_growth_lag1
+#> -----------------------------------
+#> Target equation coefficients:
+#>                 Estimate HAC SE
+#> (Intercept)       -4.556  3.020
+#> baro_small         0.118  0.025
+#> baro_small_lag1   -0.061  0.042
+#> gdp_growth_lag1   -0.188  0.136
+#> -----------------------------------
+#> Model fit:
+#>  Statistic               Value
+#>  R-squared               0.820
+#>  Adjusted R-squared      0.730
+#>  Residual standard error 1.093
+#> -----------------------------------
+#> Indicator summary:
+#>            Frequency Predict    Aggregation
+#> baro_small month     auto.arima mean       
+#> -----------------------------------
+#> Uncertainty:
+#> Coefficient SEs: hac
+#> Prediction intervals: residual resampling
+#> Simulation paths: 2
+#> -----------------------------------
 ```

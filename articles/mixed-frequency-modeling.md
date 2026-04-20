@@ -87,6 +87,12 @@ summary(mean_model)
 #> (Intercept)          0.516
 #> monthly_indicator    0.999
 #> -----------------------------------
+#> Model fit:
+#>  Statistic               Value
+#>  R-squared               0.999
+#>  Adjusted R-squared      0.999
+#>  Residual standard error 0.142
+#> -----------------------------------
 #> Indicator summary:
 #>                   Frequency Predict Aggregation
 #> monthly_indicator month     last    mean       
@@ -104,6 +110,12 @@ summary(last_model)
 #>                   Estimate
 #> (Intercept)          0.590
 #> monthly_indicator    0.993
+#> -----------------------------------
+#> Model fit:
+#>  Statistic               Value
+#>  R-squared               0.993
+#>  Adjusted R-squared      0.993
+#>  Residual standard error 0.337
 #> -----------------------------------
 #> Indicator summary:
 #>                   Frequency Predict Aggregation
@@ -141,6 +153,12 @@ summary(unrestricted_model)
 #> monthly_indicator_hf1    0.198
 #> monthly_indicator_hf2    0.596
 #> monthly_indicator_hf3    0.205
+#> -----------------------------------
+#> Model fit:
+#>  Statistic               Value
+#>  R-squared               1.000
+#>  Adjusted R-squared      1.000
+#>  Residual standard error 0.067
 #> -----------------------------------
 #> Indicator summary:
 #>                   Frequency Predict Aggregation 

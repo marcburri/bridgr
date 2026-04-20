@@ -54,6 +54,12 @@ summary(model)
 #> (Intercept)   -9.962
 #> baro           0.104
 #> -----------------------------------
+#> Model fit:
+#>  Statistic               Value
+#>  R-squared               0.477
+#>  Adjusted R-squared      0.469
+#>  Residual standard error 0.967
+#> -----------------------------------
 #> Indicator summary:
 #>      Frequency Predict    Aggregation
 #> baro month     auto.arima mean       
