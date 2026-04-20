@@ -42,7 +42,9 @@ horizon because later forecast steps depend on forecasted rather than
 observed target lags and, when needed, completed indicator paths. Under the
 package's residual-resampling and full-system bootstrap workflows, those
 simulated disturbances accumulate across steps, so standard errors and
-interval widths can widen as the forecast horizon extends.
+interval widths can widen as the forecast horizon extends. The
+\code{uncertainty-and-scenarios} vignette includes one worked example that trims
+forecast rows by an acceptable prediction-interval width.
 }
 \examples{
 gdp_growth <- tsbox::ts_pc(gdp)

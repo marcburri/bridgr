@@ -33,7 +33,6 @@
 #' @srrstatsTODO {TS2.5} *Incorporate a system to ensure that both row and column orders follow the same ordering as the underlying time series data. This may, for example, be done by including the `index` attribute of the time series data as an attribute of the auto-covariance matrix.*
 #' @srrstatsTODO {TS3.1} *If possible, provide at least one test which violates TS3.0*
 #' @srrstatsTODO {TS3.3} *Either:*
-#' @srrstatsTODO {TS3.3a} *Document, preferable via an example, how to trim forecast values based on a specified error margin or equivalent; or*
 #' @srrstatsTODO {TS3.3b} *Provide an explicit mechanism to trim forecast values to a specified error margin, either via an explicit post-processing function, or via an input parameter to a primary analytic function.* 
 #' @srrstatsTODO {TS4.1} *Any units included as attributes of input data should also be included within return values.*
 #' @srrstatsTODO {TS4.4} *Document the effect of any such transformations on forecast data, including potential effects on both first- and second-order estimates.*

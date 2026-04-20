@@ -22,7 +22,9 @@
 #' observed target lags and, when needed, completed indicator paths. Under the
 #' package's residual-resampling and full-system bootstrap workflows, those
 #' simulated disturbances accumulate across steps, so standard errors and
-#' interval widths can widen as the forecast horizon extends.
+#' interval widths can widen as the forecast horizon extends. The
+#' `uncertainty-and-scenarios` vignette includes one worked example that trims
+#' forecast rows by an acceptable prediction-interval width.
 #'
 #' @srrstats {TS4.2} The forecast method documents the class and contents of the returned `"mf_model_forecast"` object.
 #' @srrstats {TS4.6} The forecast method returns point predictions together with explicit uncertainty summaries when available.
@@ -31,6 +33,7 @@
 #' @srrstats {TS4.7} Forecast output keeps forecast values clearly separated from the observed input history.
 #' @srrstats {TS4.7a} `forecast.mf_model()` returns forecast values separately from the observed input series.
 #' @srrstats {TS3.2} The forecast documentation explains that horizon-specific uncertainty is driven by recursive dependence on forecasted target lags, completed indicator paths, and accumulated simulated disturbances.
+#' @srrstats {TS3.3a} The uncertainty vignette provides an explicit example of trimming forecast rows by a tolerated prediction-interval width.
 #' @srrstats {RE4.14} Forecast outputs include uncertainty measures (`se`, `lower`, and `upper`) in addition to point predictions when available.
 #'
 #' @examples
