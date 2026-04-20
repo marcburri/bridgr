@@ -94,3 +94,8 @@ expalmon_model <- mf_model(
 
 summary(expalmon_model)
 ```
+
+
+## Code of Conduct
+
+Please note that the bridgr project is released with a [Contributor Code of Conduct](https://marcburri.github.io/bridgr/CODE_OF_CONDUCT.html). By contributing to this project, you agree to abide by its terms.
