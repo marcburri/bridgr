@@ -484,6 +484,30 @@ test_that("bridge validates that tabular inputs are ordered by time", {
   )
 })
 
+test_that("bridge rejects perfectly collinear regressors before fitting", {
+  monthly_values <- make_monthly_indicator(n = 24)$value
+  monthly_time <- seq(as.Date("2020-01-01"), by = "month", length.out = 24)
+  indic <- dplyr::tibble(
+    id = rep(c("a", "b"), each = length(monthly_time)),
+    time = rep(monthly_time, times = 2),
+    value = rep(monthly_values, times = 2)
+  )
+  target <- make_quarter_target(
+    dplyr::tibble(time = monthly_time, value = monthly_values),
+    n_quarters = 8
+  )
+
+  expect_error(
+    mf_model(
+      target = target,
+      indic = indic,
+      indic_predict = c("last", "last"),
+      h = 1
+    ),
+    "Perfect collinearity detected among regressors"
+  )
+})
+
 test_that(
   paste(
     "bridge preprocessing recovers known coefficients from a",

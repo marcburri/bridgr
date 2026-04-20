@@ -381,6 +381,12 @@ fit_bridge_model <- function(
     )
   }
 
+  check_regressor_collinearity(
+    estimation_set = estimation_set,
+    regressor_names = regressor_names,
+    call = rlang::caller_env()
+  )
+
   if (
     any(vapply(
       config$indic_aggregators,

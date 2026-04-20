@@ -1000,6 +1000,52 @@ circular_block_bootstrap_indices <- function(n_rows, block_length) {
   indices[seq_len(n_rows)]
 }
 
+#' @srrstats {RE2.4a} The finalized regressor matrix is checked for exact rank
+#' deficiency before fitting, so perfectly collinear predictors are rejected
+#' with an explicit preprocessing error.
+#' @keywords internal
+#' @noRd
+check_regressor_collinearity <- function(
+  estimation_set,
+  regressor_names,
+  call = rlang::caller_env()
+) {
+  if (length(regressor_names) < 2) {
+    return(invisible(NULL))
+  }
+
+  design_matrix <- cbind(
+    "(Intercept)" = 1,
+    as.matrix(estimation_set[, regressor_names, drop = FALSE])
+  )
+  qr_design <- qr(
+    design_matrix,
+    tol = sqrt(.Machine$double.eps)
+  )
+
+  if (qr_design$rank == ncol(design_matrix)) {
+    return(invisible(NULL))
+  }
+
+  dependent_columns <- colnames(design_matrix)[
+    qr_design$pivot[seq.int(qr_design$rank + 1L, ncol(design_matrix))]
+  ]
+  dependent_regressors <- setdiff(dependent_columns, "(Intercept)")
+  if (length(dependent_regressors) == 0) {
+    dependent_regressors <- regressor_names
+  }
+
+  rlang::abort(
+    paste0(
+      "Perfect collinearity detected among regressors in the final ",
+      "estimation set: ",
+      paste0("`", dependent_regressors, "`", collapse = ", "),
+      "."
+    ),
+    call = call
+  )
+}
+
 #' @keywords internal
 #' @noRd
 fit_target_model <- function(
