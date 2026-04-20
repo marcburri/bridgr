@@ -513,6 +513,8 @@ test_that("plot.mf_model renders forecast and fit views", {
   expect_s3_class(fit_plot, "ggplot")
   expect_equal(min(forecast_build$data[[1]]$x), expected_start)
   expect_equal(nrow(forecast_build$data[[1]]), 50)
+  expect_equal(forecast_plot$labels$x, "Time (week)")
+  expect_equal(fit_plot$labels$x, "Time (week)")
 })
 
 test_that("theme_bridgr accepts legacy dotted legend arguments", {

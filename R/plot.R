@@ -178,6 +178,7 @@ scale_fill_bridgr <- function(...) {
 #' @srrstats {TS5.0} Forecast and fit visualizations are provided through the default `plot.mf_model()` method.
 #' @srrstats {TS5.1} The temporal axis defaults to the label `"Time"`.
 #' @srrstats {TS5.2} Time is placed on the horizontal axis by default.
+#' @srrstats {TS5.3} The default x-axis label includes the unit of the target time index, such as `Time (quarter)` or `Time (week)`.
 #' @srrstats {TS5.6} Forecast plots include prediction intervals by default whenever uncertainty is available.
 #' @srrstats {TS5.7} Forecast plots include the observed input history together with forecast output by default.
 #' @srrstats {TS5.8} Observed, fitted, and forecast series are visually distinguished by separate layers and colors.
@@ -210,6 +211,7 @@ plot.mf_model <- function(
   ...
 ) {
   type <- match.arg(type)
+  default_time_label <- paste0("Time (", x$target_frequency$unit[[1]], ")")
 
   target_data <- dplyr::tibble(
     time = x$target$time,
@@ -242,7 +244,7 @@ plot.mf_model <- function(
       main <- "Mixed-Frequency Model Fit"
     }
     if (is.null(xlab)) {
-      xlab <- "Time"
+      xlab <- default_time_label
     }
     if (is.null(ylab)) {
       ylab <- x$target_name
@@ -296,7 +298,7 @@ plot.mf_model <- function(
     main <- "Mixed-Frequency Forecast"
   }
   if (is.null(xlab)) {
-    xlab <- "Time"
+    xlab <- default_time_label
   }
   if (is.null(ylab)) {
     ylab <- x$target_name
