@@ -1,3 +1,6 @@
+#' @srrstats {G5.3} Standard fitted models and uncertainty-enabled forecasts
+#' return finite numeric outputs with no `NA`, `NaN`, or `Inf` values in
+#' components expected to be defined.
 test_that("standard fitted models and forecasts return finite numeric outputs", {
   indic <- make_monthly_indicator(n = 36)
   target <- make_quarter_target(indic, n_quarters = 12)

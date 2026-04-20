@@ -1,3 +1,21 @@
+#' @srrstats {G5.4} These tests check forecasting rules, aggregation outputs,
+#' and beta weights against known expected results.
+#' @srrstats {G5.4a} Deterministic constructions and direct alternative
+#' implementations separate method correctness from implementation correctness,
+#' including exact slot-weight simulations and direct comparisons with
+#' `forecast::auto.arima()` and `forecast::ets()`.
+#' @srrstats {G5.4b} Package outputs are compared with direct
+#' `forecast::auto.arima()`, `forecast::ets()`, and normalized beta-weight
+#' calculations.
+#' @srrstats {G5.6} Deterministic recovery checks verify unrestricted
+#' mixed-frequency slot coefficients against known expected values.
+#' @srrstats {G5.6a} Those recovery checks use explicit tolerances such as
+#' `tolerance = 0.05` rather than requiring exact equality.
+#' @srrstats {RE7.0} Noiseless deterministic mixed-frequency constructions with
+#' exact predictor-response structure verify recovery of known coefficients and
+#' weights.
+#' @srrstats {RE7.1} Noiseless mixed-frequency targets recover the exact
+#' predictor-response relationship within tolerance.
 test_that(
   "forecast method `last` repeats the latest observed value",
   {

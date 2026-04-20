@@ -25,20 +25,9 @@
 #' @srrstatsTODO {G5.2} *Appropriate error and warning behaviour of all functions should be explicitly demonstrated through tests. In particular,*
 #' @srrstatsTODO {G5.2a} *Every message produced within R code by `stop()`, `warning()`, `message()`, or equivalent should be unique*
 #' @srrstatsTODO {G5.2b} *Explicit tests should demonstrate conditions which trigger every one of those messages, and should compare the result with expected values.*
-#' @srrstats {G5.3} `tests/testthat/test-return-values.R` checks that standard fitted models and uncertainty-enabled forecasts return finite numeric outputs with no `NA`, `NaN`, or `Inf` values in components expected to be defined.
-#' @srrstats {G5.4} `tests/testthat/test-method-behaviors.R` checks forecasting rules, aggregation outputs, and beta weights against known expected results.
-#' @srrstats {G5.4a} The test suite uses simple deterministic constructions and direct alternative implementations to separate method correctness from implementation correctness, for example through exact slot-weight simulations and direct comparisons with `forecast::auto.arima()` and `forecast::ets()`.
-#' @srrstats {G5.4b} `tests/testthat/test-method-behaviors.R` compares package outputs with direct `forecast::auto.arima()`, `forecast::ets()`, and normalized beta-weight calculations.
-#' @srrstats {G5.5} Stochastic correctness checks use explicit fixed seeds, for example through `make_seeded_ar1_indicator(seed = 123)` and `solver_options$seed` in parametric-weight tests.
-#' @srrstats {G5.6} `tests/testthat/test-method-behaviors.R` includes deterministic recovery checks for unrestricted mixed-frequency slot coefficients.
-#' @srrstats {G5.6a} Those recovery checks use explicit tolerances such as `tolerance = 0.05` rather than requiring exact equality.
-#' @srrstats {G5.6b} `tests/testthat/test-bridge.R` repeats indicator-dynamics recovery checks over multiple random seeds to confirm stable parameter recovery under stochastic simulation.
+#' 
 #' @srrstatsTODO {G5.7} **Algorithm performance tests** *to test that implementation performs as expected as properties of data change. For instance, a test may show that parameters approach correct estimates within tolerance as data size increases, or that convergence times decrease for higher convergence thresholds.*
-#' @srrstats {G5.8} `tests/testthat/test-bridge.R`, `test-utils.R`, and `test-alignment-optimization.R` cover invalid inputs, missing values, alignment failures, and optimizer edge cases.
-#' @srrstats {G5.8a} `tests/testthat/test-bridge.R` checks that zero-length target and indicator inputs fail early with explicit preprocessing errors.
-#' @srrstats {G5.8b} `tests/testthat/test-bridge.R` checks that unsupported character and complex-valued series fail with explicit preprocessing errors.
-#' @srrstats {G5.8c} `tests/testthat/test-bridge.R` checks both all-`NA` series, which fail during validation, and all-identical indicator series, which still produce finite fitted and forecast values.
-#' @srrstats {G5.8d} `tests/testthat/test-bridge.R` checks data outside the supported mixed-frequency setup, including lower-frequency indicators and target periods with too few high-frequency observations.
+#' 
 #' @srrstatsTODO {G5.9} **Noise susceptibility tests** *Packages should test for expected stochastic behaviour, such as through the following conditions:*
 #' @srrstatsTODO {G5.9a} *Adding trivial noise (for example, at the scale of `.Machine$double.eps`) to data does not meaningfully change results*
 #' @srrstatsTODO {G5.9b} *Running under different random seeds or initial conditions does not meaningfully change results* 
@@ -78,11 +67,10 @@
 #' @srrstatsTODO {RE4.1} *Regression Software may enable an ability to generate a model object without actually fitting values. This may be useful for controlling batch processing of computationally intensive fitting algorithms.* 
 #' @srrstatsTODO {RE4.15} *Sufficient documentation and/or testing should be provided to demonstrate that forecast errors, confidence intervals, or equivalent values increase with forecast horizons.* 
 #' @srrstatsTODO {RE5.0} *Scaling relationships between sizes of input data (numbers of observations, with potential extension to numbers of variables/columns) and speed of algorithm.* 
-#' @srrstats {RE7.0} `tests/testthat/test-bridge.R` and `test-method-behaviors.R` use noiseless deterministic mixed-frequency constructions with exact predictor-response structure to verify recovery of known coefficients and weights.
-#' @srrstats {RE7.1} `tests/testthat/test-method-behaviors.R` constructs noiseless mixed-frequency targets and checks recovery of the exact predictor-response relationship within tolerance.
+#' 
 #' @srrstatsTODO {RE7.1a} *In particular, these tests should confirm that model fitting is at least as fast or (preferably) faster than testing with equivalent noisy data (see RE2.4b).* 
 #' @srrstatsTODO {RE7.2} Demonstrate that output objects retain aspects of input data such as row or case names (see **RE1.3**).
-#' @srrstats {RE7.3} `tests/testthat/test-accessors.R` exercises returned model objects through `coef()`, `confint()`, `formula()`, `nobs()`, `vcov()`, `fitted()`, `residuals()`, and `print()`.
+#' 
 #' @srrstatsTODO {RE7.4} Extending directly from **RE4.15**, where appropriate, tests should demonstrate and confirm that forecast errors, confidence intervals, or equivalent values increase with forecast horizons.
 #' @noRd
 NULL

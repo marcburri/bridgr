@@ -1,3 +1,6 @@
+#' @srrstats {RE7.3} Returned model objects are exercised through `coef()`,
+#' `confint()`, `formula()`, `nobs()`, `vcov()`, `fitted()`, `residuals()`,
+#' and `print()`.
 test_that("coef.mf_model delegates to the stored target regression", {
   indic <- make_monthly_indicator(n = 36)
   target <- make_quarter_target(indic, n_quarters = 12)

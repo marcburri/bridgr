@@ -1,3 +1,22 @@
+#' @srrstats {G5.5} Stochastic correctness checks use explicit fixed seeds,
+#' including `make_seeded_ar1_indicator(seed = 123)` and `solver_options$seed`
+#' in parametric-weight tests.
+#' @srrstats {G5.6b} Indicator-dynamics recovery checks are repeated over
+#' multiple random seeds to confirm stable parameter recovery under stochastic
+#' simulation.
+#' @srrstats {G5.8} Along with `test-utils.R` and
+#' `test-alignment-optimization.R`, these tests cover invalid inputs, missing
+#' values, alignment failures, and optimizer edge cases.
+#' @srrstats {G5.8a} Zero-length target and indicator inputs fail early with
+#' explicit preprocessing errors.
+#' @srrstats {G5.8b} Unsupported character and complex-valued series fail with
+#' explicit preprocessing errors.
+#' @srrstats {G5.8c} Both all-`NA` series and all-identical indicator series
+#' are exercised; the former fail during validation and the latter still
+#' produce finite fitted and forecast values.
+#' @srrstats {G5.8d} Data outside the supported mixed-frequency setup are
+#' checked, including lower-frequency indicators and target periods with too
+#' few high-frequency observations.
 test_that("bridge warns and forwards to mf_model", {
   indic <- make_monthly_indicator()
   target <- make_quarter_target(indic, n_quarters = 6)
