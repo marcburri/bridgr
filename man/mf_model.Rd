@@ -156,6 +156,15 @@ contains fewer observations than required, the call fails. Month-, quarter-,
 and year-based input dates are standardized to period starts when needed
 for frequency recognition.
 }
+\section{Model specification}{
+
+\code{bridgr} does not use a formula interface. Mixed-frequency bridge models are
+specified through separate \code{target} and \code{indic} series plus the forecasting,
+aggregation, and lag controls because the package must standardize,
+align, extend, and aggregate the time-series inputs before the final target
+regression formula can be assembled.
+}
+
 \section{Deprecated \code{bridge()} wrapper}{
 
 \code{\link[=bridge]{bridge()}} is retained for compatibility and forwards to \code{mf_model()} with a

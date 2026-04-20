@@ -116,6 +116,13 @@
 #' fitted target model, fitted indicator models, and metadata required by
 #' [forecast.mf_model()] and [summary.mf_model()].
 #'
+#' @section Model specification:
+#' `bridgr` does not use a formula interface. Mixed-frequency bridge models are
+#' specified through separate `target` and `indic` series plus the forecasting,
+#' aggregation, and lag controls because the package must standardize,
+#' align, extend, and aggregate the time-series inputs before the final target
+#' regression formula can be assembled.
+#'
 #' @section Deprecated `bridge()` wrapper:
 #' [bridge()] is retained for compatibility and forwards to `mf_model()` with a
 #' deprecation warning.
@@ -175,6 +182,7 @@
 #' @srrstats {TS4.3} The returned model stores explicit time-scale information through target and indicator frequency metadata plus aligned time-indexed estimation and forecast datasets.
 #' @srrstats {TS4.7b} The returned model keeps aligned estimation and forecast values in separate list items, `estimation_set` and `forecast_set`.
 #' @srrstats {RE4.0} `mf_model()` returns a model object of class `"mf_model"`.
+#' @srrstats {RE1.0} The documentation explicitly explains why `bridgr` uses separate mixed-frequency series inputs instead of a formula interface.
 #' @export
 mf_model <- function(
   target,
