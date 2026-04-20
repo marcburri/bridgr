@@ -1,5 +1,8 @@
 #' @srrstats {TS3.0} Forecast tests demonstrate at least one recursive bridge
 #' case in which prediction uncertainty widens with forecast horizon.
+#' @srrstats {RE4.15} Forecast tests demonstrate that recursive bridge
+#' prediction intervals widen across horizons in a fitted mixed-frequency
+#' regression.
 test_that("forecast uncertainty widens with horizon in recursive bridges", {
   withr::local_seed(123)
 
