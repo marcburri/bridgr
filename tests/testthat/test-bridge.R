@@ -467,6 +467,23 @@ test_that("bridge validates duplicate timestamps and missing values", {
   )
 })
 
+test_that("bridge validates that tabular inputs are ordered by time", {
+  indic <- make_monthly_indicator(n = 12)
+  target <- make_quarter_target(indic, n_quarters = 4)
+
+  unordered_target <- target[c(2, 1, 3, 4), ]
+  unordered_indic <- indic[c(2, 1, 3:nrow(indic)), ]
+
+  expect_error(
+    mf_model(target = unordered_target, indic = indic),
+    "must be ordered by time"
+  )
+  expect_error(
+    mf_model(target = target, indic = unordered_indic),
+    "must be ordered by time"
+  )
+})
+
 test_that(
   paste(
     "bridge preprocessing recovers known coefficients from a",

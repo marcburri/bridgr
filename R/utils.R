@@ -187,6 +187,7 @@ bridge_argument_label <- function(expr, fallback) {
 #' @srrstats {TS1.0} Only explicit time-series inputs accepted by `tsbox::ts_boxable()` enter the preprocessing pipeline; generic non-time-series objects are rejected.
 #' @srrstats {TS1.2} `as_bridge_tbl()` validates that submitted series are acceptable ts-boxable time-series inputs.
 #' @srrstats {TS1.3} `as_bridge_tbl()` and downstream normalization convert accepted inputs to one uniform internal table representation.
+#' @srrstats {TS1.6} Tabular inputs that are not ordered by time within each series are rejected during preprocessing before they are standardized for modeling.
 #' @srrstats {TS1.5} Input rows are sorted by series id and time before downstream processing.
 #' @keywords internal
 #' @noRd
@@ -205,6 +206,28 @@ as_bridge_tbl <- function(
     )
   }
   if (inherits(x, "data.frame")) {
+    if ("time" %in% names(x)) {
+      raw_time <- x[["time"]]
+      if (!anyNA(raw_time)) {
+        raw_id <- if ("id" %in% names(x)) {
+          as.character(x[["id"]])
+        } else {
+          rep(default_id, length(raw_time))
+        }
+        series_rows <- split(seq_along(raw_time), raw_id)
+        unordered <- vapply(
+          series_rows,
+          function(index) is.unsorted(raw_time[index]),
+          logical(1)
+        )
+        if (any(unordered)) {
+          rlang::abort(
+            paste0("`", arg, "` must be ordered by time within each series."),
+            call = call
+          )
+        }
+      }
+    }
     raw_values <- x[["values"]]
     if (is.null(raw_values)) {
       raw_values <- x[["value"]]
