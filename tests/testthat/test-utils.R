@@ -1,4 +1,5 @@
 test_that("solver option normalization validates controls", {
+  defaults <- bridgr:::normalize_parametric_solver_options(NULL)
   options <- bridgr:::normalize_parametric_solver_options(
     list(
       method = "BFGS",
@@ -9,6 +10,7 @@ test_that("solver option normalization validates controls", {
     )
   )
 
+  expect_equal(defaults$reltol, 1e-8)
   expect_equal(options$method, "BFGS")
   expect_equal(options$maxiter, 10L)
   expect_equal(options$n_starts, 3L)
@@ -34,6 +36,10 @@ test_that("solver option normalization validates controls", {
   expect_error(
     bridgr:::normalize_parametric_solver_options(list(seed = c(1, 2))),
     "must be `NULL` or a single finite number"
+  )
+  expect_error(
+    bridgr:::normalize_parametric_solver_options(list(reltol = 0)),
+    "must be a single finite number > 0"
   )
 })
 

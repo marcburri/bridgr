@@ -670,6 +670,7 @@ normalize_parametric_solver_options <- function(
     n_starts = 5L,
     seed = NULL,
     trace = 0L,
+    reltol = 1e-8,
     start_values = NULL
   )
 
@@ -735,6 +736,15 @@ normalize_parametric_solver_options <- function(
       call = call
     )
   }
+  if (!is.numeric(defaults$reltol) ||
+    length(defaults$reltol) != 1 ||
+    !is.finite(defaults$reltol) ||
+    defaults$reltol <= 0) {
+    rlang::abort(
+      "`solver_options$reltol` must be a single finite number > 0.",
+      call = call
+    )
+  }
 
   defaults$maxiter <- as.integer(round(defaults$maxiter))
   defaults$n_starts <- as.integer(round(defaults$n_starts))
@@ -742,6 +752,7 @@ normalize_parametric_solver_options <- function(
   if (!is.null(defaults$seed)) {
     defaults$seed <- as.integer(round(defaults$seed))
   }
+  defaults$reltol <- as.numeric(defaults$reltol)
 
   defaults
 }
@@ -2308,7 +2319,8 @@ run_parametric_optimizer <- function(
       control = list(
         trace = solver_options$trace,
         eval.max = solver_options$maxiter * 2L,
-        iter.max = solver_options$maxiter
+        iter.max = solver_options$maxiter,
+        rel.tol = solver_options$reltol
       )
     )
     return(list(
@@ -2329,6 +2341,11 @@ run_parametric_optimizer <- function(
       maxit = solver_options$maxiter
     )
   )
+  if (identical(method, "L-BFGS-B")) {
+    args$control$factr <- max(solver_options$reltol / .Machine$double.eps, 1)
+  } else {
+    args$control$reltol <- solver_options$reltol
+  }
   if (!is.null(gradient) && !identical(method, "Nelder-Mead")) {
     args$gr <- gradient
   }

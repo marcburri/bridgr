@@ -101,15 +101,18 @@
 #' `method` for the optimizer (`"L-BFGS-B"`, `"BFGS"`, `"Nelder-Mead"`, or
 #' `"nlminb"`), `maxiter` for the iteration budget per optimization run,
 #' `n_starts` for the number of multi-start attempts, `seed` for reproducible
-#' random restarts, `trace` for optimizer verbosity, and `start_values` for
-#' user-supplied initial parameter values. `start_values` can be either a
-#' numeric vector or a named list. For a numeric vector, values are concatenated
-#' in indicator order across the parametric aggregators. Within each indicator,
+#' random restarts, `trace` for optimizer verbosity, `reltol` for the relative
+#' convergence tolerance passed through to the selected optimizer backend, and
+#' `start_values` for user-supplied initial parameter values. Documented
+#' defaults are `method = "L-BFGS-B"`, `maxiter = 1000`, `n_starts = 5`,
+#' `trace = 0`, and `reltol = 1e-8`. `start_values` can be either a numeric
+#' vector or a named list. For a numeric vector, values are concatenated in
+#' indicator order across the parametric aggregators. Within each indicator,
 #' the parameter order is `(linear, quadratic)` for `"expalmon"` and
 #' `(left_shape, right_shape)` for `"beta"`. Named-list `start_values` must
-#' provide exactly the required number of values for each parametric
-#' indicator. These controls are ignored unless at least one indicator uses a
-#' parametric aggregator.
+#' provide exactly the required number of values for each parametric indicator.
+#' These controls are ignored unless at least one indicator uses a parametric
+#' aggregator.
 #'
 #' @return An object of class `"mf_model"` containing the standardized input
 #' series, inferred frequencies, aligned estimation and forecast datasets, the
@@ -209,6 +212,7 @@
 #' @srrstats {RE1.0} The documentation explicitly explains why `bridgr` uses separate mixed-frequency series inputs instead of a formula interface.
 #' @srrstats {RE1.3a} The documentation explicitly states that preprocessing drops arbitrary extra input attributes when data are standardized to the package's common internal table format.
 #' @srrstats {RE1.4} The public documentation states the package assumptions about ordered, regular, non-missing mixed-frequency inputs, and validation tests exercise violations such as duplicate timestamps, explicit missing values, and lower-frequency indicators.
+#' @srrstats {RE3.2} The `solver_options` documentation states the default convergence-control values used for joint parametric optimization, including the default relative tolerance and iteration budget.
 #' @srrstats {TS2.2} The stationarity documentation explicitly states that users are expected to prepare bridge inputs so the relevant lower-order moments, typically mean and variance, are on an appropriate scale before fitting.
 #' @srrstats {TS2.3} The documentation explicitly states that stationarity-relevant transformations are expected to happen upstream rather than being imposed automatically by the package.
 #' @export

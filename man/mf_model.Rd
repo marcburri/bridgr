@@ -94,15 +94,18 @@ optimization. Supported entries are:
 \code{method} for the optimizer (\code{"L-BFGS-B"}, \code{"BFGS"}, \code{"Nelder-Mead"}, or
 \code{"nlminb"}), \code{maxiter} for the iteration budget per optimization run,
 \code{n_starts} for the number of multi-start attempts, \code{seed} for reproducible
-random restarts, \code{trace} for optimizer verbosity, and \code{start_values} for
-user-supplied initial parameter values. \code{start_values} can be either a
-numeric vector or a named list. For a numeric vector, values are concatenated
-in indicator order across the parametric aggregators. Within each indicator,
+random restarts, \code{trace} for optimizer verbosity, \code{reltol} for the relative
+convergence tolerance passed through to the selected optimizer backend, and
+\code{start_values} for user-supplied initial parameter values. Documented
+defaults are \code{method = "L-BFGS-B"}, \code{maxiter = 1000}, \code{n_starts = 5},
+\code{trace = 0}, and \code{reltol = 1e-8}. \code{start_values} can be either a numeric
+vector or a named list. For a numeric vector, values are concatenated in
+indicator order across the parametric aggregators. Within each indicator,
 the parameter order is \verb{(linear, quadratic)} for \code{"expalmon"} and
 \verb{(left_shape, right_shape)} for \code{"beta"}. Named-list \code{start_values} must
-provide exactly the required number of values for each parametric
-indicator. These controls are ignored unless at least one indicator uses a
-parametric aggregator.}
+provide exactly the required number of values for each parametric indicator.
+These controls are ignored unless at least one indicator uses a parametric
+aggregator.}
 
 \item{...}{Arguments forwarded to \code{\link[=mf_model]{mf_model()}}.}
 }
