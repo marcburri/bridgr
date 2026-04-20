@@ -8,6 +8,7 @@
 #' to expand diagnostics and mixed-frequency model options without changing the
 #' core target-and-indicator workflow.
 #' @srrstats {G1.2} Package-level documentation includes an explicit lifecycle statement describing the current stable interface and the anticipated direction of future development.
+#' @srrstats {G1.4} Package functions are documented with roxygen2 blocks in `R/`, and those blocks generate the installed reference documentation.
 #' @srrstats {G1.1} The package documentation positions `bridgr` as a focused R interface for bridge-style nowcasting relative to existing R packages such as `midasr` and `midasml`, rather than as a first implementation of bridge or MIDAS methods.
 #' @keywords internal
 "_PACKAGE"
