@@ -196,6 +196,9 @@ interpolate_series_values <- function(values) {
 #' @srrstats {G2.14b} When `missing = "drop"`, explicit missing values are
 #' removed with a warning before downstream processing so analysis can proceed
 #' on the supported non-missing subset.
+#' @srrstats {G2.14c} When `missing = "impute"`, explicit missing values are
+#' replaced before analysis with deterministic within-series interpolated
+#' values.
 #' @srrstats {TS2.1b} When `missing = "drop"`, explicit missing values are
 #' removed with a warning before downstream processing so supported ragged-edge
 #' workflows can proceed on the equivalent irregular series.
