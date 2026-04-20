@@ -44,6 +44,8 @@ Suggests:
     testthat (>= 3.0.0),
     withr,
     xts
+Remotes:
+    ropensci-review-tools/srr
 Config/testthat/edition: 3
 Depends: 
     R (>= 4.1.0)
