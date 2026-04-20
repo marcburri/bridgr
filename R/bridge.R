@@ -115,19 +115,21 @@
 #' `method` for the optimizer (`"L-BFGS-B"`, `"BFGS"`, `"Nelder-Mead"`, or
 #' `"nlminb"`), `maxiter` for the iteration budget per optimization run,
 #' `n_starts` for the number of multi-start attempts, `seed` for reproducible
-#' random restarts, `trace` for optimizer verbosity, `reltol` for the relative
-#' convergence tolerance passed through to the selected optimizer backend, and
+#' random restarts, `trace` for optimizer verbosity, `warn` to control whether
+#' non-convergence warnings are emitted, `reltol` for the relative convergence
+#' tolerance passed through to the selected optimizer backend, and
 #' `start_values` for user-supplied initial parameter values. Documented
 #' defaults are `method = "L-BFGS-B"`, `maxiter = 1000`, `n_starts = 5`,
-#' `trace = 0`, and `reltol = 1e-8`. `start_values` can be either a numeric
-#' vector or a named list. For a numeric vector, values are concatenated in
-#' indicator order across the parametric aggregators. Within each indicator,
-#' the parameter order is `(linear, quadratic)` for `"expalmon"` and
-#' `(left_shape, right_shape)` for `"beta"`. Named-list `start_values` must
-#' provide exactly the required number of values for each parametric indicator.
-#' Users can override `reltol` in any call through
-#' `solver_options = list(reltol = ...)`. These controls are ignored unless at
-#' least one indicator uses a parametric aggregator.
+#' `trace = 0`, `warn = TRUE`, and `reltol = 1e-8`. `start_values` can be
+#' either a numeric vector or a named list. For a numeric vector, values are
+#' concatenated in indicator order across the parametric aggregators. Within
+#' each indicator, the parameter order is `(linear, quadratic)` for
+#' `"expalmon"` and `(left_shape, right_shape)` for `"beta"`. Named-list
+#' `start_values` must provide exactly the required number of values for each
+#' parametric indicator. Users can override `reltol` or suppress convergence
+#' warnings through `solver_options = list(reltol = ..., warn = FALSE)`. These
+#' controls are ignored unless at least one indicator uses a parametric
+#' aggregator.
 #'
 #' @return An object of class `"mf_model"` containing the standardized input
 #' series, inferred frequencies, aligned estimation and forecast datasets, the
@@ -245,6 +247,7 @@
 #' @srrstats {RE1.4} The public documentation states the package assumptions about ordered, regular, non-missing mixed-frequency inputs, and validation tests exercise violations such as duplicate timestamps, explicit missing values, and lower-frequency indicators.
 #' @srrstats {RE3.2} The `solver_options` documentation states the default convergence-control values used for joint parametric optimization, including the default relative tolerance and iteration budget.
 #' @srrstats {RE3.3} The public `solver_options` argument explicitly exposes `reltol`, allowing users to set the convergence tolerance for joint parametric optimization.
+#' @srrstats {RE3.1} The public `solver_options` interface includes `warn = FALSE` to suppress non-convergence warnings while the fitted model still stores optimizer method, code, and message in `parametric_optimization`.
 #' @srrstats {TS2.2} The stationarity documentation explicitly states that users are expected to prepare bridge inputs so the relevant lower-order moments, typically mean and variance, are on an appropriate scale before fitting.
 #' @srrstats {TS2.3} The documentation explicitly states that stationarity-relevant transformations are expected to happen upstream rather than being imposed automatically by the package.
 #' @srrstats {G1.3} The `mf_model()` documentation now defines the core mixed-frequency terms used throughout the package, including target, indicator, indicator forecasting, aggregation, direct prediction, and unrestricted aggregation.

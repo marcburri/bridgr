@@ -237,6 +237,53 @@ test_that("optimizer warning keeps the best non-converged start", {
   expect_equal(length(result$weights$x), 3)
 })
 
+test_that(
+  "mf_model can suppress convergence warnings while keeping metadata",
+  {
+    indic <- make_monthly_indicator(n = 36)
+    target <- make_quarter_target(indic, n_quarters = 12)
+
+    testthat::local_mocked_bindings(
+      run_parametric_optimizer = function(objective,
+                                          gradient,
+                                          start,
+                                          lower,
+                                          upper,
+                                          solver_options) {
+        list(
+          par = start,
+          value = 0,
+          convergence = 1L,
+          message = "stalled",
+          method = solver_options$method
+        )
+      },
+      .package = "bridgr"
+    )
+
+    expect_no_warning(
+      model <- mf_model(
+        target = target,
+        indic = indic,
+        indic_predict = "last",
+        indic_aggregators = "beta",
+        solver_options = list(
+          method = "BFGS",
+          n_starts = 1L,
+          maxiter = 5L,
+          warn = FALSE,
+          start_values = c(2, 3)
+        ),
+        h = 1
+      )
+    )
+
+    expect_equal(model$parametric_optimization$convergence, 1L)
+    expect_equal(model$parametric_optimization$message, "stalled")
+    expect_equal(model$parametric_optimization$method, "BFGS")
+  }
+)
+
 test_that("optimizer aborts when every candidate is non-finite", {
   parametric_specs <- list(
     x = list(

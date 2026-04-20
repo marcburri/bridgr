@@ -919,6 +919,7 @@ normalize_parametric_solver_options <- function(
     n_starts = 5L,
     seed = NULL,
     trace = 0L,
+    warn = TRUE,
     reltol = 1e-8,
     start_values = NULL
   )
@@ -973,6 +974,13 @@ normalize_parametric_solver_options <- function(
     defaults$trace < 0) {
     rlang::abort(
       "`solver_options$trace` must be a single integer >= 0.",
+      call = call
+    )
+  }
+  if (!is.logical(defaults$warn) || length(defaults$warn) != 1 ||
+    is.na(defaults$warn)) {
+    rlang::abort(
+      "`solver_options$warn` must be either `TRUE` or `FALSE`.",
       call = call
     )
   }
@@ -2749,6 +2757,16 @@ optimize_parametric_weights <- function(
   solver_options,
   call = rlang::caller_env()
 ) {
+  solver_options <- normalize_parametric_solver_options(
+    solver_options,
+    call = call
+  )
+  solver_options <- validate_parametric_solver_start(
+    solver_options = solver_options,
+    parametric_specs = parametric_specs,
+    call = call
+  )
+
   indicator_ids <- names(parametric_specs)
   base_blocks <- solver_options$start_values
   if (is.null(base_blocks)) {
@@ -2856,7 +2874,7 @@ optimize_parametric_weights <- function(
     )
   }
 
-  if (!isTRUE(best_result$convergence == 0)) {
+  if (!isTRUE(best_result$convergence == 0) && isTRUE(solver_options$warn)) {
     rlang::warn(
       paste0(
         "Joint parametric aggregation optimization did not fully ",

@@ -6,15 +6,18 @@ test_that("solver option normalization validates controls", {
       maxiter = 10.4,
       n_starts = 2.6,
       trace = 1.2,
+      warn = FALSE,
       seed = 9.7
     )
   )
 
   expect_equal(defaults$reltol, 1e-8)
+  expect_equal(defaults$warn, TRUE)
   expect_equal(options$method, "BFGS")
   expect_equal(options$maxiter, 10L)
   expect_equal(options$n_starts, 3L)
   expect_equal(options$trace, 1L)
+  expect_equal(options$warn, FALSE)
   expect_equal(options$seed, 10L)
 
   expect_error(
@@ -32,6 +35,10 @@ test_that("solver option normalization validates controls", {
   expect_error(
     bridgr:::normalize_parametric_solver_options(list(trace = -1)),
     "must be a single integer >= 0"
+  )
+  expect_error(
+    bridgr:::normalize_parametric_solver_options(list(warn = NA)),
+    "`solver_options\\$warn` must be either `TRUE` or `FALSE`"
   )
   expect_error(
     bridgr:::normalize_parametric_solver_options(list(seed = c(1, 2))),
