@@ -8,5 +8,5 @@
   bridgr](https://marcburri.github.io/bridgr/articles/mixed-frequency-modeling.md):
 - [Ragged-Edge Nowcasting with
   bridgr](https://marcburri.github.io/bridgr/articles/ragged-edge-nowcasting.md):
-- [UNKNOWN
-  TITLE](https://marcburri.github.io/bridgr/articles/uncertainty-and-scenarios.md):
+- [Uncertainty and Scenario
+  Forecasting](https://marcburri.github.io/bridgr/articles/uncertainty-and-scenarios.md):

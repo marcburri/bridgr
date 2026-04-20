@@ -1,7 +1,4 @@
-# 
-
-title: “Uncertainty and Scenario Forecasting” output:
-rmarkdown::html_vignette vignette: \> % % % —
+# Uncertainty and Scenario Forecasting
 
 ## Overview
 
