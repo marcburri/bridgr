@@ -68,3 +68,14 @@ vcov.mf_model <- function(object, ...) {
 fitted.mf_model <- function(object, ...) {
   stats::fitted(object$model, ...)
 }
+
+#' @rdname mf_model-accessors
+#' @details `residuals.mf_model()` returns target-equation residuals on the same
+#'   standardized scale as the fitted target series, so they can be passed
+#'   directly to downstream residual diagnostics.
+#' @srrstats {RE4.10} `residuals.mf_model()` returns target-equation residuals on the fitted model scale and documents that they can be used directly in downstream residual diagnostics.
+#' @method residuals mf_model
+#' @export
+residuals.mf_model <- function(object, ...) {
+  stats::residuals(object$model, ...)
+}

@@ -91,3 +91,22 @@ test_that("fitted.mf_model returns the in-sample fitted path", {
   expect_equal(stats::fitted(model), stats::fitted(model$model))
   expect_equal(length(stats::fitted(model)), nrow(model$estimation_set))
 })
+
+test_that("residuals.mf_model delegates residual diagnostics to the target fit", {
+  indic <- make_monthly_indicator(n = 36)
+  target <- make_quarter_target(indic, n_quarters = 12)
+
+  model <- mf_model(
+    target = target,
+    indic = indic,
+    indic_predict = "last",
+    target_lags = 1,
+    h = 1
+  )
+
+  expect_equal(stats::residuals(model), stats::residuals(model$model))
+  expect_equal(
+    as.numeric(stats::fitted(model) + stats::residuals(model)),
+    as.numeric(model$estimation_set[[model$target_name]])
+  )
+})

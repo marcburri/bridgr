@@ -7,6 +7,7 @@
 \alias{nobs.mf_model}
 \alias{vcov.mf_model}
 \alias{fitted.mf_model}
+\alias{residuals.mf_model}
 \title{Accessor Methods for Mixed-Frequency Models}
 \usage{
 \method{coef}{mf_model}(object, ...)
@@ -18,6 +19,8 @@
 \method{vcov}{mf_model}(object, ...)
 
 \method{fitted}{mf_model}(object, ...)
+
+\method{residuals}{mf_model}(object, ...)
 }
 \arguments{
 \item{object, x}{A fitted \code{"mf_model"} object returned by \code{\link[=mf_model]{mf_model()}}.}
@@ -30,6 +33,11 @@ regression fit.
 }
 \description{
 Access standard model summaries from a fitted \code{\link[=mf_model]{mf_model()}} object.
+}
+\details{
+\code{residuals.mf_model()} returns target-equation residuals on the same
+standardized scale as the fitted target series, so they can be passed
+directly to downstream residual diagnostics.
 }
 \examples{
 gdp_growth <- tsbox::ts_pc(gdp)
