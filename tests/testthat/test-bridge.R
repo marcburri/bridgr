@@ -468,6 +468,113 @@ test_that("bridge validates duplicate timestamps and missing values", {
   )
 })
 
+test_that("missing and stationarity options are validated", {
+  indic <- make_monthly_indicator(n = 12)
+  target <- make_quarter_target(indic, n_quarters = 4)
+
+  expect_error(
+    mf_model(target = target, indic = indic, missing = "skip"),
+    "`missing` must be one of"
+  )
+  expect_error(
+    mf_model(target = target, indic = indic, stationarity = "check"),
+    "`stationarity` must be one of"
+  )
+})
+
+test_that(
+  "bridge can drop explicit trailing missings and match ragged-edge input",
+  {
+    indic <- make_monthly_indicator(n = 25)
+    target <- make_quarter_target(indic, n_quarters = 8)
+    missing_indic <- indic
+    missing_indic$value[[25]] <- NA_real_
+    dropped_indic <- indic[-25, ]
+
+    expect_warning(
+      dropped_model <- mf_model(
+        target = target,
+        indic = missing_indic,
+        missing = "drop",
+        indic_predict = "last",
+        h = 1
+      ),
+      "dropping them before analysis"
+    )
+    reference_model <- mf_model(
+      target = target,
+      indic = dropped_indic,
+      indic_predict = "last",
+      h = 1
+    )
+
+    expect_equal(
+      dropped_model$estimation_set$time,
+      reference_model$estimation_set$time
+    )
+    expect_equal(
+      unname(dropped_model$estimation_set[[3]]),
+      unname(reference_model$estimation_set[[3]])
+    )
+    expect_equal(
+      dropped_model$forecast_set$time,
+      reference_model$forecast_set$time
+    )
+    expect_equal(
+      unname(dropped_model$forecast_set[[2]]),
+      unname(reference_model$forecast_set[[2]])
+    )
+    expect_equal(
+      unname(stats::coef(dropped_model$model)),
+      unname(stats::coef(reference_model$model)),
+      tolerance = 1e-8
+    )
+  }
+)
+
+test_that("bridge can impute explicit missing values before fitting", {
+  indic <- make_monthly_indicator(n = 24)
+  target <- make_quarter_target(indic, n_quarters = 8)
+  missing_indic <- indic
+  missing_indic$value[[10]] <- NA_real_
+  expected_value <- mean(c(indic$value[[9]], indic$value[[11]]))
+
+  expect_warning(
+    model <- mf_model(
+      target = target,
+      indic = missing_indic,
+      missing = "impute",
+      indic_predict = "last",
+      h = 1
+    ),
+    "imputing them by linear interpolation"
+  )
+
+  expect_s3_class(model, "mf_model")
+  expect_equal(model$indic$values[[10]], expected_value)
+  expect_false(anyNA(model$indic$values))
+  expect_true(all(is.finite(model$indic$values)))
+})
+
+test_that("stationarity = 'warn' emits heuristic diagnostics", {
+  indic <- make_monthly_indicator(n = 24)
+  target <- make_quarter_target(indic, n_quarters = 8) |>
+    dplyr::mutate(value = .data$value + seq(0, 14, length.out = length(.data$value)))
+
+  expect_warning(
+    model <- mf_model(
+      target = target,
+      indic = indic,
+      indic_predict = "last",
+      stationarity = "warn",
+      h = 1
+    ),
+    "Heuristic stationarity checks flagged"
+  )
+
+  expect_s3_class(model, "mf_model")
+})
+
 test_that("bridge validates that tabular inputs are ordered by time", {
   indic <- make_monthly_indicator(n = 12)
   target <- make_quarter_target(indic, n_quarters = 4)

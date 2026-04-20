@@ -8,6 +8,7 @@
 mf_model(
   target,
   indic,
+  missing = "error",
   indic_predict = NULL,
   indic_aggregators = NULL,
   indic_lags = 0,
@@ -17,6 +18,7 @@ mf_model(
   se = FALSE,
   bootstrap = NULL,
   full_system_bootstrap = FALSE,
+  stationarity = "none",
   solver_options = NULL
 )
 
@@ -30,6 +32,15 @@ or a regular time-series object supported by tsbox.}
 \item{indic}{One or more indicator series in a \code{\link[tsbox:ts_boxable]{tsbox::ts_boxable()}}
 format, such as data frames / tibbles with \code{time} and \code{value}/\code{values}
 columns, or regular time-series objects supported by tsbox.}
+
+\item{missing}{Character string controlling how explicit missing values in
+submitted \code{target} or \code{indic} series are handled. \code{missing = "error"} keeps
+the strict default and aborts on explicit missing values.
+\code{missing = "drop"} removes explicit missing values with a warning before
+downstream analysis, which is most useful when they correspond to supported
+ragged-edge gaps at the ends of series. \code{missing = "impute"} replaces
+explicit missing values by series-wise linear interpolation with endpoint
+carry before model fitting. Missing timestamps are always an error.}
 
 \item{indic_predict}{A character vector of indicator forecasting methods.
 Length must be \code{1} or equal to the number of indicator series. Setting
@@ -88,6 +99,13 @@ Delta-HAC uncertainty from the fitted target equation. This option is only
 used when \code{se = TRUE}. Because it refits the full bridge workflow on every
 draw, \code{full_system_bootstrap = TRUE} can be substantially slower than the
 default residual-resampling intervals.}
+
+\item{stationarity}{Character string controlling optional heuristic
+lower-order stationarity diagnostics. \code{stationarity = "none"} skips
+diagnostics. \code{stationarity = "warn"} checks submitted target and indicator
+series for a KPSS-style differencing signal and large variance shifts, and
+warns when those heuristics suggest that upstream transformations such as
+differences, growth rates, log changes, or demeaning may be appropriate.}
 
 \item{solver_options}{A list of optional controls for joint parametric-weight
 optimization. Supported entries are:
@@ -195,8 +213,12 @@ that is appropriate for bridge-style forecasting. In practice this often
 means working with growth rates, differences, or other transformed series
 prepared upstream. This expectation primarily concerns the lower-order
 moments that matter most for bridge-style forecasting, typically the mean
-and variance of the submitted series. The package does not automatically
-test for or enforce stationarity before fitting the bridge regression.
+and variance of the submitted series. By default the package does not
+automatically enforce stationarity, but \code{stationarity = "warn"} enables
+heuristic pre-fit diagnostics for strong linear trends and variance shifts
+and points users toward differences, growth rates, log changes, demeaning,
+or other variance-stabilizing transformations when those heuristics are
+triggered.
 }
 
 \section{Deprecated \code{bridge()} wrapper}{

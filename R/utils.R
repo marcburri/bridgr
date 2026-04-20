@@ -149,6 +149,131 @@ normalize_bridge_default_id <- function(default_id) {
 
 #' @keywords internal
 #' @noRd
+normalize_missing_action <- function(
+  missing = "error",
+  call = rlang::caller_env()
+) {
+  rlang::arg_match0(
+    arg = missing,
+    values = c("error", "drop", "impute"),
+    error_call = call
+  )
+}
+
+#' @keywords internal
+#' @noRd
+normalize_stationarity_action <- function(
+  stationarity = "none",
+  call = rlang::caller_env()
+) {
+  rlang::arg_match0(
+    arg = stationarity,
+    values = c("none", "warn"),
+    error_call = call
+  )
+}
+
+#' @keywords internal
+#' @noRd
+interpolate_series_values <- function(values) {
+  observed <- !is.na(values)
+  if (sum(observed) == 0) {
+    return(values)
+  }
+  if (sum(observed) == 1) {
+    return(rep(values[observed][[1]], length(values)))
+  }
+
+  stats::approx(
+    x = which(observed),
+    y = values[observed],
+    xout = seq_along(values),
+    method = "linear",
+    rule = 2
+  )$y
+}
+
+#' @srrstats {TS2.1b} When `missing = "drop"`, explicit missing values are
+#' removed with a warning before downstream processing so supported ragged-edge
+#' workflows can proceed on the equivalent irregular series.
+#' @srrstats {TS2.1c} When `missing = "impute"`, explicit missing values are
+#' replaced by series-wise linear interpolation with endpoint carry before model
+#' fitting.
+#' @keywords internal
+#' @noRd
+apply_missing_value_policy <- function(
+  data,
+  arg,
+  missing = "error",
+  call = rlang::caller_env()
+) {
+  missing <- normalize_missing_action(missing, call = call)
+
+  if (anyNA(data$time)) {
+    rlang::abort(
+      paste0("`", arg, "` contains missing timestamps."),
+      call = call
+    )
+  }
+
+  missing_n <- sum(is.na(data$values))
+  if (missing_n == 0) {
+    return(data)
+  }
+
+  if (identical(missing, "error")) {
+    rlang::abort(paste0("`", arg, "` contains missing values."), call = call)
+  }
+
+  if (identical(missing, "drop")) {
+    rlang::warn(
+      paste0(
+        "`", arg, "` contains ", missing_n, " missing value",
+        if (missing_n == 1) "" else "s",
+        "; dropping them before analysis."
+      ),
+      call = call
+    )
+    return(dplyr::filter(data, !is.na(.data$values)))
+  }
+
+  all_missing_ids <- data |>
+    dplyr::group_by(.data$id) |>
+    dplyr::summarise(all_missing = all(is.na(.data$values)), .groups = "drop") |>
+    dplyr::filter(.data$all_missing) |>
+    dplyr::pull(.data$id)
+  if (length(all_missing_ids) > 0) {
+    rlang::abort(
+      paste0(
+        "`", arg,
+        "` cannot be imputed because the following series contain only ",
+        "missing values: ",
+        paste0("`", all_missing_ids, "`", collapse = ", "),
+        "."
+      ),
+      call = call
+    )
+  }
+
+  rlang::warn(
+    paste0(
+      "`", arg, "` contains ", missing_n, " missing value",
+      if (missing_n == 1) "" else "s",
+      "; imputing them by linear interpolation within each series."
+    ),
+    call = call
+  )
+
+  data |>
+    dplyr::group_by(.data$id) |>
+    dplyr::group_modify(
+      ~ dplyr::mutate(.x, values = interpolate_series_values(.data$values))
+    ) |>
+    dplyr::ungroup()
+}
+
+#' @keywords internal
+#' @noRd
 is_bridge_reference_expr <- function(expr) {
   if (is.symbol(expr)) {
     return(TRUE)
@@ -195,6 +320,7 @@ as_bridge_tbl <- function(
   x,
   arg,
   default_id,
+  missing = "error",
   call = rlang::caller_env()
 ) {
   default_id <- normalize_bridge_default_id(default_id)
@@ -281,7 +407,12 @@ as_bridge_tbl <- function(
       time = .data$time,
       values = as.numeric(.data$values)
     ) |>
-    dplyr::arrange(.data$id, .data$time)
+    dplyr::arrange(.data$id, .data$time) |>
+    apply_missing_value_policy(
+      arg = arg,
+      missing = missing,
+      call = call
+    )
 }
 
 #' @keywords internal
@@ -391,6 +522,95 @@ check_bridge_series <- function(
   }
 
   invisible(data)
+}
+
+#' @keywords internal
+#' @noRd
+stationarity_series_issues <- function(values) {
+  issues <- character()
+  n_obs <- length(values)
+
+  if (n_obs >= 6) {
+    ndiffs_required <- tryCatch(
+      forecast::ndiffs(values, alpha = 0.05, test = "kpss"),
+      error = function(...) NA_integer_
+    )
+    if (isTRUE(is.finite(ndiffs_required) && ndiffs_required > 0)) {
+      issues <- c(issues, "KPSS differencing signal")
+    }
+  }
+
+  split_index <- floor(n_obs / 2)
+  if (split_index >= 3 && (n_obs - split_index) >= 3) {
+    first_sd <- stats::sd(values[seq_len(split_index)])
+    second_sd <- stats::sd(values[(split_index + 1):n_obs])
+    if (all(is.finite(c(first_sd, second_sd)))) {
+      min_sd <- min(first_sd, second_sd)
+      max_sd <- max(first_sd, second_sd)
+      variance_ratio <- if (min_sd == 0) {
+        Inf
+      } else {
+        max_sd / min_sd
+      }
+      if (variance_ratio >= 2.5) {
+        issues <- c(issues, "variance shift")
+      }
+    }
+  }
+
+  unique(issues)
+}
+
+#' @srrstats {TS2.4} The package provides one optional preprocessing routine
+#' that checks lower-order stationarity heuristics relevant for bridge-style
+#' forecasting before fitting.
+#' @srrstats {TS2.4a} When `stationarity = "warn"`, those heuristics emit a
+#' diagnostic warning naming the affected series before model fitting.
+#' @keywords internal
+#' @noRd
+warn_stationarity_diagnostics <- function(
+  data,
+  arg,
+  stationarity = "none",
+  call = rlang::caller_env()
+) {
+  stationarity <- normalize_stationarity_action(
+    stationarity = stationarity,
+    call = call
+  )
+  if (!identical(stationarity, "warn")) {
+    return(invisible(NULL))
+  }
+
+  flagged <- data |>
+    dplyr::group_by(.data$id) |>
+    dplyr::group_modify(
+      ~ {
+        issues <- stationarity_series_issues(.x$values)
+        if (length(issues) == 0) {
+          return(dplyr::tibble(issues = character()))
+        }
+        dplyr::tibble(issues = paste(issues, collapse = ", "))
+      }
+    ) |>
+    dplyr::ungroup()
+
+  if (nrow(flagged) == 0) {
+    return(invisible(NULL))
+  }
+
+  issue_text <- paste0("`", flagged$id, "` (", flagged$issues, ")")
+  rlang::warn(
+    paste0(
+      "Heuristic stationarity checks flagged ", arg, " series ",
+      paste(issue_text, collapse = "; "),
+      ". Consider differences, growth rates, log changes, demeaning, or ",
+      "other variance-stabilizing transformations before fitting."
+    ),
+    call = call
+  )
+
+  invisible(flagged)
 }
 
 #' @keywords internal

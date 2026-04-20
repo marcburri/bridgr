@@ -34,12 +34,6 @@
 #' @srrstatsTODO {G5.10} *Extended tests should included and run under a common framework with other tests but be switched on by flags such as as a `<MYPKG>_EXTENDED_TESTS="true"` environment variable.* - The extended tests can be then run automatically by GitHub Actions for example by adding the following to the `env` section of the workflow: 
 #' @srrstatsTODO {TS1.4} *The pre-processing function described above should maintain all time- or date-based components or attributes of input data.* 
 #' @srrstatsTODO {TS1.7} *Accept inputs defined via the [`units` package](https://github.com/r-quantities/units/) for attributing SI units to R vectors.*
-#' @srrstatsTODO {TS2.1} *Where possible, all functions should provide options for users to specify how to handle missing data, with options minimally including:*
-#' @srrstatsTODO {TS2.1b} *warn or ignore missing data, and proceed to analyse irregular data, ensuring that results from function calls with regular yet missing data return identical values to submitting equivalent irregular data with no missing values; or*
-#' @srrstatsTODO {TS2.1c} *replace missing data with appropriately imputed values.* 
-#' @srrstatsTODO {TS2.4} *Implement appropriate checks for all relevant forms of stationarity, and either:*
-#' @srrstatsTODO {TS2.4a} *issue diagnostic messages or warnings; or*
-#' @srrstatsTODO {TS2.4b} *enable or advise on appropriate transformations to ensure stationarity.* 
 #' @srrstatsTODO {TS2.5} *Incorporate a system to ensure that both row and column orders follow the same ordering as the underlying time series data. This may, for example, be done by including the `index` attribute of the time series data as an attribute of the auto-covariance matrix.*
 #' @srrstatsTODO {TS3.0} *Provide tests to demonstrate at least one case in which errors widen appropriately with forecast horizon.*
 #' @srrstatsTODO {TS3.1} *If possible, provide at least one test which violates TS3.0*

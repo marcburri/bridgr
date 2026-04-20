@@ -47,6 +47,14 @@
 #' @param indic One or more indicator series in a [tsbox::ts_boxable()]
 #' format, such as data frames / tibbles with `time` and `value`/`values`
 #' columns, or regular time-series objects supported by tsbox.
+#' @param missing Character string controlling how explicit missing values in
+#' submitted `target` or `indic` series are handled. `missing = "error"` keeps
+#' the strict default and aborts on explicit missing values.
+#' `missing = "drop"` removes explicit missing values with a warning before
+#' downstream analysis, which is most useful when they correspond to supported
+#' ragged-edge gaps at the ends of series. `missing = "impute"` replaces
+#' explicit missing values by series-wise linear interpolation with endpoint
+#' carry before model fitting. Missing timestamps are always an error.
 #' @param indic_predict A character vector of indicator forecasting methods.
 #' Length must be `1` or equal to the number of indicator series. Setting
 #' `indic_predict = "direct"` switches to direct MIDAS-style alignment: the
@@ -96,6 +104,12 @@
 #' used when `se = TRUE`. Because it refits the full bridge workflow on every
 #' draw, `full_system_bootstrap = TRUE` can be substantially slower than the
 #' default residual-resampling intervals.
+#' @param stationarity Character string controlling optional heuristic
+#' lower-order stationarity diagnostics. `stationarity = "none"` skips
+#' diagnostics. `stationarity = "warn"` checks submitted target and indicator
+#' series for a KPSS-style differencing signal and large variance shifts, and
+#' warns when those heuristics suggest that upstream transformations such as
+#' differences, growth rates, log changes, or demeaning may be appropriate.
 #' @param solver_options A list of optional controls for joint parametric-weight
 #' optimization. Supported entries are:
 #' `method` for the optimizer (`"L-BFGS-B"`, `"BFGS"`, `"Nelder-Mead"`, or
@@ -148,8 +162,12 @@
 #' means working with growth rates, differences, or other transformed series
 #' prepared upstream. This expectation primarily concerns the lower-order
 #' moments that matter most for bridge-style forecasting, typically the mean
-#' and variance of the submitted series. The package does not automatically
-#' test for or enforce stationarity before fitting the bridge regression.
+#' and variance of the submitted series. By default the package does not
+#' automatically enforce stationarity, but `stationarity = "warn"` enables
+#' heuristic pre-fit diagnostics for strong linear trends and variance shifts
+#' and points users toward differences, growth rates, log changes, demeaning,
+#' or other variance-stabilizing transformations when those heuristics are
+#' triggered.
 #'
 #' @section Deprecated `bridge()` wrapper:
 #' [bridge()] is retained for compatibility and forwards to `mf_model()` with a
@@ -217,10 +235,13 @@
 #' @srrstats {RE3.3} The public `solver_options` argument explicitly exposes `reltol`, allowing users to set the convergence tolerance for joint parametric optimization.
 #' @srrstats {TS2.2} The stationarity documentation explicitly states that users are expected to prepare bridge inputs so the relevant lower-order moments, typically mean and variance, are on an appropriate scale before fitting.
 #' @srrstats {TS2.3} The documentation explicitly states that stationarity-relevant transformations are expected to happen upstream rather than being imposed automatically by the package.
+#' @srrstats {TS2.1} The public `missing` argument documents explicit user-selectable handling of missing values through strict errors, drop-with-warning behavior, and imputation.
+#' @srrstats {TS2.4b} The public stationarity documentation and `stationarity = "warn"` option advise concrete upstream transformations such as differences, growth rates, log changes, and demeaning when heuristic diagnostics flag a series.
 #' @export
 mf_model <- function(
   target,
   indic,
+  missing = "error",
   indic_predict = NULL,
   indic_aggregators = NULL,
   indic_lags = 0,
@@ -230,8 +251,14 @@ mf_model <- function(
   se = FALSE,
   bootstrap = NULL,
   full_system_bootstrap = FALSE,
+  stationarity = "none",
   solver_options = NULL
 ) {
+  missing <- normalize_missing_action(missing, call = rlang::caller_env())
+  stationarity <- normalize_stationarity_action(
+    stationarity,
+    call = rlang::caller_env()
+  )
   target_name <- bridge_argument_label(substitute(target), "target")
   indic_name <- bridge_argument_label(substitute(indic), "indic")
 
@@ -239,12 +266,14 @@ mf_model <- function(
   target_tbl <- as_bridge_tbl(
     x = target,
     arg = "target",
-    default_id = target_name
+    default_id = target_name,
+    missing = missing
   )
   indic_tbl <- as_bridge_tbl(
     x = indic,
     arg = "indic",
-    default_id = indic_name
+    default_id = indic_name,
+    missing = missing
   )
   target_tbl <- normalize_period_start_data(target_tbl)
   indic_tbl <- normalize_period_start_data(indic_tbl)
@@ -262,6 +291,19 @@ mf_model <- function(
     bootstrap = bootstrap,
     full_system_bootstrap = full_system_bootstrap,
     solver_options = solver_options
+  )
+
+  warn_stationarity_diagnostics(
+    data = target_tbl,
+    arg = "target",
+    stationarity = stationarity,
+    call = rlang::caller_env()
+  )
+  warn_stationarity_diagnostics(
+    data = indic_tbl,
+    arg = "indic",
+    stationarity = stationarity,
+    call = rlang::caller_env()
   )
 
   # Carry the target symbol into the final model formula and output.
