@@ -174,6 +174,16 @@ numeric values are not preserved in the fitted object unless they are
 re-encoded in those standardized columns.
 }
 
+\section{Input assumptions}{
+
+\code{bridgr} assumes that submitted target and indicator series are ordered by
+time within each series, free of duplicate timestamps and explicit missing
+values, and regular enough for the package to infer a supported target and
+indicator frequency. It also assumes that indicator series are at least as
+high-frequency as the target. Violations of these assumptions are rejected
+during preprocessing and validation rather than being silently repaired.
+}
+
 \section{Stationarity}{
 
 \code{bridgr} assumes that users provide target and indicator series on a scale

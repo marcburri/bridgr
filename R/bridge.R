@@ -130,6 +130,14 @@
 #' numeric values are not preserved in the fitted object unless they are
 #' re-encoded in those standardized columns.
 #'
+#' @section Input assumptions:
+#' `bridgr` assumes that submitted target and indicator series are ordered by
+#' time within each series, free of duplicate timestamps and explicit missing
+#' values, and regular enough for the package to infer a supported target and
+#' indicator frequency. It also assumes that indicator series are at least as
+#' high-frequency as the target. Violations of these assumptions are rejected
+#' during preprocessing and validation rather than being silently repaired.
+#'
 #' @section Stationarity:
 #' `bridgr` assumes that users provide target and indicator series on a scale
 #' that is appropriate for bridge-style forecasting. In practice this often
@@ -200,6 +208,7 @@
 #' @srrstats {RE4.0} `mf_model()` returns a model object of class `"mf_model"`.
 #' @srrstats {RE1.0} The documentation explicitly explains why `bridgr` uses separate mixed-frequency series inputs instead of a formula interface.
 #' @srrstats {RE1.3a} The documentation explicitly states that preprocessing drops arbitrary extra input attributes when data are standardized to the package's common internal table format.
+#' @srrstats {RE1.4} The public documentation states the package assumptions about ordered, regular, non-missing mixed-frequency inputs, and validation tests exercise violations such as duplicate timestamps, explicit missing values, and lower-frequency indicators.
 #' @srrstats {TS2.2} The stationarity documentation explicitly states that users are expected to prepare bridge inputs so the relevant lower-order moments, typically mean and variance, are on an appropriate scale before fitting.
 #' @srrstats {TS2.3} The documentation explicitly states that stationarity-relevant transformations are expected to happen upstream rather than being imposed automatically by the package.
 #' @export
