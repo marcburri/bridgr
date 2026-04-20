@@ -179,6 +179,42 @@ test_that("unsupported value types fail during preprocessing", {
   )
 })
 
+test_that("all-NA and all-identical series edge cases are covered", {
+  indic <- make_monthly_indicator(n = 24)
+  target <- make_quarter_target(indic, n_quarters = 8)
+  all_na_target <- dplyr::tibble(
+    time = target$time,
+    value = rep(NA_real_, nrow(target))
+  )
+  all_na_indic <- dplyr::tibble(
+    time = indic$time,
+    value = rep(NA_real_, nrow(indic))
+  )
+  all_identical_indic <- dplyr::tibble(
+    time = indic$time,
+    value = rep(5, nrow(indic))
+  )
+
+  expect_error(
+    mf_model(target = all_na_target, indic = indic, h = 1),
+    "contains missing values"
+  )
+  expect_error(
+    mf_model(target = target, indic = all_na_indic, h = 1),
+    "contains missing values"
+  )
+
+  identical_model <- mf_model(
+    target = target,
+    indic = all_identical_indic,
+    indic_predict = "last",
+    h = 1
+  )
+  expect_s3_class(identical_model, "mf_model")
+  expect_false(anyNA(stats::fitted(identical_model$model)))
+  expect_false(anyNA(identical_model$forecast_set[[identical_model$indic_name[[1]]]]))
+})
+
 test_that("invalid or lower-frequency indicators are rejected", {
   indic <- dplyr::tibble(
     time = seq(as.Date("2020-01-01"), by = "quarter", length.out = 4),
