@@ -315,6 +315,28 @@ test_that("parametric starting values must have the exact required length", {
   )
 })
 
+test_that("mf_model accepts an explicit parametric optimizer tolerance", {
+  indic <- make_monthly_indicator(n = 36)
+  target <- make_quarter_target(indic, n_quarters = 12)
+
+  model <- suppressWarnings(mf_model(
+    target = target,
+    indic = indic,
+    indic_predict = "last",
+    indic_aggregators = "beta",
+    solver_options = list(
+      reltol = 1e-6,
+      start_values = c(2, 3),
+      n_starts = 1,
+      maxiter = 75
+    ),
+    h = 1
+  ))
+
+  expect_s3_class(model, "mf_model")
+  expect_equal(model$parametric_optimization$method, "L-BFGS-B")
+})
+
 test_that("deprecated solver option `start` is rejected", {
   indic <- make_monthly_indicator()
   target <- make_quarter_target(indic, n_quarters = 6)

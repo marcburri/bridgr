@@ -104,8 +104,9 @@ indicator order across the parametric aggregators. Within each indicator,
 the parameter order is \verb{(linear, quadratic)} for \code{"expalmon"} and
 \verb{(left_shape, right_shape)} for \code{"beta"}. Named-list \code{start_values} must
 provide exactly the required number of values for each parametric indicator.
-These controls are ignored unless at least one indicator uses a parametric
-aggregator.}
+Users can override \code{reltol} in any call through
+\code{solver_options = list(reltol = ...)}. These controls are ignored unless at
+least one indicator uses a parametric aggregator.}
 
 \item{...}{Arguments forwarded to \code{\link[=mf_model]{mf_model()}}.}
 }
