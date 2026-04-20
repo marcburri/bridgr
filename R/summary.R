@@ -5,8 +5,8 @@
 #'
 #' @return `object`, invisibly.
 #'
-#' @srrstats {RE4.18} The package provides a dedicated `summary.mf_model()` method for fitted model objects.
-#' @srrstats {RE4.11} `summary.mf_model()` reports goodness-of-fit summaries such as R-squared, adjusted R-squared, and residual standard error alongside the coefficient table.
+#' @srrstats {RE4.18} Provides a dedicated `summary.mf_model()` method.
+#' @srrstats {RE4.11} Reports GOF metrics with the coefficient table.
 #'
 #' @examples
 #' gdp_growth <- tsbox::ts_pc(gdp)

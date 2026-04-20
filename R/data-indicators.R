@@ -47,7 +47,7 @@
 #' data(baro)
 #' library(tsbox)
 #' suppressMessages(ts_plot(baro))
-#' @srrstats {G5.1} The package exports documented datasets (`gdp`, `baro`, `wea`, and `fcurve`), and `gdp`/`baro` are used in examples, vignettes, and behavior tests so users can reproduce those workflows.
+#' @srrstats {G5.1} Exported datasets support reproducible examples and tests.
 #' @format NULL
 "gdp"
 

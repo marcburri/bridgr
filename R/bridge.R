@@ -228,33 +228,33 @@
 #' Simple Methods Are Sufficient. *Oxford Bulletin of Economics and
 #' Statistics*, 1-25. \doi{10.1111/obes.70073}
 #'
-#' @srrstats {G1.0} `mf_model()` documents primary academic references for bridge and MIDAS models in its `@references` section.
-#' @srrstats {G2.0a} The parameter documentation states explicit length rules for vector inputs such as `indic_predict` and `indic_aggregators`.
-#' @srrstats {G2.1a} The parameter documentation states explicit expected types for vector inputs such as character method vectors, numeric weight vectors, and named numeric conversion vectors.
-#' @srrstats {TS1.1} The `target` and `indic` parameters document accepted ts-boxable time-series and tabular input forms.
-#' @srrstats {TS1.8} The documentation explicitly states the regular frequency ladder and default conversion counts used to relate days, weeks, months, quarters, and years.
-#' @srrstats {RE1.2} The `indic` parameter documents accepted predictor formats as ts-boxable time-series inputs.
-#' @srrstats {RE2.0} The documentation explains default input transformations, including period-start normalization, indicator extension, and aggregation.
-#' @srrstats {G3.1} The uncertainty arguments document more than one covariance-estimation route, including HAC / Delta-HAC uncertainty and optional full-system block-bootstrap uncertainty, rather than relying only on `stats::cov()`.
-#' @srrstats {TS4.0} The fitted object satisfies the return-value standard through a documented custom `"mf_model"` class.
+#' @srrstats {G1.0} Documents bridge and MIDAS references.
+#' @srrstats {G2.0a} Documents vector length rules.
+#' @srrstats {G2.1a} Documents expected control-input types.
+#' @srrstats {TS1.1} Documents accepted ts-boxable input forms.
+#' @srrstats {TS1.8} Documents the supported frequency ladder.
+#' @srrstats {RE1.2} Documents accepted predictor input forms.
+#' @srrstats {RE2.0} Documents default preprocessing and aggregation.
+#' @srrstats {G3.1} Documents HAC, Delta-HAC, and bootstrap uncertainty routes.
+#' @srrstats {TS4.0} Returns a documented `"mf_model"` object.
 #' @srrstats {TS4.0b} `mf_model()` returns a class-defined `"mf_model"` object.
-#' @srrstats {TS4.2} The `@return` section documents the class and main contents of the `"mf_model"` object.
-#' @srrstats {TS4.3} The returned model stores explicit time-scale information through target and indicator frequency metadata plus aligned time-indexed estimation and forecast datasets.
-#' @srrstats {TS4.7b} The returned model keeps aligned estimation and forecast values in separate list items, `estimation_set` and `forecast_set`.
+#' @srrstats {TS4.2} The `@return` docs describe the model object.
+#' @srrstats {TS4.3} Stores frequency metadata and aligned time-indexed sets.
+#' @srrstats {TS4.7b} Keeps estimation and forecast values in separate items.
 #' @srrstats {RE4.0} `mf_model()` returns a model object of class `"mf_model"`.
-#' @srrstats {RE1.0} The documentation explicitly explains why `bridgr` uses separate mixed-frequency series inputs instead of a formula interface.
-#' @srrstats {RE1.3a} The documentation explicitly states that preprocessing drops arbitrary extra input attributes when data are standardized to the package's common internal table format.
-#' @srrstats {RE1.4} The public documentation states the package assumptions about ordered, regular, non-missing mixed-frequency inputs, and validation tests exercise violations such as duplicate timestamps, explicit missing values, and lower-frequency indicators.
-#' @srrstats {RE3.2} The `solver_options` documentation states the default convergence-control values used for joint parametric optimization, including the default relative tolerance and iteration budget.
-#' @srrstats {RE3.3} The public `solver_options` argument explicitly exposes `reltol`, allowing users to set the convergence tolerance for joint parametric optimization.
-#' @srrstats {RE3.1} The public `solver_options` interface includes `warn = FALSE` to suppress non-convergence warnings while the fitted model still stores optimizer method, code, and message in `parametric_optimization`.
-#' @srrstats {TS2.2} The stationarity documentation explicitly states that users are expected to prepare bridge inputs so the relevant lower-order moments, typically mean and variance, are on an appropriate scale before fitting.
-#' @srrstats {TS2.3} The documentation explicitly states that stationarity-relevant transformations are expected to happen upstream rather than being imposed automatically by the package.
-#' @srrstats {G1.3} The `mf_model()` documentation now defines the core mixed-frequency terms used throughout the package, including target, indicator, indicator forecasting, aggregation, direct prediction, and unrestricted aggregation.
-#' @srrstats {G2.14} The public `missing` argument gives users explicit control over how submitted `NA` values are handled before model fitting.
-#' @srrstats {TS2.1} The public `missing` argument documents explicit user-selectable handling of missing values through strict errors, drop-with-warning behavior, and imputation.
-#' @srrstats {RE2.1} The public `missing` argument implements explicit user-selectable handling of submitted missing values before bridge estimation.
-#' @srrstats {TS2.4b} The public stationarity documentation and `stationarity = "warn"` option advise concrete upstream transformations such as differences, growth rates, log changes, and demeaning when heuristic diagnostics flag a series.
+#' @srrstats {RE1.0} Explains the non-formula mixed-frequency interface.
+#' @srrstats {RE1.3a} Documents that extra attributes are dropped on import.
+#' @srrstats {RE1.4} Documents ordering, regularity, and missing-data rules.
+#' @srrstats {RE3.2} Documents default optimizer controls.
+#' @srrstats {RE3.3} Exposes `reltol` as a user control.
+#' @srrstats {RE3.1} Exposes `warn = FALSE` without dropping diagnostics.
+#' @srrstats {TS2.2} States the expected lower-order stationarity setup.
+#' @srrstats {TS2.3} States that transformations happen upstream.
+#' @srrstats {G1.3} Defines core mixed-frequency terminology.
+#' @srrstats {G2.14} Exposes missing-data handling as a public control.
+#' @srrstats {TS2.1} Documents error, drop, and impute modes.
+#' @srrstats {RE2.1} Exposes explicit missing-data handling before fitting.
+#' @srrstats {TS2.4b} Advises upstream stationarity transformations.
 #' @export
 mf_model <- function(
   target,
@@ -343,9 +343,9 @@ bridge <- function(...) {
   mf_model(...)
 }
 
-#' @srrstats {RE4.7} When parametric aggregation is used, convergence information is stored in `parametric_optimization` on the returned model object.
-#' @srrstats {RE4.8} The returned model stores the standardized target series and target-frequency metadata.
-#' @srrstats {RE4.13} The returned model stores indicator series, indicator-frequency metadata, and regressor names.
+#' @srrstats {RE4.7} Stores parametric convergence metadata.
+#' @srrstats {RE4.8} Stores the target series and its frequency metadata.
+#' @srrstats {RE4.13} Stores indicator data, frequencies, and regressor names.
 #' @keywords internal
 #' @noRd
 fit_bridge_model <- function(
@@ -642,9 +642,9 @@ fit_bridge_model <- function(
   )
 }
 
-#' @srrstats {G2.0} Public scalar and per-indicator controls are checked for required lengths before model fitting.
-#' @srrstats {G2.1} Public control arguments are type-checked here, while `as_bridge_tbl()` validates the time-series inputs.
-#' @srrstats {G2.2} `target` is restricted to exactly one submitted series, while indicator multiplicity is handled explicitly.
+#' @srrstats {G2.0} Checks scalar and per-indicator control lengths.
+#' @srrstats {G2.1} Type-checks controls before model fitting.
+#' @srrstats {G2.2} Restricts `target` to one series.
 #' @keywords internal
 #' @noRd
 validate_bridge_inputs <- function(

@@ -24,7 +24,7 @@
 NULL
 
 #' @rdname mf_model-accessors
-#' @srrstats {RE4.2} `coef.mf_model()` returns the fitted coefficients of the stored target regression.
+#' @srrstats {RE4.2} Returns the fitted target-regression coefficients.
 #' @method coef mf_model
 #' @export
 coef.mf_model <- function(object, ...) {
@@ -34,7 +34,7 @@ coef.mf_model <- function(object, ...) {
 #' @rdname mf_model-accessors
 #' @param parm,level Passed to [confint()]. Confidence intervals are computed
 #'   from the coefficient covariance matrix returned by [stats::vcov()].
-#' @srrstats {RE4.3} `confint.mf_model()` returns coefficient confidence intervals derived from the model's reported covariance matrix.
+#' @srrstats {RE4.3} Returns coefficient intervals from the stored covariance.
 #' @method confint mf_model
 #' @export
 confint.mf_model <- function(object, parm = NULL, level = 0.95, ...) {
@@ -74,7 +74,7 @@ confint.mf_model <- function(object, parm = NULL, level = 0.95, ...) {
 }
 
 #' @rdname mf_model-accessors
-#' @srrstats {RE4.4} `formula.mf_model()` returns the assembled target-regression formula stored on the fitted model object.
+#' @srrstats {RE4.4} Returns the stored target-regression formula.
 #' @method formula mf_model
 #' @export
 formula.mf_model <- function(x, ...) {
@@ -82,7 +82,7 @@ formula.mf_model <- function(x, ...) {
 }
 
 #' @rdname mf_model-accessors
-#' @srrstats {RE4.5} `nobs.mf_model()` returns the number of rows used in the fitted target regression.
+#' @srrstats {RE4.5} Returns the number of fitted target-regression rows.
 #' @method nobs mf_model
 #' @export
 nobs.mf_model <- function(object, ...) {
@@ -90,7 +90,7 @@ nobs.mf_model <- function(object, ...) {
 }
 
 #' @rdname mf_model-accessors
-#' @srrstats {RE4.6} `vcov.mf_model()` returns the stored coefficient covariance matrix when available and otherwise falls back to the underlying target regression fit.
+#' @srrstats {RE4.6} Returns stored covariance or falls back to the target fit.
 #' @method vcov mf_model
 #' @export
 vcov.mf_model <- function(object, ...) {
@@ -104,7 +104,7 @@ vcov.mf_model <- function(object, ...) {
 }
 
 #' @rdname mf_model-accessors
-#' @srrstats {RE4.9} `fitted.mf_model()` returns the in-sample fitted values from the stored target regression.
+#' @srrstats {RE4.9} Returns in-sample fitted target values.
 #' @method fitted mf_model
 #' @export
 fitted.mf_model <- function(object, ...) {
@@ -115,7 +115,7 @@ fitted.mf_model <- function(object, ...) {
 #' @details `residuals.mf_model()` returns target-equation residuals on the same
 #'   standardized scale as the fitted target series, so they can be passed
 #'   directly to downstream residual diagnostics.
-#' @srrstats {RE4.10} `residuals.mf_model()` returns target-equation residuals on the fitted model scale and documents that they can be used directly in downstream residual diagnostics.
+#' @srrstats {RE4.10} Returns target residuals on the fitted-model scale.
 #' @method residuals mf_model
 #' @export
 residuals.mf_model <- function(object, ...) {
@@ -124,7 +124,7 @@ residuals.mf_model <- function(object, ...) {
 
 #' @rdname mf_model-accessors
 #' @return `x`, invisibly.
-#' @srrstats {RE4.17} `print.mf_model()` provides an on-screen summary of model inputs, coefficients, and uncertainty settings through the package's standard summary layout.
+#' @srrstats {RE4.17} Prints the standard model summary layout.
 #' @method print mf_model
 #' @export
 print.mf_model <- function(x, ...) {

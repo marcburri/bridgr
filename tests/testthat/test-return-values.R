@@ -1,7 +1,9 @@
 #' @srrstats {G5.3} Standard fitted models and uncertainty-enabled forecasts
 #' return finite numeric outputs with no `NA`, `NaN`, or `Inf` values in
 #' components expected to be defined.
-test_that("standard fitted models and forecasts return finite numeric outputs", {
+test_that(
+  "standard fitted models and forecasts return finite numeric outputs",
+  {
   indic <- make_monthly_indicator(n = 36)
   target <- make_quarter_target(indic, n_quarters = 12)
 
@@ -26,8 +28,12 @@ test_that("standard fitted models and forecasts return finite numeric outputs", 
   expect_false(anyNA(stats::residuals(model)))
   expect_true(all(is.finite(stats::residuals(model))))
 
-  estimation_numeric <- model$estimation_set[setdiff(names(model$estimation_set), "time")]
-  forecast_numeric <- model$forecast_set[setdiff(names(model$forecast_set), "time")]
+  estimation_numeric <- model$estimation_set[
+    setdiff(names(model$estimation_set), "time")
+  ]
+  forecast_numeric <- model$forecast_set[
+    setdiff(names(model$forecast_set), "time")
+  ]
   expect_false(anyNA(estimation_numeric))
   expect_true(all(vapply(
     estimation_numeric,
@@ -49,4 +55,5 @@ test_that("standard fitted models and forecasts return finite numeric outputs", 
   expect_true(all(is.finite(fc$lower)))
   expect_false(anyNA(fc$upper))
   expect_true(all(is.finite(fc$upper)))
-})
+  }
+)

@@ -121,7 +121,9 @@ test_that("fitted.mf_model returns the in-sample fitted path", {
   expect_equal(length(stats::fitted(model)), nrow(model$estimation_set))
 })
 
-test_that("residuals.mf_model delegates residual diagnostics to the target fit", {
+test_that(
+  "residuals.mf_model delegates residual diagnostics to the target fit",
+  {
   indic <- make_monthly_indicator(n = 36)
   target <- make_quarter_target(indic, n_quarters = 12)
 
@@ -138,7 +140,8 @@ test_that("residuals.mf_model delegates residual diagnostics to the target fit",
     as.numeric(stats::fitted(model) + stats::residuals(model)),
     as.numeric(model$estimation_set[[model$target_name]])
   )
-})
+  }
+)
 
 test_that("print.mf_model exposes the package summary layout", {
   indic <- make_monthly_indicator(n = 36)
@@ -158,7 +161,9 @@ test_that("print.mf_model exposes the package summary layout", {
   expect_true(any(grepl("Indicator summary:", output, fixed = TRUE)))
 })
 
-test_that("returned model objects behave consistently across accessor methods", {
+test_that(
+  "returned model objects behave consistently across accessor methods",
+  {
   indic <- make_monthly_indicator(n = 36)
   target <- make_quarter_target(indic, n_quarters = 12)
 
@@ -182,4 +187,5 @@ test_that("returned model objects behave consistently across accessor methods", 
   expect_equal(stats::fitted(model), stats::fitted(model$model))
   expect_equal(stats::residuals(model), stats::residuals(model$model))
   expect_invisible(print(model))
-})
+  }
+)

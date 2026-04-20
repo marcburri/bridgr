@@ -193,21 +193,11 @@ interpolate_series_values <- function(values) {
   )$y
 }
 
-#' @srrstats {G2.14b} When `missing = "drop"`, explicit missing values are
-#' removed with a warning before downstream processing so analysis can proceed
-#' on the supported non-missing subset.
-#' @srrstats {G2.14c} When `missing = "impute"`, explicit missing values are
-#' replaced before analysis with deterministic within-series interpolated
-#' values.
-#' @srrstats {G2.15} Explicit missing values are resolved here before downstream
-#' routines call summary statistics such as `mean()` or `sd()`, so later code
-#' does not rely on implicit non-missingness.
-#' @srrstats {TS2.1b} When `missing = "drop"`, explicit missing values are
-#' removed with a warning before downstream processing so supported ragged-edge
-#' workflows can proceed on the equivalent irregular series.
-#' @srrstats {TS2.1c} When `missing = "impute"`, explicit missing values are
-#' replaced by series-wise linear interpolation with endpoint carry before model
-#' fitting.
+#' @srrstats {G2.14b} `missing = "drop"` removes explicit missing values.
+#' @srrstats {G2.14c} `missing = "impute"` replaces missing values.
+#' @srrstats {G2.15} Resolves missing values before later summary statistics.
+#' @srrstats {TS2.1b} Drop mode warns and proceeds on the non-missing subset.
+#' @srrstats {TS2.1c} Impute mode uses linear interpolation with end carry.
 #' @keywords internal
 #' @noRd
 apply_missing_value_policy <- function(
@@ -248,7 +238,10 @@ apply_missing_value_policy <- function(
 
   all_missing_ids <- data |>
     dplyr::group_by(.data$id) |>
-    dplyr::summarise(all_missing = all(is.na(.data$values)), .groups = "drop") |>
+    dplyr::summarise(
+      all_missing = all(is.na(.data$values)),
+      .groups = "drop"
+    ) |>
     dplyr::filter(.data$all_missing) |>
     dplyr::pull(.data$id)
   if (length(all_missing_ids) > 0) {
@@ -310,19 +303,19 @@ bridge_argument_label <- function(expr, fallback) {
   normalize_bridge_default_id(fallback)
 }
 
-#' @srrstats {G2.4} Supported inputs are explicitly converted into one standard internal form through character and numeric coercion in the preprocessing helpers, alongside integer normalization for scalar control arguments.
-#' @srrstats {G2.4b} Series values are explicitly standardized with `as.numeric()` before downstream use.
-#' @srrstats {G2.4c} Series identifiers are explicitly standardized with `as.character()`.
-#' @srrstats {G2.10} Downstream column selection happens only after conversion to a standard tibble, so it does not rely on class-specific extraction defaults of the original input object.
-#' @srrstats {G2.6} Supported one-dimensional time-series inputs are standardized through tsbox regardless of their original supported class.
-#' @srrstats {G2.7} The package accepts multiple ts-boxable tabular and time-series input forms through `tsbox::ts_boxable()`.
-#' @srrstats {G2.8} `as_bridge_tbl()` is the common pre-processing step that converts supported inputs to one standardized internal table form.
-#' @srrstats {G2.12} List-valued value columns are rejected with an informative preprocessing error before the data are standardized for modeling.
-#' @srrstats {TS1.0} Only explicit time-series inputs accepted by `tsbox::ts_boxable()` enter the preprocessing pipeline; generic non-time-series objects are rejected.
-#' @srrstats {TS1.2} `as_bridge_tbl()` validates that submitted series are acceptable ts-boxable time-series inputs.
-#' @srrstats {TS1.3} `as_bridge_tbl()` and downstream normalization convert accepted inputs to one uniform internal table representation.
-#' @srrstats {TS1.6} Tabular inputs that are not ordered by time within each series are rejected during preprocessing before they are standardized for modeling.
-#' @srrstats {TS1.5} Input rows are sorted by series id and time before downstream processing.
+#' @srrstats {G2.4} Converts supported inputs to one internal form.
+#' @srrstats {G2.4b} Standardizes series values with `as.numeric()`.
+#' @srrstats {G2.4c} Standardizes series ids with `as.character()`.
+#' @srrstats {G2.10} Selects columns after standard tibble conversion.
+#' @srrstats {G2.6} Standardizes supported series through tsbox.
+#' @srrstats {G2.7} Accepts multiple ts-boxable input forms.
+#' @srrstats {G2.8} Uses one shared preprocessing step for supported inputs.
+#' @srrstats {G2.12} Rejects list-valued data columns before modeling.
+#' @srrstats {TS1.0} Only ts-boxable time-series inputs enter preprocessing.
+#' @srrstats {TS1.2} Validates ts-boxable input status in `as_bridge_tbl()`.
+#' @srrstats {TS1.3} Converts accepted inputs to one table format.
+#' @srrstats {TS1.6} Rejects per-series time disorder in tabular inputs.
+#' @srrstats {TS1.5} Sorts rows by series id and time.
 #' @keywords internal
 #' @noRd
 as_bridge_tbl <- function(
@@ -367,7 +360,11 @@ as_bridge_tbl <- function(
     if (is.null(raw_values)) {
       raw_values <- x[["value"]]
     }
-    if (!is.null(raw_values) && !is.list(raw_values) && !is.numeric(raw_values)) {
+    if (
+      !is.null(raw_values) &&
+        !is.list(raw_values) &&
+        !is.numeric(raw_values)
+    ) {
       rlang::abort(
         paste0("`", arg, "` must contain a numeric `value`/`values` column."),
         call = call
@@ -485,9 +482,9 @@ normalize_period_start_data <- function(data) {
     dplyr::ungroup()
 }
 
-#' @srrstats {G2.13} Missing timestamps and values are rejected during early series validation before analytic routines are called.
-#' @srrstats {G2.14a} Explicit missing values in submitted series trigger an immediate error during validation.
-#' @srrstats {TS2.1a} Submitted series with explicit missing timestamps or values error during preprocessing rather than being analyzed silently.
+#' @srrstats {G2.13} Rejects missing timestamps and values early.
+#' @srrstats {G2.14a} Errors on explicit missing values during validation.
+#' @srrstats {TS2.1a} Explicit missing timestamps or values error early.
 #' @keywords internal
 #' @noRd
 check_bridge_series <- function(
@@ -746,9 +743,9 @@ align_bridge_inputs <- function(
   )
 }
 
-#' @srrstats {G2.3} Univariate character control inputs are normalized case-insensitively and restricted to supported method names before use.
-#' @srrstats {G2.3a} Indicator forecasting methods are restricted to an allowed set before use.
-#' @srrstats {G2.3b} Character method names are normalized with `tolower()` so matching is case-insensitive.
+#' @srrstats {G2.3} Normalizes character controls case-insensitively.
+#' @srrstats {G2.3a} Restricts forecasting methods to an allowed set.
+#' @srrstats {G2.3b} Uses `tolower()` for case-insensitive matching.
 #' @keywords internal
 #' @noRd
 normalize_indicator_methods <- function(
@@ -793,7 +790,7 @@ normalize_indicator_methods <- function(
   unname(methods)
 }
 
-#' @srrstats {G2.3b} Character aggregation names are normalized with `tolower()` so matching is case-insensitive.
+#' @srrstats {G2.3b} Uses `tolower()` for aggregation names too.
 #' @keywords internal
 #' @noRd
 normalize_indicator_aggregators <- function(
@@ -908,8 +905,8 @@ default_parametric_start <- function(aggregator) {
   rep(0, parametric_parameter_count(aggregator))
 }
 
-#' @srrstats {G2.3a} `solver_options$method` is validated with `match.arg()` against the supported optimizer set.
-#' @srrstats {G2.4a} Integer-valued solver controls are explicitly normalized with `as.integer(round(...))`.
+#' @srrstats {G2.3a} Validates `solver_options$method` with `match.arg()`.
+#' @srrstats {G2.4a} Normalizes integer solver controls explicitly.
 #' @keywords internal
 #' @noRd
 normalize_parametric_solver_options <- function(
@@ -2747,7 +2744,7 @@ run_parametric_optimizer <- function(
   )
 }
 
-#' @srrstats {RE3.0} Non-converged parametric-weight optimizations trigger a warning before the best available result is retained.
+#' @srrstats {RE3.0} Warns before keeping the best non-converged result.
 #' @keywords internal
 #' @noRd
 optimize_parametric_weights <- function(

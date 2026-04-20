@@ -7,12 +7,12 @@
 #' for bridge-style nowcasting workflows, while future development is expected
 #' to expand diagnostics and mixed-frequency model options without changing the
 #' core target-and-indicator workflow.
-#' @srrstats {G1.2} Package-level documentation includes an explicit lifecycle statement describing the current stable interface and the anticipated direction of future development.
-#' @srrstats {G1.4} Package functions are documented with roxygen2 blocks in `R/`, and those blocks generate the installed reference documentation.
-#' @srrstats {G1.4a} Internal helpers in `R/` are also documented with roxygen2 and are suppressed from standalone help pages with `@noRd` and `@keywords internal`.
-#' @srrstats {G1.1} The package documentation positions `bridgr` as a focused R interface for bridge-style nowcasting relative to existing R packages such as `midasr` and `midasml`, rather than as a first implementation of bridge or MIDAS methods.
-#' @srrstats {G5.2} Appropriate error and warning behaviour of all functions should be explicitly demonstrated through tests. In particular,
-#' @srrstats {G5.2a} Every message produced within R code by `stop()`, `warning()`, `message()`, or equivalent should be unique
+#' @srrstats {G1.2} Documents the package lifecycle and stable interface.
+#' @srrstats {G1.4} Documents package functions with roxygen2.
+#' @srrstats {G1.4a} Documents internal helpers with roxygen2 and `@noRd`.
+#' @srrstats {G1.1} Positions `bridgr` relative to nearby R packages.
+#' @srrstats {G5.2} Tests should cover warning and error behavior.
+#' @srrstats {G5.2a} Messages should be unique.
 #' @keywords internal
 "_PACKAGE"
 utils::globalVariables(c(

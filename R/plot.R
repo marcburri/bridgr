@@ -175,17 +175,17 @@ scale_fill_bridgr <- function(...) {
 #'
 #' @return A ggplot2 object.
 #'
-#' @srrstats {TS5.0} Forecast and fit visualizations are provided through the default `plot.mf_model()` method.
-#' @srrstats {TS5.1} The temporal axis defaults to the label `"Time"`.
-#' @srrstats {TS5.2} Time is placed on the horizontal axis by default.
-#' @srrstats {TS5.3} The default x-axis label includes the unit of the target time index, such as `Time (quarter)` or `Time (week)`.
-#' @srrstats {TS5.6} Forecast plots include prediction intervals by default whenever uncertainty is available.
-#' @srrstats {TS5.7} Forecast plots include the observed input history together with forecast output by default.
-#' @srrstats {TS5.8} Observed, fitted, and forecast series are visually distinguished by separate layers and colors.
-#' @srrstats {RE6.0} Model objects of class `"mf_model"` implement a default plot method.
-#' @srrstats {RE6.1} The plot interface uses S3 dispatch via `plot.mf_model()`.
-#' @srrstats {RE6.2} The default `plot.mf_model()` view is the in-sample fitted path, while forecast plots remain available through `type = "forecast"`.
-#' @srrstats {RE6.3} Forecast plots distinguish historical model input from forecast output.
+#' @srrstats {TS5.0} Provides default fit and forecast plots.
+#' @srrstats {TS5.1} Uses `"Time"`-style labels on the temporal axis.
+#' @srrstats {TS5.2} Puts time on the horizontal axis.
+#' @srrstats {TS5.3} Includes the time unit in the default x label.
+#' @srrstats {TS5.6} Shows intervals when uncertainty is available.
+#' @srrstats {TS5.7} Combines observed history with forecast output.
+#' @srrstats {TS5.8} Distinguishes observed, fitted, and forecast series.
+#' @srrstats {RE6.0} Implements a default plot method for `"mf_model"`.
+#' @srrstats {RE6.1} Uses S3 dispatch via `plot.mf_model()`.
+#' @srrstats {RE6.2} Defaults to the in-sample fit view.
+#' @srrstats {RE6.3} Separates historical input from forecast output.
 #'
 #' @examples
 #' gdp_growth <- tsbox::ts_pc(gdp)

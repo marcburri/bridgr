@@ -20,8 +20,7 @@
 #' @srrstats {G5.8d} Data outside the supported mixed-frequency setup are
 #' checked, including lower-frequency indicators and target periods with too
 #' few high-frequency observations.
-#' @srrstats {G5.2b} Explicit tests demonstrate conditions which trigger 
-#' every of the messages, and compare the result with expected values.
+#' @srrstats {G5.2b} Tests trigger documented messages and compare outcomes.
 test_that("bridge warns and forwards to mf_model", {
   indic <- make_monthly_indicator()
   target <- make_quarter_target(indic, n_quarters = 6)
@@ -237,7 +236,9 @@ test_that("all-NA and all-identical series edge cases are covered", {
   )
   expect_s3_class(identical_model, "mf_model")
   expect_false(anyNA(stats::fitted(identical_model$model)))
-  expect_false(anyNA(identical_model$forecast_set[[identical_model$indic_name[[1]]]]))
+  expect_false(anyNA(
+    identical_model$forecast_set[[identical_model$indic_name[[1]]]]
+  ))
 })
 
 test_that("invalid or lower-frequency indicators are rejected", {
@@ -564,7 +565,9 @@ test_that("bridge can impute explicit missing values before fitting", {
 test_that("stationarity = 'warn' emits heuristic diagnostics", {
   indic <- make_monthly_indicator(n = 24)
   target <- make_quarter_target(indic, n_quarters = 8) |>
-    dplyr::mutate(value = .data$value + seq(0, 14, length.out = length(.data$value)))
+    dplyr::mutate(
+      value = .data$value + seq(0, 14, length.out = length(.data$value))
+    )
 
   expect_warning(
     model <- mf_model(

@@ -26,16 +26,16 @@
 #' `uncertainty-and-scenarios` vignette includes one worked example that trims
 #' forecast rows by an acceptable prediction-interval width.
 #'
-#' @srrstats {TS4.2} The forecast method documents the class and contents of the returned `"mf_model_forecast"` object.
-#' @srrstats {TS4.6} The forecast method returns point predictions together with explicit uncertainty summaries when available.
-#' @srrstats {TS4.6b} Forecast results return point predictions together with standard errors and interval matrices when uncertainty is available.
-#' @srrstats {TS4.6c} When full distribution objects are not returned, the forecast output still carries explicit uncertainty summaries.
-#' @srrstats {TS4.7} Forecast output keeps forecast values clearly separated from the observed input history.
-#' @srrstats {TS4.7a} `forecast.mf_model()` returns forecast values separately from the observed input series.
-#' @srrstats {TS3.2} The forecast documentation explains that horizon-specific uncertainty is driven by recursive dependence on forecasted target lags, completed indicator paths, and accumulated simulated disturbances.
-#' @srrstats {TS3.3} The package satisfies the forecast-trimming standard through documented guidance in the uncertainty vignette.
-#' @srrstats {TS3.3a} The uncertainty vignette provides an explicit example of trimming forecast rows by a tolerated prediction-interval width.
-#' @srrstats {RE4.14} Forecast outputs include uncertainty measures (`se`, `lower`, and `upper`) in addition to point predictions when available.
+#' @srrstats {TS4.2} Documents the forecast object structure.
+#' @srrstats {TS4.6} Returns point forecasts with uncertainty when available.
+#' @srrstats {TS4.6b} Returns standard errors and interval matrices.
+#' @srrstats {TS4.6c} Carries uncertainty summaries without a distribution.
+#' @srrstats {TS4.7} Keeps forecasts separate from observed history.
+#' @srrstats {TS4.7a} Returns forecast values separately from inputs.
+#' @srrstats {TS3.2} Explains why uncertainty widens with horizon.
+#' @srrstats {TS3.3} Meets trimming guidance through vignette documentation.
+#' @srrstats {TS3.3a} Shows interval-width trimming in the vignette.
+#' @srrstats {RE4.14} Returns `se`, `lower`, and `upper` with forecasts.
 #'
 #' @examples
 #' gdp_growth <- tsbox::ts_pc(gdp)
