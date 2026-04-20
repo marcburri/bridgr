@@ -37,6 +37,18 @@ weighting. If a target period contains more high-frequency observations
 than implied by the current frequency mapping, the package keeps the
 most recent observations and reports a summarized warning.
 
+Compared with [`midasr`](https://CRAN.R-project.org/package=midasr),
+which is a broad toolkit for estimating, testing, selecting, and
+forecasting MIDAS regressions, `bridgr` focuses more narrowly on
+bridge-style nowcasting workflows with automatic frequency alignment,
+indicator extension, aggregation, and a simpler end-to-end interface.
+Compared with [`midasml`](https://CRAN.R-project.org/package=midasml),
+which targets high-dimensional mixed-frequency time-series and panel
+models with regularization methods such as sparse-group LASSO, `bridgr`
+is aimed at lower-dimensional applied forecasting settings where
+transparent bridge-model specification, interpretation, and standard
+forecasting methods are the priority.
+
 ## Installation
 
 From CRAN:
@@ -81,8 +93,11 @@ forecast(bridge_model)
 #> Simulation paths: 100
 #> -----------------------------------
 #>   time       mean  se    lower_80 upper_80 lower_95 upper_95
-#> 1 2023-01-01 0.808 0.608 -0.018   1.390    -0.515   2.044   
-#> 2 2023-04-01 0.468 0.644 -0.218   1.445    -0.647   1.785
+#> 1 2023-01-01 0.808 0.794 -0.215   1.870    -1.005   2.059   
+#> 2 2023-04-01 0.468 0.836 -0.612   1.748    -1.054   2.420
+```
+
+``` r
 
 summary(bridge_model)
 #> Mixed-frequency model summary
