@@ -175,6 +175,16 @@ scale_fill_bridgr <- function(...) {
 #'
 #' @return A ggplot2 object.
 #'
+#' @srrstats {TS5.0} Forecast and fit visualizations are provided through the default `plot.mf_model()` method.
+#' @srrstats {TS5.1} The temporal axis defaults to the label `"Time"`.
+#' @srrstats {TS5.2} Time is placed on the horizontal axis by default.
+#' @srrstats {TS5.6} Forecast plots include prediction intervals by default whenever uncertainty is available.
+#' @srrstats {TS5.7} Forecast plots include the observed input history together with forecast output by default.
+#' @srrstats {TS5.8} Observed, fitted, and forecast series are visually distinguished by separate layers and colors.
+#' @srrstats {RE6.0} Model objects of class `"mf_model"` implement a default plot method.
+#' @srrstats {RE6.1} The plot interface uses S3 dispatch via `plot.mf_model()`.
+#' @srrstats {RE6.3} Forecast plots distinguish historical model input from forecast output.
+#'
 #' @examples
 #' gdp_growth <- tsbox::ts_pc(gdp)
 #' gdp_growth <- tsbox::ts_na_omit(gdp_growth)

@@ -160,6 +160,21 @@
 #' Burri, M. (2026). Nowcasting Swiss GDP Growth From Public Lead Texts:
 #' Simple Methods Are Sufficient. *Oxford Bulletin of Economics and
 #' Statistics*, 1-25. \doi{10.1111/obes.70073}
+#'
+#' @srrstats {G1.0} `mf_model()` documents primary academic references for bridge and MIDAS models in its `@references` section.
+#' @srrstats {G2.0a} The parameter documentation states explicit length rules for vector inputs such as `indic_predict` and `indic_aggregators`.
+#' @srrstats {G2.1a} The parameter documentation states explicit expected types for vector inputs such as character method vectors, numeric weight vectors, and named numeric conversion vectors.
+#' @srrstats {TS1.1} The `target` and `indic` parameters document accepted ts-boxable time-series and tabular input forms.
+#' @srrstats {TS1.8} The documentation explicitly states the regular frequency ladder and default conversion counts used to relate days, weeks, months, quarters, and years.
+#' @srrstats {RE1.2} The `indic` parameter documents accepted predictor formats as ts-boxable time-series inputs.
+#' @srrstats {RE2.0} The documentation explains default input transformations, including period-start normalization, indicator extension, and aggregation.
+#' @srrstats {G3.1} The uncertainty arguments document more than one covariance-estimation route, including HAC / Delta-HAC uncertainty and optional full-system block-bootstrap uncertainty, rather than relying only on `stats::cov()`.
+#' @srrstats {TS4.0} The fitted object satisfies the return-value standard through a documented custom `"mf_model"` class.
+#' @srrstats {TS4.0b} `mf_model()` returns a class-defined `"mf_model"` object.
+#' @srrstats {TS4.2} The `@return` section documents the class and main contents of the `"mf_model"` object.
+#' @srrstats {TS4.3} The returned model stores explicit time-scale information through target and indicator frequency metadata plus aligned time-indexed estimation and forecast datasets.
+#' @srrstats {TS4.7b} The returned model keeps aligned estimation and forecast values in separate list items, `estimation_set` and `forecast_set`.
+#' @srrstats {RE4.0} `mf_model()` returns a model object of class `"mf_model"`.
 #' @export
 mf_model <- function(
   target,
@@ -226,6 +241,9 @@ bridge <- function(...) {
   mf_model(...)
 }
 
+#' @srrstats {RE4.7} When parametric aggregation is used, convergence information is stored in `parametric_optimization` on the returned model object.
+#' @srrstats {RE4.8} The returned model stores the standardized target series and target-frequency metadata.
+#' @srrstats {RE4.13} The returned model stores indicator series, indicator-frequency metadata, and regressor names.
 #' @keywords internal
 #' @noRd
 fit_bridge_model <- function(
@@ -502,6 +520,9 @@ fit_bridge_model <- function(
   )
 }
 
+#' @srrstats {G2.0} Public scalar and per-indicator controls are checked for required lengths before model fitting.
+#' @srrstats {G2.1} Public control arguments are type-checked here, while `as_bridge_tbl()` validates the time-series inputs.
+#' @srrstats {G2.2} `target` is restricted to exactly one submitted series, while indicator multiplicity is handled explicitly.
 #' @keywords internal
 #' @noRd
 validate_bridge_inputs <- function(

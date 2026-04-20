@@ -5,6 +5,8 @@
 #'
 #' @return `object`, invisibly.
 #'
+#' @srrstats {RE4.18} The package provides a dedicated `summary.mf_model()` method for fitted model objects.
+#'
 #' @examples
 #' gdp_growth <- tsbox::ts_pc(gdp)
 #' gdp_growth <- tsbox::ts_na_omit(gdp_growth)

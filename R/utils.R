@@ -176,6 +176,17 @@ bridge_argument_label <- function(expr, fallback) {
   normalize_bridge_default_id(fallback)
 }
 
+#' @srrstats {G2.4} Supported inputs are explicitly converted into one standard internal form through character and numeric coercion in the preprocessing helpers, alongside integer normalization for scalar control arguments.
+#' @srrstats {G2.4b} Series values are explicitly standardized with `as.numeric()` before downstream use.
+#' @srrstats {G2.4c} Series identifiers are explicitly standardized with `as.character()`.
+#' @srrstats {G2.10} Downstream column selection happens only after conversion to a standard tibble, so it does not rely on class-specific extraction defaults of the original input object.
+#' @srrstats {G2.6} Supported one-dimensional time-series inputs are standardized through tsbox regardless of their original supported class.
+#' @srrstats {G2.7} The package accepts multiple ts-boxable tabular and time-series input forms through `tsbox::ts_boxable()`.
+#' @srrstats {G2.8} `as_bridge_tbl()` is the common pre-processing step that converts supported inputs to one standardized internal table form.
+#' @srrstats {TS1.0} Only explicit time-series inputs accepted by `tsbox::ts_boxable()` enter the preprocessing pipeline; generic non-time-series objects are rejected.
+#' @srrstats {TS1.2} `as_bridge_tbl()` validates that submitted series are acceptable ts-boxable time-series inputs.
+#' @srrstats {TS1.3} `as_bridge_tbl()` and downstream normalization convert accepted inputs to one uniform internal table representation.
+#' @srrstats {TS1.5} Input rows are sorted by series id and time before downstream processing.
 #' @keywords internal
 #' @noRd
 as_bridge_tbl <- function(
@@ -277,6 +288,9 @@ normalize_period_start_data <- function(data) {
     dplyr::ungroup()
 }
 
+#' @srrstats {G2.13} Missing timestamps and values are rejected during early series validation before analytic routines are called.
+#' @srrstats {G2.14a} Explicit missing values in submitted series trigger an immediate error during validation.
+#' @srrstats {TS2.1a} Submitted series with explicit missing timestamps or values error during preprocessing rather than being analyzed silently.
 #' @keywords internal
 #' @noRd
 check_bridge_series <- function(
@@ -446,6 +460,9 @@ align_bridge_inputs <- function(
   )
 }
 
+#' @srrstats {G2.3} Univariate character control inputs are normalized case-insensitively and restricted to supported method names before use.
+#' @srrstats {G2.3a} Indicator forecasting methods are restricted to an allowed set before use.
+#' @srrstats {G2.3b} Character method names are normalized with `tolower()` so matching is case-insensitive.
 #' @keywords internal
 #' @noRd
 normalize_indicator_methods <- function(
@@ -490,6 +507,7 @@ normalize_indicator_methods <- function(
   unname(methods)
 }
 
+#' @srrstats {G2.3b} Character aggregation names are normalized with `tolower()` so matching is case-insensitive.
 #' @keywords internal
 #' @noRd
 normalize_indicator_aggregators <- function(
@@ -604,6 +622,8 @@ default_parametric_start <- function(aggregator) {
   rep(0, parametric_parameter_count(aggregator))
 }
 
+#' @srrstats {G2.3a} `solver_options$method` is validated with `match.arg()` against the supported optimizer set.
+#' @srrstats {G2.4a} Integer-valued solver controls are explicitly normalized with `as.integer(round(...))`.
 #' @keywords internal
 #' @noRd
 normalize_parametric_solver_options <- function(
@@ -2130,6 +2150,8 @@ parametric_bounds <- function(specs) {
   list(lower = lower, upper = upper)
 }
 
+#' @keywords internal
+#' @noRd
 split_parameter_vector <- function(parameters, specs) {
   block_sizes <- vapply(
     specs,
@@ -2291,6 +2313,7 @@ run_parametric_optimizer <- function(
   )
 }
 
+#' @srrstats {RE3.0} Non-converged parametric-weight optimizations trigger a warning before the best available result is retained.
 #' @keywords internal
 #' @noRd
 optimize_parametric_weights <- function(
