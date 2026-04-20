@@ -187,6 +187,20 @@ align, extend, and aggregate the time-series inputs before the final target
 regression formula can be assembled.
 }
 
+\section{Terminology}{
+
+Throughout \code{bridgr}, a \emph{target} is the lower-frequency response series to be
+forecasted. An \emph{indicator} is any higher-frequency predictor series aligned
+to the target frequency before the final regression is fit. \emph{Indicator
+forecasting} refers to how end-of-sample indicator values are completed when
+the target horizon extends beyond the latest observed indicator block.
+\emph{Aggregation} refers to how high-frequency indicator values within a target
+period are combined into bridge regressors. \emph{Direct} prediction skips
+indicator forecasting and aligns the latest complete high-frequency blocks
+backward from the forecast horizon, while \emph{unrestricted} aggregation keeps
+one separate coefficient per within-period high-frequency observation.
+}
+
 \section{Input standardization}{
 
 Submitted series are converted to a common internal table with \code{id}, \code{time},

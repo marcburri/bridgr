@@ -141,6 +141,18 @@
 #' align, extend, and aggregate the time-series inputs before the final target
 #' regression formula can be assembled.
 #'
+#' @section Terminology:
+#' Throughout `bridgr`, a *target* is the lower-frequency response series to be
+#' forecasted. An *indicator* is any higher-frequency predictor series aligned
+#' to the target frequency before the final regression is fit. *Indicator
+#' forecasting* refers to how end-of-sample indicator values are completed when
+#' the target horizon extends beyond the latest observed indicator block.
+#' *Aggregation* refers to how high-frequency indicator values within a target
+#' period are combined into bridge regressors. *Direct* prediction skips
+#' indicator forecasting and aligns the latest complete high-frequency blocks
+#' backward from the forecast horizon, while *unrestricted* aggregation keeps
+#' one separate coefficient per within-period high-frequency observation.
+#'
 #' @section Input standardization:
 #' Submitted series are converted to a common internal table with `id`, `time`,
 #' and numeric `values` columns before model fitting. This means that
@@ -235,6 +247,7 @@
 #' @srrstats {RE3.3} The public `solver_options` argument explicitly exposes `reltol`, allowing users to set the convergence tolerance for joint parametric optimization.
 #' @srrstats {TS2.2} The stationarity documentation explicitly states that users are expected to prepare bridge inputs so the relevant lower-order moments, typically mean and variance, are on an appropriate scale before fitting.
 #' @srrstats {TS2.3} The documentation explicitly states that stationarity-relevant transformations are expected to happen upstream rather than being imposed automatically by the package.
+#' @srrstats {G1.3} The `mf_model()` documentation now defines the core mixed-frequency terms used throughout the package, including target, indicator, indicator forecasting, aggregation, direct prediction, and unrestricted aggregation.
 #' @srrstats {TS2.1} The public `missing` argument documents explicit user-selectable handling of missing values through strict errors, drop-with-warning behavior, and imputation.
 #' @srrstats {TS2.4b} The public stationarity documentation and `stationarity = "warn"` option advise concrete upstream transformations such as differences, growth rates, log changes, and demeaning when heuristic diagnostics flag a series.
 #' @export
