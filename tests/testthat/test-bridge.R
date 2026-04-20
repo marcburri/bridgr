@@ -838,3 +838,34 @@ test_that("auto.arima recovers indicator dynamics", {
     tolerance = 1e-8
   )
 })
+
+test_that("indicator-dynamics recovery is stable across multiple seeds", {
+  phi <- 0.7
+  seeds <- c(11, 123, 987)
+
+  estimates <- vapply(
+    seeds,
+    function(seed) {
+      indic <- make_seeded_ar1_indicator(n = 240, phi = phi, seed = seed)
+      target <- make_quarter_target(
+        indic,
+        n_quarters = 80,
+        intercept = 0.5,
+        slope = 1.1
+      )
+      model <- mf_model(
+        target = target,
+        indic = indic,
+        indic_predict = "auto.arima",
+        indic_aggregators = "mean",
+        target_lags = 0,
+        h = 1
+      )
+
+      unname(stats::coef(model$indic_models$indic)[["ar1"]])
+    },
+    numeric(1)
+  )
+
+  expect_equal(estimates, rep(phi, length(seeds)), tolerance = 0.12)
+})

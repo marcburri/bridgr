@@ -32,7 +32,7 @@
 #' @srrstats {G5.5} Stochastic correctness checks use explicit fixed seeds, for example through `make_seeded_ar1_indicator(seed = 123)` and `solver_options$seed` in parametric-weight tests.
 #' @srrstats {G5.6} `tests/testthat/test-method-behaviors.R` includes deterministic recovery checks for unrestricted mixed-frequency slot coefficients.
 #' @srrstats {G5.6a} Those recovery checks use explicit tolerances such as `tolerance = 0.05` rather than requiring exact equality.
-#' @srrstatsTODO {G5.6b} *Parameter recovery tests should be run with multiple random seeds when either data simulation or the algorithm contains a random component. (When long-running, such tests may be part of an extended, rather than regular, test suite; see G5.10-4.12, below).* 
+#' @srrstats {G5.6b} `tests/testthat/test-bridge.R` repeats indicator-dynamics recovery checks over multiple random seeds to confirm stable parameter recovery under stochastic simulation.
 #' @srrstatsTODO {G5.7} **Algorithm performance tests** *to test that implementation performs as expected as properties of data change. For instance, a test may show that parameters approach correct estimates within tolerance as data size increases, or that convergence times decrease for higher convergence thresholds.*
 #' @srrstats {G5.8} `tests/testthat/test-bridge.R`, `test-utils.R`, and `test-alignment-optimization.R` cover invalid inputs, missing values, alignment failures, and optimizer edge cases.
 #' @srrstats {G5.8a} `tests/testthat/test-bridge.R` checks that zero-length target and indicator inputs fail early with explicit preprocessing errors.
