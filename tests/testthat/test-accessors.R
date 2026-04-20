@@ -15,6 +15,32 @@ test_that("coef.mf_model delegates to the stored target regression", {
   expect_equal(stats::coefficients(model), stats::coef(model$model))
 })
 
+test_that("confint.mf_model uses the reported coefficient covariance matrix", {
+  indic <- make_monthly_indicator(n = 36)
+  target <- make_quarter_target(indic, n_quarters = 12)
+
+  model <- mf_model(
+    target = target,
+    indic = indic,
+    indic_predict = "last",
+    target_lags = 1,
+    se = TRUE,
+    bootstrap = list(N = 8, block_length = 3),
+    h = 1
+  )
+
+  intervals <- stats::confint(model)
+  critical_value <- stats::qt(0.975, df = stats::df.residual(model$model))
+  standard_errors <- sqrt(diag(stats::vcov(model)))
+  expected <- cbind(
+    stats::coef(model) - critical_value * standard_errors,
+    stats::coef(model) + critical_value * standard_errors
+  )
+  colnames(expected) <- colnames(intervals)
+
+  expect_equal(intervals, expected)
+})
+
 test_that("formula.mf_model returns the stored bridge regression formula", {
   indic <- make_monthly_indicator(n = 36)
   target <- make_quarter_target(indic, n_quarters = 12)

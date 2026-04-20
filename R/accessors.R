@@ -32,6 +32,48 @@ coef.mf_model <- function(object, ...) {
 }
 
 #' @rdname mf_model-accessors
+#' @param parm,level Passed to [confint()]. Confidence intervals are computed
+#'   from the coefficient covariance matrix returned by [vcov.mf_model()].
+#' @srrstats {RE4.3} `confint.mf_model()` returns coefficient confidence intervals derived from the model's reported covariance matrix.
+#' @method confint mf_model
+#' @export
+confint.mf_model <- function(object, parm = NULL, level = 0.95, ...) {
+  coefficients <- stats::coef(object)
+  covariance <- stats::vcov(object)
+
+  if (is.null(parm)) {
+    parm_names <- names(coefficients)
+  } else if (is.numeric(parm)) {
+    parm_names <- names(coefficients)[parm]
+  } else {
+    parm_names <- parm
+  }
+  parm_names <- parm_names[!is.na(parm_names)]
+
+  standard_errors <- sqrt(diag(covariance))[parm_names]
+  degrees_freedom <- tryCatch(
+    stats::df.residual(object$model),
+    error = function(...) NA_real_
+  )
+  critical_value <- if (is.finite(degrees_freedom) && degrees_freedom > 0) {
+    stats::qt((1 + level) / 2, df = degrees_freedom)
+  } else {
+    stats::qnorm((1 + level) / 2)
+  }
+
+  intervals <- cbind(
+    coefficients[parm_names] - critical_value * standard_errors,
+    coefficients[parm_names] + critical_value * standard_errors
+  )
+  colnames(intervals) <- paste0(
+    format(100 * c((1 - level) / 2, 1 - (1 - level) / 2), trim = TRUE),
+    " %"
+  )
+
+  intervals
+}
+
+#' @rdname mf_model-accessors
 #' @srrstats {RE4.4} `formula.mf_model()` returns the assembled target-regression formula stored on the fitted model object.
 #' @method formula mf_model
 #' @export

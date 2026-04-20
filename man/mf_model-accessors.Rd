@@ -3,6 +3,7 @@
 \name{mf_model-accessors}
 \alias{mf_model-accessors}
 \alias{coef.mf_model}
+\alias{confint.mf_model}
 \alias{formula.mf_model}
 \alias{nobs.mf_model}
 \alias{vcov.mf_model}
@@ -12,6 +13,8 @@
 \title{Accessor Methods for Mixed-Frequency Models}
 \usage{
 \method{coef}{mf_model}(object, ...)
+
+\method{confint}{mf_model}(object, parm = NULL, level = 0.95, ...)
 
 \method{formula}{mf_model}(x, ...)
 
@@ -29,6 +32,9 @@
 \item{object, x}{A fitted \code{"mf_model"} object returned by \code{\link[=mf_model]{mf_model()}}.}
 
 \item{...}{Unused.}
+
+\item{parm, level}{Passed to \code{\link[=confint]{confint()}}. Confidence intervals are computed
+from the coefficient covariance matrix returned by \code{\link[=vcov.mf_model]{vcov.mf_model()}}.}
 }
 \value{
 The requested model summary, usually delegated from the stored target
