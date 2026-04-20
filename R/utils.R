@@ -1000,6 +1000,30 @@ circular_block_bootstrap_indices <- function(n_rows, block_length) {
   indices[seq_len(n_rows)]
 }
 
+#' @srrstats {RE2.4} The finalized estimation set is screened for exact
+#' collinearity before fitting through one dedicated preprocessing routine that
+#' checks both regressor-vs-regressor and target-vs-regressor dependencies.
+#' @keywords internal
+#' @noRd
+check_estimation_set_collinearity <- function(
+  estimation_set,
+  target_name,
+  regressor_names,
+  call = rlang::caller_env()
+) {
+  check_regressor_collinearity(
+    estimation_set = estimation_set,
+    regressor_names = regressor_names,
+    call = call
+  )
+  check_target_regressor_collinearity(
+    estimation_set = estimation_set,
+    target_name = target_name,
+    regressor_names = regressor_names,
+    call = call
+  )
+}
+
 #' @srrstats {RE2.4a} The finalized regressor matrix is checked for exact rank
 #' deficiency before fitting, so perfectly collinear predictors are rejected
 #' with an explicit preprocessing error.
