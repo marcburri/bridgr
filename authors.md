@@ -11,13 +11,13 @@ Source:
 [`DESCRIPTION`](https://github.com/marcburri/bridgr/blob/main/DESCRIPTION)
 
 Burri M (2026). *bridgr: Bridging Data Frequencies for Timely Economic
-Forecasts*. R package version 0.1.2,
+Forecasts*. R package version 0.1.2.9000,
 <https://github.com/marcburri/bridgr>.
 
     @Manual{,
       title = {bridgr: Bridging Data Frequencies for Timely Economic Forecasts},
       author = {Marc Burri},
       year = {2026},
-      note = {R package version 0.1.2},
+      note = {R package version 0.1.2.9000},
       url = {https://github.com/marcburri/bridgr},
     }
