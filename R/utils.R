@@ -223,6 +223,12 @@ as_bridge_tbl <- function(
 
   out <- suppressMessages(tsbox::ts_tbl(x)) |>
     standardize_ts_tbl()
+  if (nrow(out) == 0) {
+    rlang::abort(
+      paste0("`", arg, "` must contain at least one observation."),
+      call = call
+    )
+  }
 
   if (!"time" %in% names(out) || !"values" %in% names(out)) {
     rlang::abort(

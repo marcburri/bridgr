@@ -35,7 +35,7 @@
 #' @srrstatsTODO {G5.6b} *Parameter recovery tests should be run with multiple random seeds when either data simulation or the algorithm contains a random component. (When long-running, such tests may be part of an extended, rather than regular, test suite; see G5.10-4.12, below).* 
 #' @srrstatsTODO {G5.7} **Algorithm performance tests** *to test that implementation performs as expected as properties of data change. For instance, a test may show that parameters approach correct estimates within tolerance as data size increases, or that convergence times decrease for higher convergence thresholds.*
 #' @srrstats {G5.8} `tests/testthat/test-bridge.R`, `test-utils.R`, and `test-alignment-optimization.R` cover invalid inputs, missing values, alignment failures, and optimizer edge cases.
-#' @srrstatsTODO {G5.8a} *Zero-length data*
+#' @srrstats {G5.8a} `tests/testthat/test-bridge.R` checks that zero-length target and indicator inputs fail early with explicit preprocessing errors.
 #' @srrstatsTODO {G5.8b} *Data of unsupported types (e.g., character or complex numbers in for functions designed only for numeric data)*
 #' @srrstatsTODO {G5.8c} *Data with all-`NA` fields or columns or all identical fields or columns*
 #' @srrstats {G5.8d} `tests/testthat/test-bridge.R` checks data outside the supported mixed-frequency setup, including lower-frequency indicators and target periods with too few high-frequency observations.
