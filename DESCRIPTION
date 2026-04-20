@@ -49,3 +49,4 @@ Depends:
 URL: https://github.com/marcburri/bridgr, https://marcburri.github.io/bridgr/
 BugReports: https://github.com/marcburri/bridgr/issues
 VignetteBuilder: knitr
+Additional_repositories: https://ropensci.r-universe.dev
