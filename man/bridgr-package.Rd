@@ -9,6 +9,13 @@
 To learn more about bridgr, start with the vignettes:
 \code{browseVignettes(package = "bridgr")}
 }
+\details{
+\code{bridgr} is under active maintenance. The public interface centered on
+\code{\link[=mf_model]{mf_model()}}, \code{\link[=forecast]{forecast()}}, \code{\link[=summary]{summary()}}, and \code{\link[=plot]{plot()}} is considered stable
+for bridge-style nowcasting workflows, while future development is expected
+to expand diagnostics and mixed-frequency model options without changing the
+core target-and-indicator workflow.
+}
 \seealso{
 Useful links:
 \itemize{
