@@ -218,6 +218,7 @@ mf_model <- function(
   )
 }
 
+#' @param ... Arguments forwarded to [mf_model()].
 #' @rdname mf_model
 #' @export
 bridge <- function(...) {

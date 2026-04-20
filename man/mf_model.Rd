@@ -103,6 +103,8 @@ the parameter order is \verb{(linear, quadratic)} for \code{"expalmon"} and
 provide exactly the required number of values for each parametric
 indicator. These controls are ignored unless at least one indicator uses a
 parametric aggregator.}
+
+\item{...}{Arguments forwarded to \code{\link[=mf_model]{mf_model()}}.}
 }
 \value{
 An object of class \code{"mf_model"} containing the standardized input
