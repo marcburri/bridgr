@@ -4,6 +4,9 @@
 #' @srrstats {G5.6b} Indicator-dynamics recovery checks are repeated over
 #' multiple random seeds to confirm stable parameter recovery under stochastic
 #' simulation.
+#' @srrstats {G5.9b} Multi-seed indicator-dynamics recovery checks confirm that
+#' the recovered AR parameter remains within tolerance across different random
+#' seeds for the same underlying data-generating process.
 #' @srrstats {G5.8} Along with `test-utils.R` and
 #' `test-alignment-optimization.R`, these tests cover invalid inputs, missing
 #' values, alignment failures, and optimizer edge cases.
@@ -17,6 +20,8 @@
 #' @srrstats {G5.8d} Data outside the supported mixed-frequency setup are
 #' checked, including lower-frequency indicators and target periods with too
 #' few high-frequency observations.
+#' @srrstats {G5.2b} Explicit tests demonstrate conditions which trigger 
+#' every of the messages, and compare the result with expected values.
 test_that("bridge warns and forwards to mf_model", {
   indic <- make_monthly_indicator()
   target <- make_quarter_target(indic, n_quarters = 6)
