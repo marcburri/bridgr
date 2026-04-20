@@ -46,3 +46,17 @@ formula.mf_model <- function(x, ...) {
 nobs.mf_model <- function(object, ...) {
   stats::nobs(object$model, ...)
 }
+
+#' @rdname mf_model-accessors
+#' @srrstats {RE4.6} `vcov.mf_model()` returns the stored coefficient covariance matrix when available and otherwise falls back to the underlying target regression fit.
+#' @method vcov mf_model
+#' @export
+vcov.mf_model <- function(object, ...) {
+  covariance <- object$uncertainty$coefficient_covariance
+
+  if (!is.null(covariance)) {
+    return(covariance)
+  }
+
+  stats::vcov(object$model, ...)
+}
