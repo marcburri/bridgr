@@ -1,6 +1,8 @@
 #' @srrstats {G5.10} Extended regression tests live under the standard
 #' `testthat` framework and are enabled with the `BRIDGR_EXTENDED_TESTS=true`
 #' environment flag.
+#' @srrstats {G5.12} The activation flag, expected scope, and runtime intent for
+#' the extended test tier are documented in `tests/README.md`.
 test_that("extended bootstrap forecasts stay finite on a larger sample", {
   skip_if_not_bridgr_extended_tests()
   withr::local_seed(2024)

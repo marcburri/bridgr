@@ -33,6 +33,7 @@
 #' @srrstats {TS4.7} Forecast output keeps forecast values clearly separated from the observed input history.
 #' @srrstats {TS4.7a} `forecast.mf_model()` returns forecast values separately from the observed input series.
 #' @srrstats {TS3.2} The forecast documentation explains that horizon-specific uncertainty is driven by recursive dependence on forecasted target lags, completed indicator paths, and accumulated simulated disturbances.
+#' @srrstats {TS3.3} The package satisfies the forecast-trimming standard through documented guidance in the uncertainty vignette.
 #' @srrstats {TS3.3a} The uncertainty vignette provides an explicit example of trimming forecast rows by a tolerated prediction-interval width.
 #' @srrstats {RE4.14} Forecast outputs include uncertainty measures (`se`, `lower`, and `upper`) in addition to point predictions when available.
 #'

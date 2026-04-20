@@ -253,6 +253,7 @@
 #' @srrstats {G1.3} The `mf_model()` documentation now defines the core mixed-frequency terms used throughout the package, including target, indicator, indicator forecasting, aggregation, direct prediction, and unrestricted aggregation.
 #' @srrstats {G2.14} The public `missing` argument gives users explicit control over how submitted `NA` values are handled before model fitting.
 #' @srrstats {TS2.1} The public `missing` argument documents explicit user-selectable handling of missing values through strict errors, drop-with-warning behavior, and imputation.
+#' @srrstats {RE2.1} The public `missing` argument implements explicit user-selectable handling of submitted missing values before bridge estimation.
 #' @srrstats {TS2.4b} The public stationarity documentation and `stationarity = "warn"` option advise concrete upstream transformations such as differences, growth rates, log changes, and demeaning when heuristic diagnostics flag a series.
 #' @export
 mf_model <- function(
