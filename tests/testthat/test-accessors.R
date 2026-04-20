@@ -110,3 +110,21 @@ test_that("residuals.mf_model delegates residual diagnostics to the target fit",
     as.numeric(model$estimation_set[[model$target_name]])
   )
 })
+
+test_that("print.mf_model exposes the package summary layout", {
+  indic <- make_monthly_indicator(n = 36)
+  target <- make_quarter_target(indic, n_quarters = 12)
+
+  model <- mf_model(
+    target = target,
+    indic = indic,
+    indic_predict = "last",
+    h = 1
+  )
+
+  output <- capture.output(print(model))
+
+  expect_true(any(grepl("Mixed-frequency model summary", output, fixed = TRUE)))
+  expect_true(any(grepl("Target equation coefficients:", output, fixed = TRUE)))
+  expect_true(any(grepl("Indicator summary:", output, fixed = TRUE)))
+})

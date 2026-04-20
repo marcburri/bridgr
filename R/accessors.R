@@ -79,3 +79,13 @@ fitted.mf_model <- function(object, ...) {
 residuals.mf_model <- function(object, ...) {
   stats::residuals(object$model, ...)
 }
+
+#' @rdname mf_model-accessors
+#' @return `x`, invisibly.
+#' @srrstats {RE4.17} `print.mf_model()` provides an on-screen summary of model inputs, coefficients, and uncertainty settings through the package's standard summary layout.
+#' @method print mf_model
+#' @export
+print.mf_model <- function(x, ...) {
+  summary(x, ...)
+  invisible(x)
+}

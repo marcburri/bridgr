@@ -8,6 +8,7 @@
 \alias{vcov.mf_model}
 \alias{fitted.mf_model}
 \alias{residuals.mf_model}
+\alias{print.mf_model}
 \title{Accessor Methods for Mixed-Frequency Models}
 \usage{
 \method{coef}{mf_model}(object, ...)
@@ -21,6 +22,8 @@
 \method{fitted}{mf_model}(object, ...)
 
 \method{residuals}{mf_model}(object, ...)
+
+\method{print}{mf_model}(x, ...)
 }
 \arguments{
 \item{object, x}{A fitted \code{"mf_model"} object returned by \code{\link[=mf_model]{mf_model()}}.}
@@ -30,6 +33,8 @@
 \value{
 The requested model summary, usually delegated from the stored target
 regression fit.
+
+\code{x}, invisibly.
 }
 \description{
 Access standard model summaries from a fitted \code{\link[=mf_model]{mf_model()}} object.
