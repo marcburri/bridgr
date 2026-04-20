@@ -17,12 +17,20 @@
 #' target-period regressors used for forecasting, and optional full-system
 #' bootstrap metadata.
 #'
+#' @details In recursive bridge forecasts, uncertainty typically increases with
+#' horizon because later forecast steps depend on forecasted rather than
+#' observed target lags and, when needed, completed indicator paths. Under the
+#' package's residual-resampling and full-system bootstrap workflows, those
+#' simulated disturbances accumulate across steps, so standard errors and
+#' interval widths can widen as the forecast horizon extends.
+#'
 #' @srrstats {TS4.2} The forecast method documents the class and contents of the returned `"mf_model_forecast"` object.
 #' @srrstats {TS4.6} The forecast method returns point predictions together with explicit uncertainty summaries when available.
 #' @srrstats {TS4.6b} Forecast results return point predictions together with standard errors and interval matrices when uncertainty is available.
 #' @srrstats {TS4.6c} When full distribution objects are not returned, the forecast output still carries explicit uncertainty summaries.
 #' @srrstats {TS4.7} Forecast output keeps forecast values clearly separated from the observed input history.
 #' @srrstats {TS4.7a} `forecast.mf_model()` returns forecast values separately from the observed input series.
+#' @srrstats {TS3.2} The forecast documentation explains that horizon-specific uncertainty is driven by recursive dependence on forecasted target lags, completed indicator paths, and accumulated simulated disturbances.
 #' @srrstats {RE4.14} Forecast outputs include uncertainty measures (`se`, `lower`, and `upper`) in addition to point predictions when available.
 #'
 #' @examples

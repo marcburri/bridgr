@@ -36,6 +36,14 @@ bootstrap metadata.
 \description{
 Forecast the target variable from a fitted \code{\link[=mf_model]{mf_model()}} object.
 }
+\details{
+In recursive bridge forecasts, uncertainty typically increases with
+horizon because later forecast steps depend on forecasted rather than
+observed target lags and, when needed, completed indicator paths. Under the
+package's residual-resampling and full-system bootstrap workflows, those
+simulated disturbances accumulate across steps, so standard errors and
+interval widths can widen as the forecast horizon extends.
+}
 \examples{
 gdp_growth <- tsbox::ts_pc(gdp)
 gdp_growth <- tsbox::ts_na_omit(gdp_growth)
