@@ -83,7 +83,9 @@ resampling forecast draws.
 # Trimming Forecasts by Error Margin
 
 One simple way to trim forecasts is to keep only those horizons whose
-prediction interval width stays below an application-specific tolerance.
+prediction interval width stays below an application-specific tolerance. For
+illustration, the example below uses the one-step-ahead 95% interval width as
+the cutoff and keeps only horizons that are no wider than that baseline.
 
 ```{r trim-by-width}
 forecast_table <- dplyr::tibble(
@@ -94,7 +96,9 @@ forecast_table <- dplyr::tibble(
 ) |>
   dplyr::mutate(width_95 = .data$upper_95 - .data$lower_95)
 
-dplyr::filter(forecast_table, .data$width_95 <= 2.25)
+tolerance_95 <- forecast_table$width_95[1]
+
+dplyr::filter(forecast_table, .data$width_95 <= tolerance_95)
 ```
 
 The threshold can be tightened or relaxed depending on how much forecast
