@@ -58,37 +58,42 @@ test_that("mean extension uses the latest available high-frequency block", {
 })
 
 test_that(
-  "direct bridge alignment ignores supplied aggregation settings",
+  "direct bridge alignment applies supplied aggregation settings",
   {
-  indic_a <- dplyr::tibble(
-    id = "a",
-    time = seq(as.Date("2020-01-01"), by = "month", length.out = 16),
-    value = seq_len(16)
-  )
-  indic_b <- dplyr::tibble(
-    id = "b",
-    time = seq(as.Date("2020-01-01"), by = "month", length.out = 16),
-    value = 100 + seq_len(16)
-  )
-  indic <- rbind(indic_a, indic_b)
-  target <- dplyr::tibble(
-    time = seq(as.Date("2020-01-01"), by = "quarter", length.out = 6),
-    value = seq_len(6)
-  )
-  weights <- c(0.2, 0.3, 0.5)
+    indic_a <- dplyr::tibble(
+      id = "a",
+      time = seq(as.Date("2020-01-01"), by = "month", length.out = 16),
+      value = seq_len(16)
+    )
+    indic_b <- dplyr::tibble(
+      id = "b",
+      time = seq(as.Date("2020-01-01"), by = "month", length.out = 16),
+      value = 100 + seq_len(16)
+    )
+    indic <- rbind(indic_a, indic_b)
+    target <- dplyr::tibble(
+      time = seq(as.Date("2020-01-01"), by = "quarter", length.out = 6),
+      value = seq_len(6)
+    )
+    weights <- c(0.2, 0.3, 0.5)
 
-  model <- mf_model(
-    target = target,
-    indic = indic,
-    indic_predict = c("direct", "direct"),
-    indic_aggregators = list(weights, "unrestricted"),
-    h = 1
-  )
+    expect_warning(
+      model <- mf_model(
+        target = target,
+        indic = indic,
+        indic_predict = c("direct", "direct"),
+        indic_aggregators = list(weights, "unrestricted"),
+        h = 1
+      ),
+      "over-parameterized U-MIDAS specification"
+    )
 
-  expect_lt(nrow(model$estimation_set), nrow(target))
-  expect_equal(model$forecast_set$a[[1]], mean(c(14, 15, 16)))
-  expect_equal(model$forecast_set$b[[1]], mean(c(114, 115, 116)))
-  expect_false(any(grepl("^b_hf", names(model$forecast_set))))
+    expect_lt(nrow(model$estimation_set), nrow(target))
+    expect_equal(model$forecast_set$a[[1]], sum(weights * c(14, 15, 16)))
+    expect_equal(model$forecast_set$b_hf1[[1]], 114)
+    expect_equal(model$forecast_set$b_hf2[[1]], 115)
+    expect_equal(model$forecast_set$b_hf3[[1]], 116)
+    expect_true(all(c("b_hf1", "b_hf2", "b_hf3") %in% names(model$forecast_set)))
   }
 )
 

@@ -34,7 +34,11 @@
 \item{...}{Unused.}
 
 \item{parm, level}{Passed to \code{\link[=confint]{confint()}}. Confidence intervals are computed
-from the coefficient covariance matrix returned by \code{\link[stats:vcov]{stats::vcov()}}.}
+from the coefficient covariance matrix returned by \code{\link[stats:vcov]{stats::vcov()}}, which
+may be the HAC or Delta-HAC covariance when \code{se = TRUE}. Critical values
+use a t-distribution with residual degrees of freedom from the fitted
+target equation; this is conservative relative to asymptotic normal
+critical values but is common practice in applied econometrics.}
 }
 \value{
 The requested model summary, usually delegated from the stored target

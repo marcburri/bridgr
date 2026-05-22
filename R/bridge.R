@@ -73,9 +73,9 @@
 #' coefficient per high-frequency observation within the target period. The
 #' parametric aggregators use two coefficients each: `"expalmon"` uses
 #' `(linear, quadratic)`, and `"beta"` uses `(left_shape, right_shape)` as the
-#' normalized beta shape parameters. When `indic_predict = "direct"`,
-#' `indic_aggregators` is ignored and direct blocks are averaged within each
-#' target period.
+#' normalized beta shape parameters. When `indic_predict = "direct"`, the
+#' supplied aggregation is applied directly to the aligned complete
+#' high-frequency blocks within each target period.
 #' @param indic_lags A non-negative integer giving the number of target-period
 #' lags to add for each aggregated indicator.
 #' @param target_lags A non-negative integer giving the autoregressive order in
@@ -485,7 +485,7 @@ fit_bridge_model <- function(
   }
 
   quoted_regressors <- paste0("`", regressor_names, "`")
-  formula <- stats::as.formula(
+  bridge_formula <- stats::as.formula(
     paste0(
       "`",
       target_name,
@@ -496,10 +496,7 @@ fit_bridge_model <- function(
 
   model_fit <- fit_target_model(
     estimation_set = estimation_set,
-    target_name = target_name,
-    regressor_names = regressor_names,
-    formula = formula,
-    target_lags = config$target_lags
+    formula = bridge_formula
   )
 
   target_history <- if (config$target_lags > 0) {
@@ -518,7 +515,7 @@ fit_bridge_model <- function(
   coefficient_uncertainty <- if (isTRUE(config$se)) {
     compute_bridge_coefficient_uncertainty(
       model = model_fit,
-      formula = formula,
+      formula = bridge_formula,
       target_tbl = target_tbl,
       target_name = target_name,
       fixed_aggregated = indicator_results$fixed_aggregated,
@@ -618,7 +615,7 @@ fit_bridge_model <- function(
         simulation_paths = prediction_uncertainty$N
       ),
       solver_options = config$solver_options,
-      formula = formula,
+      formula = bridge_formula,
       estimation_set = estimation_set,
       forecast_base_set = forecast_base_set,
       forecast_set = point_path$forecast_set,
@@ -776,10 +773,6 @@ validate_bridge_inputs <- function(
       call = call
     )
   }
-  if (direct_used) {
-    indic_aggregators <- rep(list("mean"), n_indicators)
-  }
-
   parametric_specs <- lapply(
     seq_len(n_indicators),
     function(i) {

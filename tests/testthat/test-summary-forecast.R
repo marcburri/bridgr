@@ -90,6 +90,37 @@ test_that("summary.mf_model omits aggregation details for direct alignment", {
   expect_false(any(grepl(parametric_label, output, fixed = TRUE)))
 })
 
+test_that("summary.mf_model reports parametric aggregation for direct expalmon", {
+  fixture <- make_daily_week_fixture(
+    n_weeks = 8,
+    h = 1,
+    indicator_values = seq_len(63)
+  )
+  indic <- dplyr::tibble(
+    time = seq(min(fixture$indic$time), by = "day", length.out = 57),
+    value = seq_len(57)
+  )
+
+  model <- mf_model(
+    target = fixture$target,
+    indic = indic,
+    indic_predict = "direct",
+    indic_aggregators = "expalmon",
+    solver_options = list(seed = 7, n_starts = 2, maxiter = 100),
+    h = 1
+  )
+
+  output <- capture.output(summary(model))
+
+  expect_true(any(grepl("Aggregation", output, fixed = TRUE)))
+  expect_true(any(grepl("expalmon", output, fixed = TRUE)))
+  expect_true(any(grepl(
+    "Estimated parametric aggregation:",
+    output,
+    fixed = TRUE
+  )))
+})
+
 test_that("forecast.mf_model accepts custom xreg for lm bridge models", {
   indic <- make_monthly_indicator(n = 36)
   target <- make_quarter_target(indic, n_quarters = 12)

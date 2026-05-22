@@ -61,9 +61,9 @@ the inferred target-period block size. \code{"unrestricted"} keeps one separate
 coefficient per high-frequency observation within the target period. The
 parametric aggregators use two coefficients each: \code{"expalmon"} uses
 \verb{(linear, quadratic)}, and \code{"beta"} uses \verb{(left_shape, right_shape)} as the
-normalized beta shape parameters. When \code{indic_predict = "direct"},
-\code{indic_aggregators} is ignored and direct blocks are averaged within each
-target period.}
+normalized beta shape parameters. When \code{indic_predict = "direct"}, the
+supplied aggregation is applied directly to the aligned complete
+high-frequency blocks within each target period.}
 
 \item{indic_lags}{A non-negative integer giving the number of target-period
 lags to add for each aggregated indicator.}

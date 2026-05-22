@@ -33,7 +33,11 @@ coef.mf_model <- function(object, ...) {
 
 #' @rdname mf_model-accessors
 #' @param parm,level Passed to [confint()]. Confidence intervals are computed
-#'   from the coefficient covariance matrix returned by [stats::vcov()].
+#'   from the coefficient covariance matrix returned by [stats::vcov()], which
+#'   may be the HAC or Delta-HAC covariance when `se = TRUE`. Critical values
+#'   use a t-distribution with residual degrees of freedom from the fitted
+#'   target equation; this is conservative relative to asymptotic normal
+#'   critical values but is common practice in applied econometrics.
 #' @srrstats {RE4.3} Returns coefficient intervals from the stored covariance.
 #' @method confint mf_model
 #' @export
@@ -45,10 +49,28 @@ confint.mf_model <- function(object, parm = NULL, level = 0.95, ...) {
     parm_names <- names(coefficients)
   } else if (is.numeric(parm)) {
     parm_names <- names(coefficients)[parm]
+    if (anyNA(parm_names)) {
+      rlang::abort(
+        paste0(
+          "`parm` indices out of range: ",
+          paste(parm[is.na(parm_names)], collapse = ", "),
+          "."
+        )
+      )
+    }
   } else {
     parm_names <- parm
+    invalid <- setdiff(parm_names, names(coefficients))
+    if (length(invalid) > 0) {
+      rlang::abort(
+        paste0(
+          "`parm` names not found in model coefficients: ",
+          paste(invalid, collapse = ", "),
+          "."
+        )
+      )
+    }
   }
-  parm_names <- parm_names[!is.na(parm_names)]
 
   standard_errors <- sqrt(diag(covariance))[parm_names]
   degrees_freedom <- tryCatch(

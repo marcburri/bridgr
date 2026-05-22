@@ -381,7 +381,7 @@ test_that("forecast method `direct` aligns blocks backward", {
   expect_equal(min(model$estimation_set$time), fixture$target$time[[2]])
 })
 
-test_that("forecast method `direct` ignores supplied aggregators", {
+test_that("forecast method `direct` supports parametric aggregation", {
   fixture <- make_daily_week_fixture(
     n_weeks = 6,
     h = 1,
@@ -401,9 +401,16 @@ test_that("forecast method `direct` ignores supplied aggregators", {
     h = 1
   )
 
-  expect_equal(model$forecast_set[[model$indic_name[[1]]]][[1]], mean(37:43))
-  expect_length(model$parametric_weights, 0)
-  expect_null(model$parametric_optimization)
+  weights <- model$parametric_weights[[model$indic_name[[1]]]]
+
+  expect_length(weights, 7)
+  expect_equal(sum(weights), 1, tolerance = 1e-8)
+  expect_equal(
+    model$forecast_set[[model$indic_name[[1]]]][[1]],
+    sum(weights * (37:43)),
+    tolerance = 1e-8
+  )
+  expect_false(is.null(model$parametric_optimization))
 })
 
 test_that("forecast method `direct` supports horizons greater than one", {

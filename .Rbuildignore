@@ -16,3 +16,5 @@
 ^LICENSE\.md$
 ^\.github$
 ^CODE_OF_CONDUCT\.md$
+^paper-jss($|/)
+^paper-ijfos($|/)
