@@ -1,4 +1,4 @@
-pandoc: 3.1.11
+pandoc: 3.8.3
 pkgdown: 2.2.0
 pkgdown_sha: ~
 articles:
@@ -6,7 +6,7 @@ articles:
   mixed-frequency-modeling: mixed-frequency-modeling.html
   ragged-edge-nowcasting: ragged-edge-nowcasting.html
   uncertainty-and-scenarios: uncertainty-and-scenarios.html
-last_built: 2026-04-20T14:55Z
+last_built: 2026-05-22T15:15Z
 urls:
   reference: https://marcburri.github.io/bridgr/reference
   article: https://marcburri.github.io/bridgr/articles

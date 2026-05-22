@@ -33,6 +33,7 @@ the final quarter is now forecasted rather than estimated, and the
 monthly indicator is only partially observed for that forecast quarter.
 
 ``` r
+
 gdp_growth <- suppressMessages(tsbox::ts_na_omit(tsbox::ts_pc(gdp)))
 gdp_nowcast <- gdp_growth |>
   dplyr::slice_head(n = nrow(gdp_growth) - 1)
@@ -79,6 +80,7 @@ nowcast.
 ## Comparing Indicator Completion Rules
 
 ``` r
+
 predict_methods <- c("last", "mean", "auto.arima", "ets")
 
 models <- lapply(
@@ -129,6 +131,7 @@ The easiest way to see what each method is doing is to inspect
 final forecast.
 
 ``` r
+
 lapply(
   models[c("last", "mean")],
   function(model) {
@@ -160,6 +163,7 @@ backward to the target periods and averages them within each target
 period.
 
 ``` r
+
 direct_model <- mf_model(
   target = gdp_nowcast,
   indic = baro_ragged,

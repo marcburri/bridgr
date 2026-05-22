@@ -16,6 +16,7 @@ differences between these approaches are easy to see.
 ## A Small Monthly-to-Quarterly Example
 
 ``` r
+
 n_quarters <- 40
 quarter_index <- rep(seq_len(n_quarters), each = 3)
 slot <- rep(1:3, times = n_quarters)
@@ -57,6 +58,7 @@ coefficients.
 ## Deterministic Bridge Aggregation
 
 ``` r
+
 mean_model <- mf_model(
   target = quarter_target,
   indic = monthly_indicator,
@@ -130,6 +132,7 @@ aggregation.
 ## Unrestricted Mixed-Frequency Regression
 
 ``` r
+
 unrestricted_model <- mf_model(
   target = quarter_target,
   indic = monthly_indicator,
@@ -180,6 +183,7 @@ within-period shape from the data while keeping the number of free
 parameters small.
 
 ``` r
+
 expalmon_model <- mf_model(
   target = quarter_target,
   indic = monthly_indicator,
@@ -208,6 +212,7 @@ The fitted object stores both the estimated weight profile and the
 underlying parametric coefficients.
 
 ``` r
+
 indicator_id <- expalmon_model$indic_name[[1]]
 
 dplyr::bind_rows(
@@ -238,6 +243,7 @@ dplyr::bind_rows(
 All of these models share the same downstream interface.
 
 ``` r
+
 dplyr::bind_rows(
   dplyr::tibble(
     model = "mean",

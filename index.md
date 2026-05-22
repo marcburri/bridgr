@@ -35,12 +35,14 @@ forecasting methods are the priority.
 From CRAN:
 
 ``` r
+
 install.packages("bridgr")
 ```
 
 You can install the development version of `bridgr` like so:
 
 ``` r
+
 # install.packages("devtools")
 devtools::install_github("marcburri/bridgr")
 ```
@@ -50,6 +52,7 @@ devtools::install_github("marcburri/bridgr")
 This example estimates a bridge model with uncertainty output:
 
 ``` r
+
 suppressPackageStartupMessages(library(bridgr))
 
 gdp <- suppressMessages(tsbox::ts_na_omit(tsbox::ts_pc(bridgr::gdp)))
@@ -79,6 +82,7 @@ forecast(bridge_model)
 ```
 
 ``` r
+
 
 summary(bridge_model)
 #> Mixed-frequency model summary
@@ -117,6 +121,7 @@ deterministic aggregator, you can switch the indicator aggregator to
 bridge model, and `solver_options` let you control the optimization.
 
 ``` r
+
 expalmon_model <- mf_model(
   target = gdp,
   indic = baro,

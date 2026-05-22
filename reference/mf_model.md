@@ -82,8 +82,9 @@ bridge(...)
   the target period. The parametric aggregators use two coefficients
   each: `"expalmon"` uses `(linear, quadratic)`, and `"beta"` uses
   `(left_shape, right_shape)` as the normalized beta shape parameters.
-  When `indic_predict = "direct"`, `indic_aggregators` is ignored and
-  direct blocks are averaged within each target period.
+  When `indic_predict = "direct"`, the supplied aggregation is applied
+  directly to the aligned complete high-frequency blocks within each
+  target period.
 
 - indic_lags:
 

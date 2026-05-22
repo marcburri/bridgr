@@ -48,7 +48,11 @@ print(x, ...)
   Passed to [`confint()`](https://rdrr.io/r/stats/confint.html).
   Confidence intervals are computed from the coefficient covariance
   matrix returned by
-  [`stats::vcov()`](https://rdrr.io/r/stats/vcov.html).
+  [`stats::vcov()`](https://rdrr.io/r/stats/vcov.html), which may be the
+  HAC or Delta-HAC covariance when `se = TRUE`. Critical values use a
+  t-distribution with residual degrees of freedom from the fitted target
+  equation; this is conservative relative to asymptotic normal critical
+  values but is common practice in applied econometrics.
 
 ## Value
 

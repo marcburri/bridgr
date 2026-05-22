@@ -23,6 +23,7 @@ The relevant estimation arguments are:
 ## Fitting a Model with Default Uncertainty
 
 ``` r
+
 gdp_growth <- suppressMessages(tsbox::ts_na_omit(tsbox::ts_pc(gdp)))
 
 boot_model <- mf_model(
@@ -57,6 +58,7 @@ returns a standardized forecast object with:
 - uncertainty metadata
 
 ``` r
+
 fc <- forecast(boot_model)
 
 fc
@@ -99,6 +101,7 @@ width as the cutoff and keeps only horizons that are no wider than that
 baseline.
 
 ``` r
+
 forecast_table <- dplyr::tibble(
   time = fc$time,
   mean = as.numeric(fc$mean),
@@ -126,6 +129,7 @@ The same uncertainty configuration also feeds into
 [`summary()`](https://rdrr.io/r/base/summary.html).
 
 ``` r
+
 summary(boot_model)
 #> Mixed-frequency model summary
 #> -----------------------------------
@@ -172,6 +176,7 @@ custom regressor names must match the ones used in the fitted target
 equation.
 
 ``` r
+
 scenario_xreg <- dplyr::tibble(
   id = rep(boot_model$xreg_names, each = nrow(boot_model$forecast_base_set)),
   time = rep(
@@ -212,6 +217,7 @@ coefficient standard errors and the forecast intervals are based on the
 bootstrap draws.
 
 ``` r
+
 full_model <- mf_model(
   target = gdp_growth,
   indic = baro,
@@ -250,6 +256,7 @@ that case, `bootstrap` is ignored and
 returns the same object shape, with `NA` uncertainty fields.
 
 ``` r
+
 point_model <- mf_model(
   target = gdp_growth,
   indic = baro,
