@@ -90,7 +90,7 @@ test_that("summary.mf_model omits aggregation details for direct alignment", {
   expect_false(any(grepl(parametric_label, output, fixed = TRUE)))
 })
 
-test_that("summary.mf_model reports parametric aggregation for direct expalmon", {
+test_that("summary.mf_model reports parametric aggregation for direct expalmon", { # nolint: line_length_linter.
   fixture <- make_daily_week_fixture(
     n_weeks = 8,
     h = 1,

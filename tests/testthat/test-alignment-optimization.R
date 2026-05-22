@@ -93,7 +93,9 @@ test_that(
     expect_equal(model$forecast_set$b_hf1[[1]], 114)
     expect_equal(model$forecast_set$b_hf2[[1]], 115)
     expect_equal(model$forecast_set$b_hf3[[1]], 116)
-    expect_true(all(c("b_hf1", "b_hf2", "b_hf3") %in% names(model$forecast_set)))
+    expect_true(all(
+      c("b_hf1", "b_hf2", "b_hf3") %in% names(model$forecast_set)
+    ))
   }
 )
 
