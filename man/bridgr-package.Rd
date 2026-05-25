@@ -6,15 +6,22 @@
 \alias{bridgr-package}
 \title{bridgr: Bridging Data Frequencies for Timely Economic Forecasts}
 \description{
+\code{bridgr} provides a unified workflow for bridging high-frequency indicators
+to lower-frequency target series, the practical job at the heart of
+nowcasting and forecasting macroeconomic variables. It covers classical
+bridge equations and MIDAS-style mixed-frequency regressions (\code{expalmon},
+\code{beta}, unrestricted / U-MIDAS) under one interface, with automatic
+frequency alignment, indicator forecasting, and aggregation.
+
 To learn more about bridgr, start with the vignettes:
 \code{browseVignettes(package = "bridgr")}
 }
 \details{
 \code{bridgr} is under active maintenance. The public interface centered on
 \code{\link[=mf_model]{mf_model()}}, \code{\link[=forecast]{forecast()}}, \code{\link[=summary]{summary()}}, and \code{\link[=plot]{plot()}} is considered stable
-for bridge-style nowcasting workflows, while future development is expected
-to expand diagnostics and mixed-frequency model options without changing the
-core target-and-indicator workflow.
+for mixed-frequency nowcasting workflows, while future development is
+expected to expand diagnostics and mixed-frequency model options without
+changing the core target-and-indicator workflow.
 }
 \seealso{
 Useful links:

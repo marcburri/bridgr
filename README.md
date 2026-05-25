@@ -19,16 +19,22 @@ status](https://www.r-pkg.org/badges/version/bridgr)](https://CRAN.R-project.org
 coverage](https://codecov.io/gh/marcburri/bridgr/graph/badge.svg)](https://app.codecov.io/gh/marcburri/bridgr)
 <!-- badges: end -->
 
-`bridgr` is designed to simplify the implementation and evaluation of
-bridge models, which are useful for nowcasting (predicting the present
-or near-term) and forecasting macroeconomic variables like GDP.
+`bridgr` provides a unified workflow for **bridging high-frequency
+indicators to lower-frequency target series** — the practical job at the
+heart of nowcasting and forecasting macroeconomic variables such as GDP
+or inflation. It supports classical bridge equations as well as
+MIDAS-style mixed-frequency regressions (`expalmon`, `beta`,
+unrestricted / U-MIDAS) under a single interface, with automatic
+frequency alignment, indicator forecasting, and aggregation.
 
-Bridge models are statistical tools that link high-frequency indicators
-(e.g., monthly industrial production) to low-frequency target variables
-(e.g., quarterly GDP) by forecasting and aggregating the indicators to
-match the target’s frequency. They enable timely predictions before the
-official release of low-frequency data, making them essential for
-policymakers who need early insights for decision-making.
+In a typical workflow `bridgr` takes a low-frequency target (e.g.,
+quarterly GDP) and one or more higher-frequency indicators (e.g.,
+monthly surveys or daily web data), forecasts any missing indicator
+observations, aggregates them to the target frequency, and fits a
+regression with optional autoregressive target dynamics. This makes it
+possible to produce timely predictions well before the official release
+of the low-frequency data — which is essential for policymakers, central
+banks, and applied forecasters who need early reads on the macroeconomy.
 
 `bridgr` supports regular frequency ladders from `second` up to `year`,
 several deterministic and model-based indicator forecasting rules, and
@@ -39,15 +45,15 @@ most recent observations and reports a summarized warning.
 
 Compared with [`midasr`](https://CRAN.R-project.org/package=midasr),
 which is a broad toolkit for estimating, testing, selecting, and
-forecasting MIDAS regressions, `bridgr` focuses more narrowly on
-bridge-style nowcasting workflows with automatic frequency alignment,
-indicator extension, aggregation, and a simpler end-to-end interface.
+forecasting MIDAS regressions, `bridgr` focuses on end-to-end nowcasting
+workflows with automatic frequency alignment, indicator extension,
+aggregation, and a simpler interface from raw series to forecast.
 Compared with [`midasml`](https://CRAN.R-project.org/package=midasml),
 which targets high-dimensional mixed-frequency time-series and panel
 models with regularization methods such as sparse-group LASSO, `bridgr`
 is aimed at lower-dimensional applied forecasting settings where
-transparent bridge-model specification, interpretation, and standard
-forecasting methods are the priority.
+transparent specification, interpretation, and standard forecasting
+tooling are the priority.
 
 ## Installation
 
@@ -93,11 +99,8 @@ forecast(bridge_model)
 #> Simulation paths: 100
 #> -----------------------------------
 #>   time       mean  se    lower_80 upper_80 lower_95 upper_95
-#> 1 2023-01-01 0.808 0.794 -0.215   1.870    -1.005   2.059   
-#> 2 2023-04-01 0.468 0.836 -0.612   1.748    -1.054   2.420
-```
-
-``` r
+#> 1 2023-01-01 0.808 0.572 -0.075   1.412    -0.265   1.896   
+#> 2 2023-04-01 0.468 0.678 -0.304   1.343    -0.642   2.788
 
 summary(bridge_model)
 #> Mixed-frequency model summary
@@ -115,6 +118,12 @@ summary(bridge_model)
 #> baro_lag1     -0.134  0.049
 #> baro_lag2      0.042  0.019
 #> gdp_lag1       0.223  0.143
+#> -----------------------------------
+#> Model fit:
+#>  Statistic               Value
+#>  R-squared               0.712
+#>  Adjusted R-squared      0.694
+#>  Residual standard error 0.747
 #> -----------------------------------
 #> Indicator summary:
 #>      Frequency Predict    Aggregation
@@ -158,6 +167,12 @@ summary(expalmon_model)
 #>             Estimate
 #> (Intercept)   -9.371
 #> baro           0.098
+#> -----------------------------------
+#> Model fit:
+#>  Statistic               Value
+#>  R-squared               0.533
+#>  Adjusted R-squared      0.527
+#>  Residual standard error 0.913
 #> -----------------------------------
 #> Indicator summary:
 #>      Frequency Predict    Aggregation

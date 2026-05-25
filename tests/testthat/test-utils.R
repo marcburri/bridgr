@@ -51,7 +51,7 @@ test_that("solver option normalization validates controls", {
 })
 
 test_that("bootstrap controls are normalized and validated", {
-  options <- bridgr:::normalize_bridge_bootstrap(
+  options <- bridgr:::normalize_mf_bootstrap(
     list(N = 25.2, block_length = 4.8)
   )
 
@@ -59,15 +59,15 @@ test_that("bootstrap controls are normalized and validated", {
   expect_equal(options$block_length, 5L)
 
   expect_error(
-    bridgr:::normalize_bridge_bootstrap("bad"),
+    bridgr:::normalize_mf_bootstrap("bad"),
     "`bootstrap` must be a list"
   )
   expect_error(
-    bridgr:::normalize_bridge_bootstrap(list(N = 0)),
+    bridgr:::normalize_mf_bootstrap(list(N = 0)),
     "`bootstrap\\$N` must be a single integer >= 1"
   )
   expect_error(
-    bridgr:::normalize_bridge_bootstrap(list(block_length = 0)),
+    bridgr:::normalize_mf_bootstrap(list(block_length = 0)),
     "`bootstrap\\$block_length` must be `NULL` or a single integer >= 1"
   )
 })
@@ -78,7 +78,7 @@ test_that("default series ids are scalarized before assignment", {
     value = 1:3
   )
 
-  output <- bridgr:::as_bridge_tbl(
+  output <- bridgr:::as_mf_tbl(
     x = input,
     arg = "target",
     default_id = c("very", "long", "expression")
@@ -96,7 +96,7 @@ test_that(
   )
 
   expect_error(
-    bridgr:::as_bridge_tbl(
+    bridgr:::as_mf_tbl(
       x = input,
       arg = "target",
       default_id = "target"
@@ -108,19 +108,19 @@ test_that(
 
 test_that("argument labels fall back cleanly for literal objects", {
   expect_equal(
-    bridgr:::bridge_argument_label(quote(example_series), "target"),
+    bridgr:::mf_argument_label(quote(example_series), "target"),
     "example_series"
   )
   expect_equal(
-    bridgr:::bridge_argument_label(quote(pkg::example_series), "target"),
+    bridgr:::mf_argument_label(quote(pkg::example_series), "target"),
     "pkg::example_series"
   )
   expect_equal(
-    bridgr:::bridge_argument_label(dplyr::tibble(x = 1), "target"),
+    bridgr:::mf_argument_label(dplyr::tibble(x = 1), "target"),
     "target"
   )
   expect_equal(
-    bridgr:::bridge_argument_label(
+    bridgr:::mf_argument_label(
       quote(base::quote(list(time = 1, value = 2))),
       "target"
     ),
@@ -350,19 +350,19 @@ finite_difference_gradient <- function(fun, x, eps = 1e-6) {
 parametric_gradient_fixture <- function(aggregator) {
   indicator <- make_monthly_indicator(n = 36)
   target <- make_quarter_target(indicator, n_quarters = 12)
-  target_tbl <- bridgr:::as_bridge_tbl(
+  target_tbl <- bridgr:::as_mf_tbl(
     target,
     arg = "target",
     default_id = "target"
   )
-  indicator_tbl <- bridgr:::as_bridge_tbl(
+  indicator_tbl <- bridgr:::as_mf_tbl(
     indicator,
     arg = "indic",
     default_id = "indic"
   )
   target_meta <- bridgr:::infer_frequency_table(target_tbl)$target
   indicator_meta <- bridgr:::infer_frequency_table(indicator_tbl)$indicators
-  aligned <- bridgr:::align_bridge_inputs(
+  aligned <- bridgr:::align_mf_inputs(
     target_tbl = target_tbl,
     indic_tbl = indicator_tbl,
     target_meta = target_meta,

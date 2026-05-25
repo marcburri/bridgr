@@ -34,8 +34,8 @@ test_that("mean extension uses the latest available high-frequency block", {
     value = c(5, 5, 5, 10, 10, 10, 20, 20, 20, 1000)
   )
 
-  target_tbl <- bridgr:::as_bridge_tbl(target, "target", "target")
-  indic_tbl <- bridgr:::as_bridge_tbl(indic, "indic", "indic")
+  target_tbl <- bridgr:::as_mf_tbl(target, "target", "target")
+  indic_tbl <- bridgr:::as_mf_tbl(indic, "indic", "indic")
   target_meta <- bridgr:::infer_frequency_table(target_tbl)$target
   indic_meta <- bridgr:::infer_frequency_table(indic_tbl)$indicators
 

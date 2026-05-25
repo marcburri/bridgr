@@ -70,7 +70,7 @@ check_scalar_number <- function(
 
 #' @keywords internal
 #' @noRd
-normalize_bridge_default_id <- function(default_id) {
+normalize_mf_default_id <- function(default_id) {
   default_id <- as.character(default_id)
   default_id <- default_id[nzchar(default_id)]
 
@@ -215,7 +215,7 @@ apply_missing_value_policy <- function(
 
 #' @keywords internal
 #' @noRd
-is_bridge_reference_expr <- function(expr) {
+is_mf_reference_expr <- function(expr) {
   if (is.symbol(expr)) {
     return(TRUE)
   }
@@ -235,12 +235,12 @@ is_bridge_reference_expr <- function(expr) {
 
 #' @keywords internal
 #' @noRd
-bridge_argument_label <- function(expr, fallback) {
-  if (is_bridge_reference_expr(expr)) {
-    return(normalize_bridge_default_id(rlang::as_label(expr)))
+mf_argument_label <- function(expr, fallback) {
+  if (is_mf_reference_expr(expr)) {
+    return(normalize_mf_default_id(rlang::as_label(expr)))
   }
 
-  normalize_bridge_default_id(fallback)
+  normalize_mf_default_id(fallback)
 }
 
 
@@ -253,20 +253,20 @@ bridge_argument_label <- function(expr, fallback) {
 #' @srrstats {G2.8} Uses one shared preprocessing step for supported inputs.
 #' @srrstats {G2.12} Rejects list-valued data columns before modeling.
 #' @srrstats {TS1.0} Only ts-boxable time-series inputs enter preprocessing.
-#' @srrstats {TS1.2} Validates ts-boxable input status in `as_bridge_tbl()`.
+#' @srrstats {TS1.2} Validates ts-boxable input status in `as_mf_tbl()`.
 #' @srrstats {TS1.3} Converts accepted inputs to one table format.
 #' @srrstats {TS1.6} Rejects per-series time disorder in tabular inputs.
 #' @srrstats {TS1.5} Sorts rows by series id and time.
 #' @keywords internal
 #' @noRd
-as_bridge_tbl <- function(
+as_mf_tbl <- function(
   x,
   arg,
   default_id,
   missing = "error",
   call = rlang::caller_env()
 ) {
-  default_id <- normalize_bridge_default_id(default_id)
+  default_id <- normalize_mf_default_id(default_id)
 
   if (!tsbox::ts_boxable(x)) {
     rlang::abort(
@@ -427,7 +427,7 @@ normalize_period_start_data <- function(data) {
 #' @srrstats {TS2.1a} Explicit missing timestamps or values error early.
 #' @keywords internal
 #' @noRd
-check_bridge_series <- function(
+check_mf_series <- function(
   data,
   arg,
   call = rlang::caller_env()
@@ -940,7 +940,7 @@ validate_parametric_solver_start <- function(
 
 #' @keywords internal
 #' @noRd
-normalize_bridge_bootstrap <- function(
+normalize_mf_bootstrap <- function(
   bootstrap,
   call = rlang::caller_env()
 ) {
@@ -1004,7 +1004,7 @@ as_forecast_xreg <- function(
     return(NULL)
   }
 
-  xreg_tbl <- as_bridge_tbl(
+  xreg_tbl <- as_mf_tbl(
     x = xreg,
     arg = "xreg",
     default_id = regressor_names[[1]],

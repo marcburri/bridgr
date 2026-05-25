@@ -700,7 +700,7 @@ evaluate_parametric_objective <- function(
     parametric_specs = parametric_specs,
     parameter_blocks = parameter_blocks
   )
-  estimation_set <- build_bridge_estimation_set(
+  estimation_set <- build_mf_estimation_set(
     target_tbl = target_tbl,
     target_name = target_name,
     feature_long = dplyr::bind_rows(
@@ -1035,7 +1035,7 @@ optimize_parametric_weights <- function(
   call = rlang::caller_env()
 ) {
   # `solver_options` are expected to be pre-normalized by
-  # `validate_bridge_inputs()`; this function does not re-validate them.
+  # `validate_mf_inputs()`; this function does not re-validate them.
   indicator_ids <- names(parametric_specs)
   base_blocks <- solver_options$start_values
   if (is.null(base_blocks)) {
@@ -1258,7 +1258,7 @@ add_target_lagged_regressors <- function(
 
 #' @keywords internal
 #' @noRd
-build_bridge_estimation_set <- function(
+build_mf_estimation_set <- function(
   target_tbl,
   target_name,
   feature_long,
@@ -1287,7 +1287,7 @@ build_bridge_estimation_set <- function(
 
 #' @keywords internal
 #' @noRd
-bridge_mean_from_parameters <- function(
+mf_mean_from_parameters <- function(
   coefficient_values,
   formula,
   estimation_set
@@ -1337,7 +1337,7 @@ rebuild_parametric_estimation_set <- function(
     parameter_blocks = parameter_blocks
   )
 
-  build_bridge_estimation_set(
+  build_mf_estimation_set(
     target_tbl = target_tbl,
     target_name = target_name,
     feature_long = dplyr::bind_rows(
@@ -1353,7 +1353,7 @@ rebuild_parametric_estimation_set <- function(
 
 #' @keywords internal
 #' @noRd
-compute_bridge_loss <- function(
+compute_mf_loss <- function(
   estimation_set,
   target_name,
   target_lags,
@@ -1394,7 +1394,7 @@ compute_bridge_loss <- function(
 
 #' @keywords internal
 #' @noRd
-resample_bridge_inputs <- function(
+resample_mf_inputs <- function(
   target_tbl,
   indic_tbl,
   target_meta,

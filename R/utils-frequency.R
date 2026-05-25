@@ -187,7 +187,7 @@ detect_time_frequency <- function(times) {
 
 #' @keywords internal
 #' @noRd
-align_bridge_inputs <- function(
+align_mf_inputs <- function(
   target_tbl,
   indic_tbl,
   target_meta,

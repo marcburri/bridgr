@@ -277,17 +277,17 @@ mf_model <- function(
     stationarity,
     call = rlang::caller_env()
   )
-  target_name <- bridge_argument_label(substitute(target), "target")
-  indic_name <- bridge_argument_label(substitute(indic), "indic")
+  target_name <- mf_argument_label(substitute(target), "target")
+  indic_name <- mf_argument_label(substitute(indic), "indic")
 
   # Standardize inputs before any frequency or aggregation logic.
-  target_tbl <- as_bridge_tbl(
+  target_tbl <- as_mf_tbl(
     x = target,
     arg = "target",
     default_id = target_name,
     missing = missing
   )
-  indic_tbl <- as_bridge_tbl(
+  indic_tbl <- as_mf_tbl(
     x = indic,
     arg = "indic",
     default_id = indic_name,
@@ -296,7 +296,7 @@ mf_model <- function(
   target_tbl <- normalize_period_start_data(target_tbl)
   indic_tbl <- normalize_period_start_data(indic_tbl)
 
-  config <- validate_bridge_inputs(
+  config <- validate_mf_inputs(
     target_tbl = target_tbl,
     indic_tbl = indic_tbl,
     indic_predict = indic_predict,
@@ -327,7 +327,7 @@ mf_model <- function(
   # Carry the target symbol into the final model formula and output.
   target_tbl <- target_tbl |>
     dplyr::mutate(id = target_name)
-  fit_bridge_model(
+  fit_mf_model(
     target_tbl = target_tbl,
     indic_tbl = indic_tbl,
     target_name = target_name,
@@ -348,7 +348,7 @@ bridge <- function(...) {
 #' @srrstats {RE4.13} Stores indicator data, frequencies, and regressor names.
 #' @keywords internal
 #' @noRd
-fit_bridge_model <- function(
+fit_mf_model <- function(
   target_tbl,
   indic_tbl,
   target_name,
@@ -369,13 +369,13 @@ fit_bridge_model <- function(
     config = config
   )
 
-  bridge_formula <- build_bridge_formula(
+  mf_formula <- build_mf_formula(
     target_name = target_name,
     regressor_names = inputs$regressor_names
   )
   model_fit <- fit_target_model(
     estimation_set = inputs$estimation_set,
-    formula = bridge_formula
+    formula = mf_formula
   )
 
   target_history <- if (config$target_lags > 0) {
@@ -393,7 +393,7 @@ fit_bridge_model <- function(
 
   uncertainty <- compute_model_uncertainty(
     model = model_fit,
-    formula = bridge_formula,
+    formula = mf_formula,
     target_tbl = inputs$target_tbl,
     indic_tbl = inputs$indic_tbl,
     target_name = target_name,
@@ -418,7 +418,7 @@ fit_bridge_model <- function(
     forecast_base_set = inputs$forecast_base_set,
     point_path = point_path,
     model_fit = model_fit,
-    bridge_formula = bridge_formula,
+    mf_formula = mf_formula,
     indicator_results = inputs$indicator_results,
     target_anchor = inputs$target_anchor,
     future_target_times = inputs$future_target_times,
@@ -439,7 +439,7 @@ prepare_estimation_inputs <- function(
   target_meta <- config$target_meta
   indic_meta <- config$indic_meta
 
-  aligned <- align_bridge_inputs(
+  aligned <- align_mf_inputs(
     target_tbl = target_tbl,
     indic_tbl = indic_tbl,
     target_meta = target_meta,
@@ -586,7 +586,7 @@ check_estimation_set <- function(
 
 #' @keywords internal
 #' @noRd
-build_bridge_formula <- function(target_name, regressor_names) {
+build_mf_formula <- function(target_name, regressor_names) {
   quoted_regressors <- paste0("`", regressor_names, "`")
   stats::as.formula(
     paste0(
@@ -616,7 +616,7 @@ compute_model_uncertainty <- function(
   call = rlang::caller_env()
 ) {
   coefficient_uncertainty <- if (isTRUE(config$se)) {
-    compute_bridge_coefficient_uncertainty(
+    compute_mf_coefficient_uncertainty(
       model = model,
       formula = formula,
       target_tbl = target_tbl,
@@ -634,7 +634,7 @@ compute_model_uncertainty <- function(
   full_bootstrap <- if (
     isTRUE(config$se) && isTRUE(config$full_system_bootstrap)
   ) {
-    bootstrap_bridge_system(
+    bootstrap_mf_system(
       enabled = TRUE,
       target_tbl = target_tbl,
       indic_tbl = indic_tbl,
@@ -708,7 +708,7 @@ assemble_mf_model <- function(
   forecast_base_set,
   point_path,
   model_fit,
-  bridge_formula,
+  mf_formula,
   indicator_results,
   target_anchor,
   future_target_times,
@@ -744,7 +744,7 @@ assemble_mf_model <- function(
         simulation_paths = uncertainty$prediction$N
       ),
       solver_options = config$solver_options,
-      formula = bridge_formula,
+      formula = mf_formula,
       estimation_set = estimation_set,
       forecast_base_set = forecast_base_set,
       forecast_set = point_path$forecast_set,
@@ -770,7 +770,7 @@ assemble_mf_model <- function(
 #' @srrstats {G2.2} Restricts `target` to one series.
 #' @keywords internal
 #' @noRd
-validate_bridge_inputs <- function(
+validate_mf_inputs <- function(
   target_tbl,
   indic_tbl,
   indic_predict,
@@ -799,8 +799,8 @@ validate_bridge_inputs <- function(
     )
   }
 
-  check_bridge_series(target_tbl, "target", call = call)
-  check_bridge_series(indic_tbl, "indic", call = call)
+  check_mf_series(target_tbl, "target", call = call)
+  check_mf_series(indic_tbl, "indic", call = call)
 
   check_scalar_count(indic_lags, "indic_lags", min = 0L, call = call)
   check_scalar_count(target_lags, "target_lags", min = 0L, call = call)
@@ -812,7 +812,7 @@ validate_bridge_inputs <- function(
     frequency_conversions,
     call = call
   )
-  bootstrap <- normalize_bridge_bootstrap(
+  bootstrap <- normalize_mf_bootstrap(
     bootstrap = bootstrap,
     call = call
   )

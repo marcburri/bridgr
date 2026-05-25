@@ -153,7 +153,7 @@ coefficient_vcov_delta_hac <- function(
     names(plus_blocks) <- names(parametric_specs)
     names(minus_blocks) <- names(parametric_specs)
 
-    mean_plus <- bridge_mean_from_parameters(
+    mean_plus <- mf_mean_from_parameters(
       coefficient_values = coefficient_values,
       formula = formula,
       estimation_set = rebuild_parametric_estimation_set(
@@ -166,7 +166,7 @@ coefficient_vcov_delta_hac <- function(
         target_lags = target_lags
       )
     )
-    mean_minus <- bridge_mean_from_parameters(
+    mean_minus <- mf_mean_from_parameters(
       coefficient_values = coefficient_values,
       formula = formula,
       estimation_set = rebuild_parametric_estimation_set(
@@ -194,7 +194,7 @@ coefficient_vcov_delta_hac <- function(
 
 #' @keywords internal
 #' @noRd
-compute_bridge_coefficient_uncertainty <- function(
+compute_mf_coefficient_uncertainty <- function(
   model,
   formula,
   target_tbl,

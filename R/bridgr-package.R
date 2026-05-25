@@ -1,12 +1,19 @@
 #' @description
+#' `bridgr` provides a unified workflow for bridging high-frequency indicators
+#' to lower-frequency target series, the practical job at the heart of
+#' nowcasting and forecasting macroeconomic variables. It covers classical
+#' bridge equations and MIDAS-style mixed-frequency regressions (`expalmon`,
+#' `beta`, unrestricted / U-MIDAS) under one interface, with automatic
+#' frequency alignment, indicator forecasting, and aggregation.
+#'
 #' To learn more about bridgr, start with the vignettes:
 #' `browseVignettes(package = "bridgr")`
 #' @details
 #' `bridgr` is under active maintenance. The public interface centered on
 #' [mf_model()], [forecast()], [summary()], and [plot()] is considered stable
-#' for bridge-style nowcasting workflows, while future development is expected
-#' to expand diagnostics and mixed-frequency model options without changing the
-#' core target-and-indicator workflow.
+#' for mixed-frequency nowcasting workflows, while future development is
+#' expected to expand diagnostics and mixed-frequency model options without
+#' changing the core target-and-indicator workflow.
 #' @srrstats {G1.2} Documents the package lifecycle and stable interface.
 #' @srrstats {G1.4} Documents package functions with roxygen2.
 #' @srrstats {G1.4a} Documents internal helpers with roxygen2 and `@noRd`.

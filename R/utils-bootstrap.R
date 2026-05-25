@@ -173,7 +173,7 @@ bootstrap_interval_matrices <- function(draws, level, horizon) {
 
 #' @keywords internal
 #' @noRd
-bootstrap_bridge_system <- function(
+bootstrap_mf_system <- function(
   enabled,
   target_tbl,
   indic_tbl,
@@ -227,7 +227,7 @@ bootstrap_bridge_system <- function(
   bootstrap_config$se <- FALSE
 
   for (draw_index in seq_len(config$bootstrap$N)) {
-    resampled_inputs <- resample_bridge_inputs(
+    resampled_inputs <- resample_mf_inputs(
       target_tbl = target_tbl,
       indic_tbl = indic_tbl,
       target_meta = target_meta,
@@ -239,7 +239,7 @@ bootstrap_bridge_system <- function(
     )
 
     draw_fit <- suppressWarnings(try(
-      fit_bridge_model(
+      fit_mf_model(
         target_tbl = resampled_inputs$target,
         indic_tbl = resampled_inputs$indic,
         target_name = target_name,

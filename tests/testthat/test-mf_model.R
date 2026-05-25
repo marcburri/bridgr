@@ -658,15 +658,15 @@ test_that(
   {
     simulated <- make_exact_multifrequency_simulation()
 
-    target_tbl <- bridgr:::as_bridge_tbl(
+    target_tbl <- bridgr:::as_mf_tbl(
       simulated$target,
       "target",
       "target"
     ) |>
       dplyr::mutate(id = "target")
-    indic_tbl <- bridgr:::as_bridge_tbl(simulated$indic, "indic", "indic")
+    indic_tbl <- bridgr:::as_mf_tbl(simulated$indic, "indic", "indic")
 
-    config <- bridgr:::validate_bridge_inputs(
+    config <- bridgr:::validate_mf_inputs(
       target_tbl = target_tbl,
       indic_tbl = indic_tbl,
       indic_predict = c("last", "last", "last"),
@@ -684,7 +684,7 @@ test_that(
       c("second", "minute", "hour")
     )
 
-    aligned <- bridgr:::align_bridge_inputs(
+    aligned <- bridgr:::align_mf_inputs(
       target_tbl,
       indic_tbl,
       target_meta,
@@ -734,15 +734,15 @@ test_that(
   {
     simulated <- make_day_week_month_simulation()
 
-    target_tbl <- bridgr:::as_bridge_tbl(
+    target_tbl <- bridgr:::as_mf_tbl(
       simulated$target,
       "target",
       "target"
     ) |>
       dplyr::mutate(id = "target")
-    indic_tbl <- bridgr:::as_bridge_tbl(simulated$indic, "indic", "indic")
+    indic_tbl <- bridgr:::as_mf_tbl(simulated$indic, "indic", "indic")
 
-    config <- bridgr:::validate_bridge_inputs(
+    config <- bridgr:::validate_mf_inputs(
       target_tbl = target_tbl,
       indic_tbl = indic_tbl,
       indic_predict = c("last", "last", "last"),
@@ -760,7 +760,7 @@ test_that(
       c("day", "week", "month")
     )
 
-    aligned <- bridgr:::align_bridge_inputs(
+    aligned <- bridgr:::align_mf_inputs(
       target_tbl,
       indic_tbl,
       target_meta,
@@ -811,15 +811,15 @@ test_that(
   {
     simulated <- make_month_quarter_year_simulation()
 
-    target_tbl <- bridgr:::as_bridge_tbl(
+    target_tbl <- bridgr:::as_mf_tbl(
       simulated$target,
       "target",
       "target"
     ) |>
       dplyr::mutate(id = "target")
-    indic_tbl <- bridgr:::as_bridge_tbl(simulated$indic, "indic", "indic")
+    indic_tbl <- bridgr:::as_mf_tbl(simulated$indic, "indic", "indic")
 
-    config <- bridgr:::validate_bridge_inputs(
+    config <- bridgr:::validate_mf_inputs(
       target_tbl = target_tbl,
       indic_tbl = indic_tbl,
       indic_predict = c("last", "last", "last"),
@@ -837,7 +837,7 @@ test_that(
       c("month", "quarter", "year")
     )
 
-    aligned <- bridgr:::align_bridge_inputs(
+    aligned <- bridgr:::align_mf_inputs(
       target_tbl,
       indic_tbl,
       target_meta,
@@ -917,7 +917,7 @@ test_that("joint expalmon optimization improves the fit", {
   )
 
   estimation_times <- fixture$target$time
-  target_tbl <- bridgr:::as_bridge_tbl(fixture$target, "target", "target") |>
+  target_tbl <- bridgr:::as_mf_tbl(fixture$target, "target", "target") |>
     dplyr::mutate(id = "target")
 
   separate_weights <- lapply(
@@ -979,7 +979,7 @@ test_that("joint expalmon optimization improves the fit", {
       )
     )
   )
-  separate_set <- bridgr:::build_bridge_estimation_set(
+  separate_set <- bridgr:::build_mf_estimation_set(
     target_tbl = target_tbl,
     target_name = "target",
     feature_long = separate_long,
@@ -987,12 +987,12 @@ test_that("joint expalmon optimization improves the fit", {
     estimation_times = estimation_times
   )
 
-  joint_loss <- bridgr:::compute_bridge_loss(
+  joint_loss <- bridgr:::compute_mf_loss(
     estimation_set = model$estimation_set,
     target_name = model$target_name,
     target_lags = model$target_lags
   )
-  separate_loss <- bridgr:::compute_bridge_loss(
+  separate_loss <- bridgr:::compute_mf_loss(
     estimation_set = separate_set,
     target_name = "target",
     target_lags = 0
