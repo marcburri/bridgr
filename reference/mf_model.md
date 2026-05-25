@@ -336,34 +336,16 @@ mf_model(
   bootstrap = list(N = 2),
   solver_options = list(seed = 123, n_starts = 1)
 )
-#> Mixed-frequency model summary
-#> -----------------------------------
-#> Target series: gdp_growth
+#> Mixed-frequency model
+#> Target series:    gdp_growth
 #> Target frequency: quarter
 #> Forecast horizon: 1
-#> Estimation rows: 10
-#> Regressors: baro_small, baro_small_lag1, gdp_growth_lag1
-#> -----------------------------------
-#> Target equation coefficients:
-#>                 Estimate HAC SE
-#> (Intercept)       -4.556  3.020
-#> baro_small         0.118  0.025
-#> baro_small_lag1   -0.061  0.042
-#> gdp_growth_lag1   -0.188  0.136
-#> -----------------------------------
-#> Model fit:
-#>  Statistic               Value
-#>  R-squared               0.820
-#>  Adjusted R-squared      0.730
-#>  Residual standard error 1.093
-#> -----------------------------------
-#> Indicator summary:
-#>            Frequency Predict    Aggregation
-#> baro_small month     auto.arima mean       
-#> -----------------------------------
-#> Uncertainty:
-#> Coefficient SEs: hac
-#> Prediction intervals: residual resampling
-#> Simulation paths: 2
-#> -----------------------------------
+#> Estimation rows:  10
+#> Formula:          gdp_growth ~ baro_small + baro_small_lag1 + gdp_growth_lag1
+#> 
+#> Coefficients:
+#>     (Intercept)      baro_small baro_small_lag1 gdp_growth_lag1 
+#>     -4.55612825      0.11796646     -0.06052022     -0.18792194 
+#> 
+#> Use `summary()` for the full model report.
 ```

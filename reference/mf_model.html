@@ -376,36 +376,18 @@ Statistics</em>, 1-25. <a href="https://doi.org/10.1111/obes.70073" class="exter
 <span class="r-in"><span>  bootstrap <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  solver_options <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>seed <span class="op">=</span> <span class="fl">123</span>, n_starts <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Mixed-frequency model summary</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> -----------------------------------</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Target series: gdp_growth</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Mixed-frequency model</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Target series:    gdp_growth</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Target frequency: quarter</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Forecast horizon: 1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Estimation rows: 10</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Regressors: baro_small, baro_small_lag1, gdp_growth_lag1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> -----------------------------------</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Target equation coefficients:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                 Estimate HAC SE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> (Intercept)       -4.556  3.020</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> baro_small         0.118  0.025</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> baro_small_lag1   -0.061  0.042</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> gdp_growth_lag1   -0.188  0.136</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> -----------------------------------</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Model fit:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Statistic               Value</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  R-squared               0.820</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Adjusted R-squared      0.730</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Residual standard error 1.093</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> -----------------------------------</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Indicator summary:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>            Frequency Predict    Aggregation</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> baro_small month     auto.arima mean       </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> -----------------------------------</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Uncertainty:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Coefficient SEs: hac</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Prediction intervals: residual resampling</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Simulation paths: 2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> -----------------------------------</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Estimation rows:  10</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Formula:          gdp_growth ~ baro_small + baro_small_lag1 + gdp_growth_lag1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Coefficients:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     (Intercept)      baro_small baro_small_lag1 gdp_growth_lag1 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     -4.55612825      0.11796646     -0.06052022     -0.18792194 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Use `summary()` for the full model report.</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
