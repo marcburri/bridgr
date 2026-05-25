@@ -146,10 +146,19 @@ residuals.mf_model <- function(object, ...) {
 
 #' @rdname mf_model-accessors
 #' @return `x`, invisibly.
-#' @srrstats {RE4.17} Prints the standard model summary layout.
+#' @srrstats {RE4.17} Prints a concise model header; use `summary()` for the
+#'   detailed report.
 #' @method print mf_model
 #' @export
 print.mf_model <- function(x, ...) {
-  summary(x, ...)
+  cat("Mixed-frequency model\n")
+  cat("Target series:    ", x$target_name, "\n", sep = "")
+  cat("Target frequency: ", x$target_frequency$unit[[1]], "\n", sep = "")
+  cat("Forecast horizon: ", x$h, "\n", sep = "")
+  cat("Estimation rows:  ", nrow(x$estimation_set), "\n", sep = "")
+  cat("Formula:          ", deparse1(x$formula), "\n", sep = "")
+  cat("\nCoefficients:\n")
+  print(stats::coef(x))
+  cat("\nUse `summary()` for the full model report.\n")
   invisible(x)
 }

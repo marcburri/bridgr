@@ -143,7 +143,7 @@ test_that(
   }
 )
 
-test_that("print.mf_model exposes the package summary layout", {
+test_that("print.mf_model prints a concise header and summary delegates", {
   indic <- make_monthly_indicator(n = 36)
   target <- make_quarter_target(indic, n_quarters = 12)
 
@@ -154,11 +154,24 @@ test_that("print.mf_model exposes the package summary layout", {
     h = 1
   )
 
-  output <- capture.output(print(model))
+  print_output <- capture.output(print(model))
+  expect_true(any(grepl("Mixed-frequency model", print_output, fixed = TRUE)))
+  expect_true(any(grepl("Coefficients:", print_output, fixed = TRUE)))
+  expect_true(any(grepl("Use `summary()`", print_output, fixed = TRUE)))
+  expect_false(
+    any(grepl("Target equation coefficients:", print_output, fixed = TRUE))
+  )
 
-  expect_true(any(grepl("Mixed-frequency model summary", output, fixed = TRUE)))
-  expect_true(any(grepl("Target equation coefficients:", output, fixed = TRUE)))
-  expect_true(any(grepl("Indicator summary:", output, fixed = TRUE)))
+  summary_output <- capture.output(summary(model))
+  expect_true(
+    any(grepl("Mixed-frequency model summary", summary_output, fixed = TRUE))
+  )
+  expect_true(
+    any(grepl("Target equation coefficients:", summary_output, fixed = TRUE))
+  )
+  expect_true(
+    any(grepl("Indicator summary:", summary_output, fixed = TRUE))
+  )
 })
 
 test_that(

@@ -28,13 +28,13 @@ recursive_lm_forecast <- function(
     ))
   }
 
-  lag_names <- target_lag_regressor_names(target_name, target_lags)
-  direct_predict <- target_lags == 0 || all(lag_names %in% names(forecast_set))
   augmented <- forecast_set
   mean_values <- numeric(horizon)
   response_values <- numeric(horizon)
 
-  if (direct_predict) {
+  # With no target lags the forecast set already contains every regressor
+  # and a single batch predict is sufficient.
+  if (target_lags == 0) {
     mean_values <- suppressWarnings(
       as.numeric(stats::predict(model, newdata = forecast_set))
     )
@@ -48,6 +48,8 @@ recursive_lm_forecast <- function(
       forecast_set = augmented
     ))
   }
+
+  lag_names <- target_lag_regressor_names(target_name, target_lags)
 
   if (is.null(target_history) || length(target_history) < target_lags) {
     rlang::abort(

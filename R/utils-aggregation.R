@@ -318,13 +318,18 @@ prepare_indicator_period_blocks <- function(
     target_meta = target_meta
   )
 
-  counts <- indicator_tbl |>
+  # Build per-period blocks and counts in a single grouped summary.
+  grouped <- indicator_tbl |>
     dplyr::mutate(period = periods) |>
-    dplyr::count(.data$period, name = "n_obs")
+    dplyr::group_by(.data$period) |>
+    dplyr::arrange(.data$time, .by_group = TRUE) |>
+    dplyr::summarise(
+      n_obs = dplyr::n(),
+      values = list(utils::tail(.data$values, obs_per_target)),
+      .groups = "drop"
+    )
 
-  insufficient_periods <- counts |>
-    dplyr::filter(.data$n_obs < obs_per_target)
-  if (nrow(insufficient_periods) > 0) {
+  if (any(grouped$n_obs < obs_per_target)) {
     rlang::abort(
       paste0(
         "Indicator `", indicator_id,
@@ -337,18 +342,7 @@ prepare_indicator_period_blocks <- function(
     )
   }
 
-  truncated_periods <- counts |>
-    dplyr::filter(.data$n_obs > obs_per_target)
-
-  # Keep the most recent observations when a period is overfilled.
-  grouped <- indicator_tbl |>
-    dplyr::mutate(period = periods) |>
-    dplyr::group_by(.data$period) |>
-    dplyr::arrange(.data$time, .by_group = TRUE) |>
-    dplyr::summarise(
-      values = list(utils::tail(.data$values, obs_per_target)),
-      .groups = "drop"
-    )
+  n_truncated <- sum(grouped$n_obs > obs_per_target)
 
   blocks <- do.call(rbind, grouped$values)
   if (is.null(dim(blocks))) {
@@ -361,7 +355,7 @@ prepare_indicator_period_blocks <- function(
     blocks = blocks,
     truncation = list(
       indicator_id = indicator_id,
-      n_periods = nrow(truncated_periods)
+      n_periods = n_truncated
     )
   )
 }
@@ -1411,7 +1405,7 @@ resample_bridge_inputs <- function(
   block_length
 ) {
   n_periods <- nrow(target_tbl)
-  sampled_indices <- circular_block_bootstrap_indices(
+  sampled_indices <- moving_block_bootstrap_indices(
     n_rows = n_periods,
     block_length = block_length
   )

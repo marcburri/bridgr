@@ -12,7 +12,7 @@ test_that("bootstrap helpers resolve defaults and valid index draws", {
     5L
   )
 
-  indices <- bridgr:::circular_block_bootstrap_indices(
+  indices <- bridgr:::moving_block_bootstrap_indices(
     n_rows = 7,
     block_length = 3
   )

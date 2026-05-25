@@ -1,6 +1,75 @@
 
 #' @keywords internal
 #' @noRd
+check_scalar_count <- function(
+  x,
+  arg,
+  min = 0L,
+  integer = TRUE,
+  call = rlang::caller_env()
+) {
+  ok <- is.numeric(x) &&
+    length(x) == 1 &&
+    is.finite(x) &&
+    x >= min &&
+    (!integer || x == as.integer(x))
+
+  if (!ok) {
+    rlang::abort(
+      paste0("`", arg, "` must be a single integer >= ", min, "."),
+      call = call
+    )
+  }
+
+  invisible(x)
+}
+
+
+#' @keywords internal
+#' @noRd
+check_scalar_flag <- function(x, arg, call = rlang::caller_env()) {
+  if (!is.logical(x) || length(x) != 1 || is.na(x)) {
+    rlang::abort(
+      paste0("`", arg, "` must be either `TRUE` or `FALSE`."),
+      call = call
+    )
+  }
+  invisible(x)
+}
+
+
+#' @keywords internal
+#' @noRd
+check_scalar_number <- function(
+  x,
+  arg,
+  min = NULL,
+  strict = FALSE,
+  call = rlang::caller_env()
+) {
+  ok <- is.numeric(x) && length(x) == 1 && is.finite(x) &&
+    (is.null(min) || (if (strict) x > min else x >= min))
+
+  if (!ok) {
+    descriptor <- if (is.null(min)) {
+      "a single finite number"
+    } else if (strict) {
+      paste0("a single finite number > ", min)
+    } else {
+      paste0("a single finite number >= ", min)
+    }
+    rlang::abort(
+      paste0("`", arg, "` must be ", descriptor, "."),
+      call = call
+    )
+  }
+
+  invisible(x)
+}
+
+
+#' @keywords internal
+#' @noRd
 normalize_bridge_default_id <- function(default_id) {
   default_id <- as.character(default_id)
   default_id <- default_id[nzchar(default_id)]
@@ -205,43 +274,12 @@ as_bridge_tbl <- function(
       call = call
     )
   }
+
+  # Reject list-valued value columns and check per-series time ordering on
+  # the raw data frame, because `tsbox::ts_tbl()` silently sorts rows and
+  # would mask any reordering violations.
   if (inherits(x, "data.frame")) {
-    if ("time" %in% names(x)) {
-      raw_time <- x[["time"]]
-      if (!anyNA(raw_time)) {
-        raw_id <- if ("id" %in% names(x)) {
-          as.character(x[["id"]])
-        } else {
-          rep(default_id, length(raw_time))
-        }
-        series_rows <- split(seq_along(raw_time), raw_id)
-        unordered <- vapply(
-          series_rows,
-          function(index) is.unsorted(raw_time[index]),
-          logical(1)
-        )
-        if (any(unordered)) {
-          rlang::abort(
-            paste0("`", arg, "` must be ordered by time within each series."),
-            call = call
-          )
-        }
-      }
-    }
-    raw_values <- x[["values"]]
-    if (is.null(raw_values)) {
-      raw_values <- x[["value"]]
-    }
-    if (
-      !is.null(raw_values) &&
-        !is.list(raw_values) &&
-        !is.numeric(raw_values)
-    ) {
-      rlang::abort(
-        paste0("`", arg, "` must contain a numeric `value`/`values` column."),
-        call = call
-      )
-    }
+    raw_values <- x[["values"]] %||% x[["value"]]
     if (is.list(raw_values)) {
       rlang::abort(
         paste0(
@@ -251,6 +289,31 @@ as_bridge_tbl <- function(
         ),
         call = call
       )
+    }
+    if (!is.null(raw_values) && !is.numeric(raw_values)) {
+      rlang::abort(
+        paste0("`", arg, "` must contain a numeric `value`/`values` column."),
+        call = call
+      )
+    }
+
+    if ("time" %in% names(x) && !anyNA(x[["time"]])) {
+      raw_id <- if ("id" %in% names(x)) {
+        as.character(x[["id"]])
+      } else {
+        rep(default_id, length(x[["time"]]))
+      }
+      series_rows <- split(seq_along(x[["time"]]), raw_id)
+      if (any(vapply(
+        series_rows,
+        function(index) is.unsorted(x[["time"]][index]),
+        logical(1)
+      ))) {
+        rlang::abort(
+          paste0("`", arg, "` must be ordered by time within each series."),
+          call = call
+        )
+      }
     }
   }
 
@@ -671,58 +734,46 @@ normalize_parametric_solver_options <- function(
     error_call = call
   )
 
-  if (!is.numeric(defaults$maxiter) ||
-    length(defaults$maxiter) != 1 ||
-    !is.finite(defaults$maxiter) ||
-    defaults$maxiter < 1) {
-    rlang::abort(
-      "`solver_options$maxiter` must be a single integer >= 1.",
-      call = call
-    )
+  check_scalar_count(
+    defaults$maxiter,
+    "solver_options$maxiter",
+    min = 1L,
+    integer = FALSE,
+    call = call
+  )
+  check_scalar_count(
+    defaults$n_starts,
+    "solver_options$n_starts",
+    min = 1L,
+    integer = FALSE,
+    call = call
+  )
+  check_scalar_count(
+    defaults$trace,
+    "solver_options$trace",
+    min = 0L,
+    integer = FALSE,
+    call = call
+  )
+  check_scalar_flag(defaults$warn, "solver_options$warn", call = call)
+  if (!is.null(defaults$seed)) {
+    seed_ok <- is.numeric(defaults$seed) &&
+      length(defaults$seed) == 1 &&
+      is.finite(defaults$seed)
+    if (!seed_ok) {
+      rlang::abort(
+        "`solver_options$seed` must be `NULL` or a single finite number.",
+        call = call
+      )
+    }
   }
-  if (!is.numeric(defaults$n_starts) ||
-    length(defaults$n_starts) != 1 ||
-    !is.finite(defaults$n_starts) ||
-    defaults$n_starts < 1) {
-    rlang::abort(
-      "`solver_options$n_starts` must be a single integer >= 1.",
-      call = call
-    )
-  }
-  if (!is.numeric(defaults$trace) ||
-    length(defaults$trace) != 1 ||
-    !is.finite(defaults$trace) ||
-    defaults$trace < 0) {
-    rlang::abort(
-      "`solver_options$trace` must be a single integer >= 0.",
-      call = call
-    )
-  }
-  if (!is.logical(defaults$warn) || length(defaults$warn) != 1 ||
-    is.na(defaults$warn)) {
-    rlang::abort(
-      "`solver_options$warn` must be either `TRUE` or `FALSE`.",
-      call = call
-    )
-  }
-  if (!is.null(defaults$seed) &&
-    (!is.numeric(defaults$seed) ||
-      length(defaults$seed) != 1 ||
-      !is.finite(defaults$seed))) {
-    rlang::abort(
-      "`solver_options$seed` must be `NULL` or a single finite number.",
-      call = call
-    )
-  }
-  if (!is.numeric(defaults$reltol) ||
-    length(defaults$reltol) != 1 ||
-    !is.finite(defaults$reltol) ||
-    defaults$reltol <= 0) {
-    rlang::abort(
-      "`solver_options$reltol` must be a single finite number > 0.",
-      call = call
-    )
-  }
+  check_scalar_number(
+    defaults$reltol,
+    "solver_options$reltol",
+    min = 0,
+    strict = TRUE,
+    call = call
+  )
 
   defaults$maxiter <- as.integer(round(defaults$maxiter))
   defaults$n_starts <- as.integer(round(defaults$n_starts))
@@ -919,22 +970,17 @@ normalize_bridge_bootstrap <- function(
 
   defaults[names(bootstrap)] <- bootstrap
 
-  if (!is.numeric(defaults$N) ||
-    length(defaults$N) != 1 ||
-    !is.finite(defaults$N) ||
-    defaults$N < 1) {
-    rlang::abort(
-      "`bootstrap$N` must be a single integer >= 1.",
-      call = call
-    )
-  }
+  check_scalar_count(
+    defaults$N, "bootstrap$N", min = 1L, integer = FALSE, call = call
+  )
   defaults$N <- as.integer(round(defaults$N))
 
   if (!is.null(defaults$block_length)) {
-    if (!is.numeric(defaults$block_length) ||
-      length(defaults$block_length) != 1 ||
-      !is.finite(defaults$block_length) ||
-      defaults$block_length < 1) {
+    block_length_ok <- is.numeric(defaults$block_length) &&
+      length(defaults$block_length) == 1 &&
+      is.finite(defaults$block_length) &&
+      defaults$block_length >= 1
+    if (!block_length_ok) {
       rlang::abort(
         "`bootstrap$block_length` must be `NULL` or a single integer >= 1.",
         call = call

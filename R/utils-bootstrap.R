@@ -17,9 +17,16 @@ resolve_bootstrap_block_length <- function(n_rows, block_length) {
 }
 
 
+#' Moving-block bootstrap indices
+#'
+#' Sample `ceiling(n_rows / block_length)` blocks, each starting at an
+#' independently drawn random position with wrap-around, and concatenate
+#' them up to `n_rows`. This is the stationary / moving-block bootstrap
+#' variant rather than a strict single-origin circular block bootstrap.
+#'
 #' @keywords internal
 #' @noRd
-circular_block_bootstrap_indices <- function(n_rows, block_length) {
+moving_block_bootstrap_indices <- function(n_rows, block_length) {
   n_blocks <- ceiling(n_rows / block_length)
   starts <- sample.int(n_rows, size = n_blocks, replace = TRUE)
 

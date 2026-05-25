@@ -354,9 +354,90 @@ fit_bridge_model <- function(
   target_name,
   config
 ) {
-  target_meta <- infer_frequency_table(target_tbl)$target
-  indic_meta <- infer_frequency_table(indic_tbl)$indicators |>
-    dplyr::arrange(match(.data$id, unique(indic_tbl$id)))
+  inputs <- prepare_estimation_inputs(
+    target_tbl = target_tbl,
+    indic_tbl = indic_tbl,
+    target_name = target_name,
+    config = config
+  )
+
+  check_estimation_set(
+    estimation_set = inputs$estimation_set,
+    target_name = target_name,
+    regressor_names = inputs$regressor_names,
+    xreg_names = inputs$xreg_names,
+    config = config
+  )
+
+  bridge_formula <- build_bridge_formula(
+    target_name = target_name,
+    regressor_names = inputs$regressor_names
+  )
+  model_fit <- fit_target_model(
+    estimation_set = inputs$estimation_set,
+    formula = bridge_formula
+  )
+
+  target_history <- if (config$target_lags > 0) {
+    utils::tail(inputs$estimation_set[[target_name]], config$target_lags)
+  } else {
+    NULL
+  }
+  point_path <- recursive_lm_forecast(
+    model = model_fit,
+    forecast_set = inputs$forecast_base_set,
+    target_name = target_name,
+    target_lags = config$target_lags,
+    target_history = target_history
+  )
+
+  uncertainty <- compute_model_uncertainty(
+    model = model_fit,
+    formula = bridge_formula,
+    target_tbl = inputs$target_tbl,
+    indic_tbl = inputs$indic_tbl,
+    target_name = target_name,
+    indicator_results = inputs$indicator_results,
+    estimation_set = inputs$estimation_set,
+    forecast_base_set = inputs$forecast_base_set,
+    regressor_names = inputs$regressor_names,
+    target_anchor = inputs$target_anchor,
+    target_history = target_history,
+    point_path = point_path,
+    config = config
+  )
+
+  assemble_mf_model(
+    target_tbl = inputs$target_tbl,
+    indic_tbl = inputs$indic_tbl,
+    target_name = target_name,
+    target_lag_names = inputs$target_lag_names,
+    regressor_names = inputs$regressor_names,
+    xreg_names = inputs$xreg_names,
+    estimation_set = inputs$estimation_set,
+    forecast_base_set = inputs$forecast_base_set,
+    point_path = point_path,
+    model_fit = model_fit,
+    bridge_formula = bridge_formula,
+    indicator_results = inputs$indicator_results,
+    target_anchor = inputs$target_anchor,
+    future_target_times = inputs$future_target_times,
+    uncertainty = uncertainty,
+    config = config
+  )
+}
+
+
+#' @keywords internal
+#' @noRd
+prepare_estimation_inputs <- function(
+  target_tbl,
+  indic_tbl,
+  target_name,
+  config
+) {
+  target_meta <- config$target_meta
+  indic_meta <- config$indic_meta
 
   aligned <- align_bridge_inputs(
     target_tbl = target_tbl,
@@ -368,9 +449,8 @@ fit_bridge_model <- function(
   indic_tbl <- aligned$indic
   target_anchor <- aligned$target_anchor
 
-  last_target_time <- max(target_tbl$time)
   future_target_times <- target_future_times(
-    last_time = last_target_time,
+    last_time = max(target_tbl$time),
     target_meta = target_meta,
     h = config$h
   )
@@ -415,29 +495,54 @@ fit_bridge_model <- function(
   forecast_base_set <- suppressMessages(tsbox::ts_wide(forecast_long)) |>
     stats::na.omit()
 
-  if (nrow(estimation_set) == 0) {
-    rlang::abort(
-      paste(
-        "No complete estimation rows remain after aligning and",
-        "aggregating the data."
-      ),
-      call = rlang::caller_env()
-    )
-  }
-
   target_lag_names <- target_lag_regressor_names(
     target_name = target_name,
     target_lags = config$target_lags
   )
   regressor_names <- setdiff(colnames(estimation_set), c("time", target_name))
   xreg_names <- setdiff(regressor_names, target_lag_names)
+
+  list(
+    target_tbl = target_tbl,
+    indic_tbl = indic_tbl,
+    target_anchor = target_anchor,
+    future_target_times = future_target_times,
+    indicator_results = indicator_results,
+    estimation_set = estimation_set,
+    forecast_base_set = forecast_base_set,
+    regressor_names = regressor_names,
+    xreg_names = xreg_names,
+    target_lag_names = target_lag_names
+  )
+}
+
+
+#' @keywords internal
+#' @noRd
+check_estimation_set <- function(
+  estimation_set,
+  target_name,
+  regressor_names,
+  xreg_names,
+  config,
+  call = rlang::caller_env()
+) {
+  if (nrow(estimation_set) == 0) {
+    rlang::abort(
+      paste(
+        "No complete estimation rows remain after aligning and",
+        "aggregating the data."
+      ),
+      call = call
+    )
+  }
   if (length(xreg_names) == 0) {
     rlang::abort(
       paste(
         "At least one aggregated indicator is required to estimate",
         "a bridge model."
       ),
-      call = rlang::caller_env()
+      call = call
     )
   }
 
@@ -453,7 +558,7 @@ fit_bridge_model <- function(
       estimation_set = estimation_set,
       target_name = target_name,
       regressor_names = regressor_names,
-      call = rlang::caller_env()
+      call = call
     )
   }
 
@@ -468,43 +573,50 @@ fit_bridge_model <- function(
           "This is below the common 10-observations-per-predictor guideline ",
           "and may indicate an over-parameterized U-MIDAS specification."
         ),
-        call = rlang::caller_env()
+        call = call
       )
     }
   }
 
+  invisible(NULL)
+}
+
+
+#' @keywords internal
+#' @noRd
+build_bridge_formula <- function(target_name, regressor_names) {
   quoted_regressors <- paste0("`", regressor_names, "`")
-  bridge_formula <- stats::as.formula(
+  stats::as.formula(
     paste0(
-      "`",
-      target_name,
-      "` ~ ",
+      "`", target_name, "` ~ ",
       paste(quoted_regressors, collapse = " + ")
     )
   )
+}
 
-  model_fit <- fit_target_model(
-    estimation_set = estimation_set,
-    formula = bridge_formula
-  )
 
-  target_history <- if (config$target_lags > 0) {
-    utils::tail(estimation_set[[target_name]], config$target_lags)
-  } else {
-    NULL
-  }
-  point_path <- recursive_lm_forecast(
-    model = model_fit,
-    forecast_set = forecast_base_set,
-    target_name = target_name,
-    target_lags = config$target_lags,
-    target_history = target_history
-  )
-
+#' @keywords internal
+#' @noRd
+compute_model_uncertainty <- function(
+  model,
+  formula,
+  target_tbl,
+  indic_tbl,
+  target_name,
+  indicator_results,
+  estimation_set,
+  forecast_base_set,
+  regressor_names,
+  target_anchor,
+  target_history,
+  point_path,
+  config,
+  call = rlang::caller_env()
+) {
   coefficient_uncertainty <- if (isTRUE(config$se)) {
     compute_bridge_coefficient_uncertainty(
-      model = model_fit,
-      formula = bridge_formula,
+      model = model,
+      formula = formula,
       target_tbl = target_tbl,
       target_name = target_name,
       fixed_aggregated = indicator_results$fixed_aggregated,
@@ -525,15 +637,15 @@ fit_bridge_model <- function(
       target_tbl = target_tbl,
       indic_tbl = indic_tbl,
       target_name = target_name,
-      target_meta = target_meta,
-      indic_meta = indic_meta,
+      target_meta = config$target_meta,
+      indic_meta = config$indic_meta,
       target_anchor = target_anchor,
       h = config$h,
       frequency_conversions = config$frequency_conversions,
       config = config,
-      coefficient_names = names(stats::coef(model_fit)),
+      coefficient_names = names(stats::coef(model)),
       point_forecast = point_path$mean,
-      call = rlang::caller_env()
+      call = call
     )
   } else {
     list(
@@ -551,9 +663,10 @@ fit_bridge_model <- function(
   }
   full_bootstrap$requested <- isTRUE(config$se) &&
     isTRUE(config$full_system_bootstrap)
+
   prediction_uncertainty <- build_prediction_uncertainty(
     enabled = isTRUE(config$se),
-    model = model_fit,
+    model = model,
     forecast_set = forecast_base_set,
     target_name = target_name,
     regressor_names = regressor_names,
@@ -563,6 +676,7 @@ fit_bridge_model <- function(
     full_system_bootstrap = isTRUE(config$full_system_bootstrap),
     full_bootstrap = full_bootstrap
   )
+
   if (isTRUE(config$full_system_bootstrap) && isTRUE(full_bootstrap$enabled)) {
     coefficient_uncertainty <- list(
       method = "block_bootstrap",
@@ -571,14 +685,42 @@ fit_bridge_model <- function(
     )
   }
 
+  list(
+    coefficient = coefficient_uncertainty,
+    prediction = prediction_uncertainty,
+    full_bootstrap = full_bootstrap
+  )
+}
+
+
+#' @keywords internal
+#' @noRd
+assemble_mf_model <- function(
+  target_tbl,
+  indic_tbl,
+  target_name,
+  target_lag_names,
+  regressor_names,
+  xreg_names,
+  estimation_set,
+  forecast_base_set,
+  point_path,
+  model_fit,
+  bridge_formula,
+  indicator_results,
+  target_anchor,
+  future_target_times,
+  uncertainty,
+  config
+) {
   structure(
     list(
       target = target_tbl,
       indic = indic_tbl,
       target_name = target_name,
       indic_name = unique(indic_tbl$id),
-      target_frequency = target_meta,
-      indicator_frequencies = indic_meta,
+      target_frequency = config$target_meta,
+      indicator_frequencies = config$indic_meta,
       indic_predict = config$indic_predict,
       indic_aggregators_requested = config$indic_aggregators_requested,
       indic_aggregators = config$indic_aggregators,
@@ -589,15 +731,15 @@ fit_bridge_model <- function(
       frequency_conversions = config$frequency_conversions,
       se = config$se,
       full_system_bootstrap = config$full_system_bootstrap,
-      bootstrap = full_bootstrap,
+      bootstrap = uncertainty$full_bootstrap,
       uncertainty = list(
         enabled = isTRUE(config$se),
-        coefficient_method = coefficient_uncertainty$method,
-        coefficient_covariance = coefficient_uncertainty$covariance,
-        coefficient_se = coefficient_uncertainty$se,
-        prediction_method = prediction_uncertainty$method,
-        prediction_draws = prediction_uncertainty$draws,
-        simulation_paths = prediction_uncertainty$N
+        coefficient_method = uncertainty$coefficient$method,
+        coefficient_covariance = uncertainty$coefficient$covariance,
+        coefficient_se = uncertainty$coefficient$se,
+        prediction_method = uncertainty$prediction$method,
+        prediction_draws = uncertainty$prediction$draws,
+        simulation_paths = uncertainty$prediction$N
       ),
       solver_options = config$solver_options,
       formula = bridge_formula,
@@ -658,38 +800,11 @@ validate_bridge_inputs <- function(
   check_bridge_series(target_tbl, "target", call = call)
   check_bridge_series(indic_tbl, "indic", call = call)
 
-  if (!is.numeric(indic_lags) ||
-    length(indic_lags) != 1 ||
-    indic_lags < 0 ||
-    indic_lags != as.integer(indic_lags)) {
-    rlang::abort(
-      "`indic_lags` must be a single non-negative integer.",
-      call = call
-    )
-  }
-  if (!is.numeric(target_lags) ||
-    length(target_lags) != 1 ||
-    target_lags < 0 ||
-    target_lags != as.integer(target_lags)) {
-    rlang::abort(
-      "`target_lags` must be a single non-negative integer.",
-      call = call
-    )
-  }
-  if (!is.numeric(h) || length(h) != 1 || h < 1 || h != as.integer(h)) {
-    rlang::abort("`h` must be a single positive integer.", call = call)
-  }
-  if (!is.logical(se) || length(se) != 1 || is.na(se)) {
-    rlang::abort("`se` must be either `TRUE` or `FALSE`.", call = call)
-  }
-  if (!is.logical(full_system_bootstrap) ||
-    length(full_system_bootstrap) != 1 ||
-    is.na(full_system_bootstrap)) {
-    rlang::abort(
-      "`full_system_bootstrap` must be either `TRUE` or `FALSE`.",
-      call = call
-    )
-  }
+  check_scalar_count(indic_lags, "indic_lags", min = 0L, call = call)
+  check_scalar_count(target_lags, "target_lags", min = 0L, call = call)
+  check_scalar_count(h, "h", min = 1L, call = call)
+  check_scalar_flag(se, "se", call = call)
+  check_scalar_flag(full_system_bootstrap, "full_system_bootstrap", call = call)
 
   frequency_conversions <- normalize_frequency_conversions(
     frequency_conversions,
@@ -790,7 +905,9 @@ validate_bridge_inputs <- function(
     se = isTRUE(se),
     full_system_bootstrap = isTRUE(full_system_bootstrap),
     bootstrap = bootstrap,
-    solver_options = solver_options
+    solver_options = solver_options,
+    target_meta = target_meta,
+    indic_meta = indic_meta
   )
 }
 
