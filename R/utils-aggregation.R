@@ -1,4 +1,17 @@
 
+# Minimum estimation-observations-per-predictor threshold below which the
+# unrestricted (U-MIDAS) specification triggers a warning.
+MIN_OBS_PER_PREDICTOR <- 10L
+
+# Symmetric bounds on the parametric-aggregator parameters during joint
+# optimization, on the optimizer scale (log scale for beta shapes).
+PARAMETRIC_OPT_BOUNDS <- c(-10, 10)
+
+# Standard deviation of the Gaussian jitter added to additional multi-start
+# initial values in the parametric-aggregator optimizer.
+PARAMETRIC_MULTISTART_JITTER_SD <- 0.5
+
+
 #' @keywords internal
 #' @noRd
 is_parametric_aggregator <- function(aggregator) {
@@ -417,22 +430,28 @@ as_unrestricted_indicator_long <- function(indicator_id, periods, blocks) {
 
 #' @keywords internal
 #' @noRd
-aggregate_period_values <- function(
-  values,
+aggregate_indicator_blocks <- function(
+  blocks,
   aggregator,
   indicator_id,
   call = rlang::caller_env()
 ) {
   if (is.character(aggregator)) {
     if (identical(aggregator, "mean")) {
-      return(mean(values))
+      return(rowMeans(blocks))
     }
     if (identical(aggregator, "last")) {
-      return(utils::tail(values, 1))
+      return(blocks[, ncol(blocks)])
     }
     if (identical(aggregator, "sum")) {
-      return(sum(values))
+      return(rowSums(blocks))
     }
+    rlang::abort(
+      paste0(
+        "Unsupported aggregation method for indicator `", indicator_id, "`."
+      ),
+      call = call
+    )
   }
 
   if (!is.numeric(aggregator)) {
@@ -444,11 +463,11 @@ aggregate_period_values <- function(
     )
   }
 
-  if (length(aggregator) != length(values)) {
+  if (length(aggregator) != ncol(blocks)) {
     rlang::abort(
       paste0(
         "Numeric weights for indicator `", indicator_id,
-        "` must have length ", length(values), "."
+        "` must have length ", ncol(blocks), "."
       ),
       call = call
     )
@@ -463,26 +482,7 @@ aggregate_period_values <- function(
     )
   }
 
-  sum(values * aggregator)
-}
-
-
-#' @keywords internal
-#' @noRd
-aggregate_indicator_blocks <- function(
-  blocks,
-  aggregator,
-  indicator_id,
-  call = rlang::caller_env()
-) {
-  apply(
-    blocks,
-    1,
-    aggregate_period_values,
-    aggregator = aggregator,
-    indicator_id = indicator_id,
-    call = call
-  )
+  as.numeric(blocks %*% as.numeric(aggregator))
 }
 
 
@@ -839,8 +839,8 @@ parametric_bounds <- function(specs) {
   total <- sum(n_params)
 
   list(
-    lower = rep(-10, total),
-    upper = rep(10, total)
+    lower = rep(PARAMETRIC_OPT_BOUNDS[[1]], total),
+    upper = rep(PARAMETRIC_OPT_BOUNDS[[2]], total)
   )
 }
 
@@ -1098,7 +1098,7 @@ optimize_parametric_weights <- function(
           current_start <- current_start + stats::rnorm(
             length(base_start),
             mean = 0,
-            sd = 0.5
+            sd = PARAMETRIC_MULTISTART_JITTER_SD
           )
           current_start <- pmax(pmin(current_start, upper), lower)
         }

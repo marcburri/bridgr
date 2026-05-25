@@ -134,10 +134,13 @@ coefficient_vcov_delta_hac <- function(
   )
 
   for (theta_index in seq_along(theta_vector)) {
+    # Relative step keeps the central difference well-scaled even when theta
+    # is far from zero (notably for log-scale beta parameters).
+    step <- epsilon * max(1, abs(theta_vector[[theta_index]]))
     plus_theta <- theta_vector
     minus_theta <- theta_vector
-    plus_theta[[theta_index]] <- plus_theta[[theta_index]] + epsilon
-    minus_theta[[theta_index]] <- minus_theta[[theta_index]] - epsilon
+    plus_theta[[theta_index]] <- plus_theta[[theta_index]] + step
+    minus_theta[[theta_index]] <- minus_theta[[theta_index]] - step
 
     plus_blocks <- split_parameter_vector(
       parameters = plus_theta,
@@ -177,7 +180,7 @@ coefficient_vcov_delta_hac <- function(
       )
     )
     jacobian[, length(coefficient_values) + theta_index] <-
-      (mean_plus - mean_minus) / (2 * epsilon)
+      (mean_plus - mean_minus) / (2 * step)
   }
 
   covariance <- vcov_from_jacobian(

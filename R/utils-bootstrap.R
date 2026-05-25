@@ -1,4 +1,10 @@
 
+#' Default moving-block bootstrap block length
+#'
+#' Returns `ceiling(n_rows^(1/3))` (clamped to `[1, n_rows]`). This is the
+#' default used whenever `bootstrap$block_length` is `NULL`. See
+#' [mf_model()] for the user-facing description.
+#'
 #' @keywords internal
 #' @noRd
 default_bootstrap_block_length <- function(n_rows) {

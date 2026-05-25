@@ -564,13 +564,15 @@ check_estimation_set <- function(
 
   if (has_unrestricted_aggregator) {
     unrestricted_ratio <- nrow(estimation_set) / length(regressor_names)
-    if (is.finite(unrestricted_ratio) && unrestricted_ratio < 10) {
+    if (is.finite(unrestricted_ratio) &&
+      unrestricted_ratio < MIN_OBS_PER_PREDICTOR) {
       rlang::warn(
         paste0(
           "The unrestricted bridge specification leaves only ",
           round(unrestricted_ratio, 2),
           " estimation observations per predictor in the final regression. ",
-          "This is below the common 10-observations-per-predictor guideline ",
+          "This is below the common ", MIN_OBS_PER_PREDICTOR,
+          "-observations-per-predictor guideline ",
           "and may indicate an over-parameterized U-MIDAS specification."
         ),
         call = call
