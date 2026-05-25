@@ -622,9 +622,6 @@ fit_bridge_model <- function(
       parametric_specs = indicator_results$parametric_specs,
       fixed_aggregated = indicator_results$fixed_aggregated,
       parametric_optimization = indicator_results$parametric_optimization,
-      expalmon_weights = indicator_results$expalmon_weights,
-      expalmon_parameters = indicator_results$expalmon_parameters,
-      expalmon_optimization = indicator_results$expalmon_optimization,
       truncation_info = indicator_results$truncation_info,
       regressor_names = regressor_names,
       xreg_names = xreg_names,
@@ -833,8 +830,6 @@ build_indicator_features <- function(
   parametric_weights <- list()
   parametric_parameters <- list()
   parametric_optimization <- NULL
-  expalmon_weights <- list()
-  expalmon_parameters <- list()
   truncation_info <- vector("list", length = nrow(indic_meta))
   parametric_specs <- list()
 
@@ -948,20 +943,6 @@ build_indicator_features <- function(
     parametric_weights <- parametric_fit$weights
     parametric_parameters <- parametric_fit$parameters
     parametric_optimization <- parametric_fit$optimization
-    expalmon_ids <- names(parametric_specs)[vapply(
-      parametric_specs,
-      function(spec) identical(spec$aggregator, "expalmon"),
-      FUN.VALUE = logical(1)
-    )]
-    expalmon_weights <- parametric_weights[expalmon_ids]
-    expalmon_parameters <- parametric_parameters[expalmon_ids]
-    if (length(expalmon_ids) > 0) {
-      expalmon_optimization <- parametric_optimization
-    } else {
-      expalmon_optimization <- NULL
-    }
-  } else {
-    expalmon_optimization <- NULL
   }
 
   truncation_info <- stats::setNames(truncation_info, indic_meta$id)
@@ -1007,9 +988,6 @@ build_indicator_features <- function(
     parametric_parameters = parametric_parameters,
     parametric_specs = parametric_specs,
     parametric_optimization = parametric_optimization,
-    expalmon_weights = expalmon_weights,
-    expalmon_parameters = expalmon_parameters,
-    expalmon_optimization = expalmon_optimization,
     truncation_info = truncation_info
   )
 }

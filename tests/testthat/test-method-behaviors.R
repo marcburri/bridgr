@@ -321,7 +321,7 @@ test_that("aggregation method `expalmon` uses its estimated weights", {
     h = 1
   )
 
-  weights <- model$expalmon_weights[[model$indic_name[[1]]]]
+  weights <- model$parametric_weights[[model$indic_name[[1]]]]
   expect_length(weights, 7)
   expect_equal(sum(weights), 1, tolerance = 1e-8)
   expect_equal(

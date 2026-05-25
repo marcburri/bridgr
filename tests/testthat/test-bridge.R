@@ -896,12 +896,12 @@ test_that("single-indicator expalmon recovers deterministic weights", {
 
   indicator_id <- model$indic_name[[1]]
   expect_equal(
-    model$expalmon_weights[[indicator_id]],
+    model$parametric_weights[[indicator_id]],
     fixture$true_weights,
     tolerance = 0.08
   )
-  expect_equal(model$expalmon_optimization$convergence, 0)
-  expect_equal(sort(names(model$expalmon_parameters)), indicator_id)
+  expect_equal(model$parametric_optimization$convergence, 0)
+  expect_equal(sort(names(model$parametric_parameters)), indicator_id)
 })
 
 test_that("joint expalmon optimization improves the fit", {
@@ -999,7 +999,7 @@ test_that("joint expalmon optimization improves the fit", {
   )
 
   expect_lt(joint_loss, separate_loss)
-  expect_equal(model$expalmon_optimization$convergence, 0)
+  expect_equal(model$parametric_optimization$convergence, 0)
 })
 
 test_that("joint expalmon optimization works alongside fixed aggregators", {
@@ -1018,7 +1018,7 @@ test_that("joint expalmon optimization works alongside fixed aggregators", {
   )
 
   expect_true(all(c("x1", "x2", "x3") %in% model$regressor_names))
-  expect_equal(model$expalmon_optimization$convergence, 0)
+  expect_equal(model$parametric_optimization$convergence, 0)
   expect_equal(
     model$estimation_set$x3[[12]],
     mean(subset(fixture$indic, id == "x3")$value[78:84])

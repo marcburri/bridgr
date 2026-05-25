@@ -1040,16 +1040,8 @@ optimize_parametric_weights <- function(
   solver_options,
   call = rlang::caller_env()
 ) {
-  solver_options <- normalize_parametric_solver_options(
-    solver_options,
-    call = call
-  )
-  solver_options <- validate_parametric_solver_start(
-    solver_options = solver_options,
-    parametric_specs = parametric_specs,
-    call = call
-  )
-
+  # `solver_options` are expected to be pre-normalized by
+  # `validate_bridge_inputs()`; this function does not re-validate them.
   indicator_ids <- names(parametric_specs)
   base_blocks <- solver_options$start_values
   if (is.null(base_blocks)) {

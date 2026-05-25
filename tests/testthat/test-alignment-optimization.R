@@ -231,6 +231,8 @@ test_that("optimizer warning keeps the best non-converged start", {
         n_starts = 2L,
         seed = 123L,
         trace = 0L,
+        warn = TRUE,
+        reltol = 1e-8,
         start_values = list(x = c(2, 3))
       )
     ),
@@ -343,6 +345,8 @@ test_that("optimizer aborts when every candidate is non-finite", {
         n_starts = 1L,
         seed = NULL,
         trace = 0L,
+        warn = TRUE,
+        reltol = 1e-8,
         start_values = list(x = c(0, 0))
       )
     ),

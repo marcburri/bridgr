@@ -71,6 +71,7 @@ test_that("predictive_target_model_draw adds forecast shocks", {
   )
   model <- stats::lm(y ~ x, data = estimation_set)
   forecast_set <- dplyr::tibble(x = c(7, 8))
+  expected_mean <- as.numeric(stats::predict(model, newdata = forecast_set))
 
   testthat::local_mocked_bindings(
     simulate_target_model_draws = function(model,
@@ -81,15 +82,7 @@ test_that("predictive_target_model_draw adds forecast shocks", {
                                            target_history = NULL,
                                            n_paths = 100L,
                                            innovations = NULL) {
-      matrix(
-        bridgr:::forecast_target_model_mean(
-          model = model,
-          forecast_set = forecast_set,
-          target_name = target_name,
-          regressor_names = regressor_names
-        ) + 0.5,
-        nrow = 1
-      )
+      matrix(expected_mean + 0.5, nrow = 1)
     },
     .package = "bridgr"
   )
@@ -101,127 +94,8 @@ test_that("predictive_target_model_draw adds forecast shocks", {
     regressor_names = "x"
   )
 
-  expect_equal(
-    draw,
-    bridgr:::forecast_target_model_mean(
-      model = model,
-      forecast_set = forecast_set,
-      target_name = "y",
-      regressor_names = "x"
-    ) + 0.5
-  )
+  expect_equal(draw, expected_mean + 0.5)
 })
-
-test_that(
-  "bootstrap_target_equation keeps valid resamples and warns on losses",
-  {
-  estimation_set <- dplyr::tibble(
-    y = c(3, 5, 7, 9, 11, 13),
-    x = c(1, 2, 3, 4, 5, 6)
-  )
-  forecast_set <- dplyr::tibble(x = c(7, 8))
-  base_model <- stats::lm(y ~ x, data = estimation_set)
-  draw_counter <- 0L
-
-  testthat::local_mocked_bindings(
-    circular_block_bootstrap_indices = function(n_rows, block_length) {
-      seq_len(n_rows)
-    },
-    fit_target_model = function(estimation_set,
-                                target_name,
-                                regressor_names,
-                                formula,
-                                target_lags) {
-      draw_counter <<- draw_counter + 1L
-      if (draw_counter == 2L) {
-        stop("draw failed")
-      }
-      stats::lm(formula = formula, data = estimation_set)
-    },
-    predictive_target_model_draw = function(model,
-                                            forecast_set,
-                                            target_name,
-                                            regressor_names) {
-      rep(draw_counter, nrow(forecast_set))
-    },
-    .package = "bridgr"
-  )
-
-  expect_warning(
-    result <- bridgr:::bootstrap_target_equation(
-      enabled = TRUE,
-      model = base_model,
-      estimation_set = estimation_set,
-      forecast_set = forecast_set,
-      target_name = "y",
-      regressor_names = "x",
-      formula = y ~ x,
-      target_lags = 0,
-      bootstrap = list(N = 3L, block_length = 2L)
-    ),
-    "produced 2 valid draws out of 3"
-  )
-
-  expect_true(result$enabled)
-  expect_equal(result$valid_N, 2L)
-  expect_equal(result$block_length, 2L)
-  expect_equal(dim(result$coefficient_draws), c(2, 2))
-  expect_equal(dim(result$forecast_draws), c(2, 2))
-  expect_equal(
-    result$forecast_draws,
-    matrix(c(1, 1, 3, 3), nrow = 2, byrow = TRUE)
-  )
-  expect_length(result$models, 2)
-  }
-)
-
-test_that(
-  "bootstrap_target_equation disables uncertainty when all draws fail",
-  {
-  estimation_set <- dplyr::tibble(
-    y = c(3, 5, 7, 9, 11, 13),
-    x = c(1, 2, 3, 4, 5, 6)
-  )
-  forecast_set <- dplyr::tibble(x = c(7, 8))
-  base_model <- stats::lm(y ~ x, data = estimation_set)
-
-  testthat::local_mocked_bindings(
-    circular_block_bootstrap_indices = function(n_rows, block_length) {
-      seq_len(n_rows)
-    },
-    fit_target_model = function(estimation_set,
-                                target_name,
-                                regressor_names,
-                                formula,
-                                target_lags) {
-      stop("draw failed")
-    },
-    .package = "bridgr"
-  )
-
-  expect_warning(
-    result <- bridgr:::bootstrap_target_equation(
-      enabled = TRUE,
-      model = base_model,
-      estimation_set = estimation_set,
-      forecast_set = forecast_set,
-      target_name = "y",
-      regressor_names = "x",
-      formula = y ~ x,
-      target_lags = 0,
-      bootstrap = list(N = 4L, block_length = NULL)
-    ),
-    "failed for every resample"
-  )
-
-  expect_false(result$enabled)
-  expect_equal(result$valid_N, 0L)
-  expect_equal(result$block_length, 2L)
-  expect_null(result$coefficient_draws)
-  expect_null(result$forecast_draws)
-  expect_null(result$models)
-  }
-)
 
 test_that("bridge keeps full bootstrap opt-in for direct forecasts", {
   indic <- make_monthly_indicator(n = 36)

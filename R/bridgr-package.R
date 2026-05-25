@@ -15,9 +15,6 @@
 #' @srrstats {G5.2a} Messages should be unique.
 #' @keywords internal
 "_PACKAGE"
-utils::globalVariables(c(
-  ".data", "id", "n", "period", "time", "values"
-))
 
 #' @importFrom rlang .data
 #' @importFrom rlang %||%

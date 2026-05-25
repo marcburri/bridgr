@@ -92,26 +92,6 @@ recursive_lm_forecast <- function(
 
 #' @keywords internal
 #' @noRd
-forecast_target_model_mean <- function(
-  model,
-  forecast_set,
-  target_name,
-  regressor_names,
-  target_lags = 0,
-  target_history = NULL
-) {
-  recursive_lm_forecast(
-    model = model,
-    forecast_set = forecast_set,
-    target_name = target_name,
-    target_lags = target_lags,
-    target_history = target_history
-  )$mean
-}
-
-
-#' @keywords internal
-#' @noRd
 center_model_residuals <- function(model) {
   residuals <- stats::residuals(model)
   residuals - mean(residuals, na.rm = TRUE)
