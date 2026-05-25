@@ -144,7 +144,7 @@ forecast.mf_model <- function(
         valid_N = object$bootstrap$valid_N,
         block_length = object$bootstrap$block_length
       ),
-      direct = identical(unique(object$indic_predict), "direct"),
+      direct = all(object$indic_predict == "direct"),
       model_class = class(object$model)[[1]]
     ),
     class = c("mf_model_forecast", "forecast")

@@ -29,20 +29,21 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE, roclets = c("rd", "namespace", "srr::srr_stats_roclet"))
 RoxygenNote: 7.3.3
 LazyData: true
-Imports: 
+Imports:
     dplyr,
-    rlang,
-    tsbox,
-    lubridate,
     forecast,
     ggplot2,
-    scales
+    lifecycle,
+    lubridate,
+    rlang,
+    scales,
+    tsbox,
+    withr
 Suggests:
     knitr,
     rmarkdown,
     srr,
     testthat (>= 3.0.0),
-    withr,
     xts
 Remotes:
     ropensci-review-tools/srr

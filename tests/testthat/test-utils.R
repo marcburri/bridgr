@@ -22,7 +22,7 @@ test_that("solver option normalization validates controls", {
 
   expect_error(
     bridgr:::normalize_parametric_solver_options(list(method = "CG")),
-    "should be one of"
+    "must be one of"
   )
   expect_error(
     bridgr:::normalize_parametric_solver_options(list(maxiter = 0)),

@@ -1093,7 +1093,7 @@ optimize_parametric_weights <- function(
   objective <- function(parameters) evaluate(parameters)$value
   gradient <- function(parameters) evaluate(parameters)$gradient
 
-  results <- bridgr_with_seed(solver_options$seed, {
+  run_starts <- function() {
     lapply(
       seq_len(solver_options$n_starts),
       function(start_index) {
@@ -1118,7 +1118,13 @@ optimize_parametric_weights <- function(
         )
       }
     )
-  })
+  }
+
+  results <- if (is.null(solver_options$seed)) {
+    run_starts()
+  } else {
+    withr::with_seed(solver_options$seed, run_starts())
+  }
 
   converged <- vapply(
     results,

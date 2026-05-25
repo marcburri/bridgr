@@ -339,7 +339,7 @@ mf_model <- function(
 #' @rdname mf_model
 #' @export
 bridge <- function(...) {
-  .Deprecated(new = "mf_model", package = "bridgr")
+  lifecycle::deprecate_warn("0.1.3", "bridge()", "mf_model()")
   mf_model(...)
 }
 
@@ -441,17 +441,13 @@ fit_bridge_model <- function(
     )
   }
 
-  skip_collinearity_screening <- any(vapply(
-    config$indic_predict,
-    identical,
-    logical(1),
-    "direct"
-  )) || any(vapply(
+  has_unrestricted_aggregator <- any(vapply(
     config$indic_aggregators,
-    identical,
-    logical(1),
-    "unrestricted"
+    function(a) is.character(a) && identical(a, "unrestricted"),
+    logical(1)
   ))
+  skip_collinearity_screening <- "direct" %in% config$indic_predict ||
+    has_unrestricted_aggregator
   if (!skip_collinearity_screening) {
     check_estimation_set_collinearity(
       estimation_set = estimation_set,
@@ -461,14 +457,7 @@ fit_bridge_model <- function(
     )
   }
 
-  if (
-    any(vapply(
-      config$indic_aggregators,
-      identical,
-      logical(1),
-      "unrestricted"
-    ))
-  ) {
+  if (has_unrestricted_aggregator) {
     unrestricted_ratio <- nrow(estimation_set) / length(regressor_names)
     if (is.finite(unrestricted_ratio) && unrestricted_ratio < 10) {
       rlang::warn(
@@ -754,14 +743,12 @@ validate_bridge_inputs <- function(
   )
   indic_aggregators_requested <- indic_aggregators
 
-  direct_used <- identical(unique(indic_predict), "direct")
+  direct_used <- all(indic_predict == "direct")
   if (any(indic_predict == "direct") && !direct_used) {
     rlang::abort(
-      paste(
-        paste0(
-          "`indic_predict = \"direct\"` must be used for all indicators ",
-          "or for none."
-        )
+      paste0(
+        "`indic_predict = \"direct\"` must be used for all indicators ",
+        "or for none."
       ),
       call = call
     )
@@ -968,10 +955,8 @@ build_indicator_features <- function(
     )
     rlang::warn(
       paste0(
-        paste(
-          "Some indicators had more observations within a target period",
-          "than implied by the current frequency mapping."
-        ),
+        "Some indicators had more observations within a target period ",
+        "than implied by the current frequency mapping. ",
         "Using the most recent observations for: ",
         paste(details, collapse = ", "),
         "."

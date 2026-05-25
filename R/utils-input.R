@@ -664,9 +664,11 @@ normalize_parametric_solver_options <- function(
   }
 
   defaults[names(solver_options)] <- solver_options
-  defaults$method <- match.arg(
+  defaults$method <- rlang::arg_match0(
     defaults$method,
-    c("L-BFGS-B", "BFGS", "Nelder-Mead", "nlminb")
+    values = c("L-BFGS-B", "BFGS", "Nelder-Mead", "nlminb"),
+    arg_nm = "solver_options$method",
+    error_call = call
   )
 
   if (!is.numeric(defaults$maxiter) ||

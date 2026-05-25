@@ -1,42 +1,6 @@
 
 #' @keywords internal
 #' @noRd
-bridgr_with_seed <- function(seed, expr) {
-  expr <- substitute(expr)
-
-  if (is.null(seed)) {
-    return(eval(expr, envir = parent.frame()))
-  }
-
-  old_seed <- if (
-    exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
-  ) {
-    get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
-  } else {
-    NULL
-  }
-  on.exit(
-    {
-      if (is.null(old_seed)) {
-        if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
-          rm(".Random.seed", envir = .GlobalEnv)
-        }
-      } else {
-        # nolint start: object_name_linter.
-        assign(x = ".Random.seed", value = old_seed, envir = .GlobalEnv)
-        # nolint end
-      }
-    },
-    add = TRUE
-  )
-
-  set.seed(seed)
-  eval(expr, envir = parent.frame())
-}
-
-
-#' @keywords internal
-#' @noRd
 default_bootstrap_block_length <- function(n_rows) {
   max(1L, min(as.integer(n_rows), as.integer(ceiling(n_rows^(1 / 3)))))
 }
