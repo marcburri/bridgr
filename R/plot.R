@@ -379,7 +379,7 @@ plot.mf_model <- function(
     p <- p +
       ggplot2::scale_fill_manual(
         values = stats::setNames(
-          grDevices::adjustcolor(forecast_color, alpha.f = 0.2),
+          forecast_color,
           paste0(level, "% interval")
         ),
         breaks = paste0(level, "% interval")

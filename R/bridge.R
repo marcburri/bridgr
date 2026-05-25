@@ -574,16 +574,12 @@ fit_bridge_model <- function(
     full_system_bootstrap = isTRUE(config$full_system_bootstrap),
     full_bootstrap = full_bootstrap
   )
-  if (isTRUE(config$full_system_bootstrap)) {
-    coefficient_uncertainty <- if (isTRUE(full_bootstrap$enabled)) {
-      list(
-        method = "block_bootstrap",
-        covariance = full_bootstrap$coefficient_covariance,
-        se = full_bootstrap$coefficient_se
-      )
-    } else {
-      list(method = NULL, covariance = NULL, se = NULL)
-    }
+  if (isTRUE(config$full_system_bootstrap) && isTRUE(full_bootstrap$enabled)) {
+    coefficient_uncertainty <- list(
+      method = "block_bootstrap",
+      covariance = full_bootstrap$coefficient_covariance,
+      se = full_bootstrap$coefficient_se
+    )
   }
 
   structure(

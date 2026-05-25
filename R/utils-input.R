@@ -281,7 +281,7 @@ as_bridge_tbl <- function(
 
   out |>
     dplyr::transmute(
-      id = as.character(.data$id %||% default_id),
+      id = as.character(.data$id),
       time = .data$time,
       values = as.numeric(.data$values)
     ) |>
