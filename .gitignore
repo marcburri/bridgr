@@ -13,3 +13,5 @@ docs
 inst/doc
 .codex
 /paper-*
+/doc/
+/Meta/

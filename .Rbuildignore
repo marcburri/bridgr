@@ -18,3 +18,5 @@
 ^CODE_OF_CONDUCT\.md$
 ^paper-jss($|/)
 ^paper-ijfos($|/)
+^doc$
+^Meta$
