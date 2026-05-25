@@ -1,15 +1,15 @@
 
 # Minimum estimation-observations-per-predictor threshold below which the
 # unrestricted (U-MIDAS) specification triggers a warning.
-MIN_OBS_PER_PREDICTOR <- 10L
+min_obs_per_predictor <- 10L
 
 # Symmetric bounds on the parametric-aggregator parameters during joint
 # optimization, on the optimizer scale (log scale for beta shapes).
-PARAMETRIC_OPT_BOUNDS <- c(-10, 10)
+parametric_opt_bounds <- c(-10, 10)
 
 # Standard deviation of the Gaussian jitter added to additional multi-start
 # initial values in the parametric-aggregator optimizer.
-PARAMETRIC_MULTISTART_JITTER_SD <- 0.5
+parametric_multistart_jitter_sd <- 0.5
 
 
 #' @keywords internal
@@ -839,8 +839,8 @@ parametric_bounds <- function(specs) {
   total <- sum(n_params)
 
   list(
-    lower = rep(PARAMETRIC_OPT_BOUNDS[[1]], total),
-    upper = rep(PARAMETRIC_OPT_BOUNDS[[2]], total)
+    lower = rep(parametric_opt_bounds[[1]], total),
+    upper = rep(parametric_opt_bounds[[2]], total)
   )
 }
 
@@ -1098,7 +1098,7 @@ optimize_parametric_weights <- function(
           current_start <- current_start + stats::rnorm(
             length(base_start),
             mean = 0,
-            sd = PARAMETRIC_MULTISTART_JITTER_SD
+            sd = parametric_multistart_jitter_sd
           )
           current_start <- pmax(pmin(current_start, upper), lower)
         }

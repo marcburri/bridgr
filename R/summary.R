@@ -138,10 +138,15 @@ print_indicator_summary <- function(object) {
         drop = FALSE
       ]
       requested <- object$indic_aggregators_requested[[index]]
+      aggregation_label <- if (is.character(requested)) {
+        requested
+      } else {
+        "custom_weights"
+      }
       data.frame(
         Frequency = indicator_meta$unit[[1]],
         Predict = object$indic_predict[[index]],
-        Aggregation = if (is.character(requested)) requested else "custom_weights",
+        Aggregation = aggregation_label,
         check.names = FALSE,
         row.names = indicator_id
       )
@@ -228,8 +233,9 @@ print_parametric_block <- function(object) {
 #' @keywords internal
 #' @noRd
 print_uncertainty_block <- function(object) {
-  coefficient_uncertainty_enabled <- !is.null(object$uncertainty$coefficient_se)
-  prediction_uncertainty_enabled <- !is.null(object$uncertainty$prediction_method)
+  uncertainty <- object$uncertainty
+  coefficient_uncertainty_enabled <- !is.null(uncertainty$coefficient_se)
+  prediction_uncertainty_enabled <- !is.null(uncertainty$prediction_method)
   if (!coefficient_uncertainty_enabled && !prediction_uncertainty_enabled) {
     return(invisible(NULL))
   }
@@ -239,12 +245,12 @@ print_uncertainty_block <- function(object) {
   if (coefficient_uncertainty_enabled) {
     cat(
       "Coefficient SEs: ",
-      object$uncertainty$coefficient_method,
+      uncertainty$coefficient_method,
       "\n",
       sep = ""
     )
   }
-  if (identical(object$uncertainty$prediction_method, "block_bootstrap")) {
+  if (identical(uncertainty$prediction_method, "block_bootstrap")) {
     cat("Prediction intervals: full-system block bootstrap\n")
     cat(
       "Bootstrap draws: ",
@@ -256,12 +262,12 @@ print_uncertainty_block <- function(object) {
     )
     cat("Block length: ", object$bootstrap$block_length, "\n", sep = "")
   } else if (
-    identical(object$uncertainty$prediction_method, "residual_resampling")
+    identical(uncertainty$prediction_method, "residual_resampling")
   ) {
     cat("Prediction intervals: residual resampling\n")
     cat(
       "Simulation paths: ",
-      object$uncertainty$simulation_paths,
+      uncertainty$simulation_paths,
       "\n",
       sep = ""
     )
