@@ -83,10 +83,10 @@
 </div>
 <!-- badges: start -->
 
-<p><code>bridgr</code> is designed to simplify the implementation and evaluation of bridge models, which are useful for nowcasting (predicting the present or near-term) and forecasting macroeconomic variables like GDP.</p>
-<p>Bridge models are statistical tools that link high-frequency indicators (e.g., monthly industrial production) to low-frequency target variables (e.g., quarterly GDP) by forecasting and aggregating the indicators to match the target’s frequency. They enable timely predictions before the official release of low-frequency data, making them essential for policymakers who need early insights for decision-making.</p>
+<p><code>bridgr</code> provides a unified workflow for <strong>bridging high-frequency indicators to lower-frequency target series</strong> — the practical job at the heart of nowcasting and forecasting macroeconomic variables such as GDP or inflation. It supports classical bridge equations as well as MIDAS-style mixed-frequency regressions (<code>expalmon</code>, <code>beta</code>, unrestricted / U-MIDAS) under a single interface, with automatic frequency alignment, indicator forecasting, and aggregation.</p>
+<p>In a typical workflow <code>bridgr</code> takes a low-frequency target (e.g., quarterly GDP) and one or more higher-frequency indicators (e.g., monthly surveys or daily web data), forecasts any missing indicator observations, aggregates them to the target frequency, and fits a regression with optional autoregressive target dynamics. This makes it possible to produce timely predictions well before the official release of the low-frequency data — which is essential for policymakers, central banks, and applied forecasters who need early reads on the macroeconomy.</p>
 <p><code>bridgr</code> supports regular frequency ladders from <code>second</code> up to <code>year</code>, several deterministic and model-based indicator forecasting rules, and multiple aggregation choices including joint <code>expalmon</code> and <code>beta</code> weighting. If a target period contains more high-frequency observations than implied by the current frequency mapping, the package keeps the most recent observations and reports a summarized warning.</p>
-<p>Compared with <a href="https://CRAN.R-project.org/package=midasr" class="external-link"><code>midasr</code></a>, which is a broad toolkit for estimating, testing, selecting, and forecasting MIDAS regressions, <code>bridgr</code> focuses more narrowly on bridge-style nowcasting workflows with automatic frequency alignment, indicator extension, aggregation, and a simpler end-to-end interface. Compared with <a href="https://CRAN.R-project.org/package=midasml" class="external-link"><code>midasml</code></a>, which targets high-dimensional mixed-frequency time-series and panel models with regularization methods such as sparse-group LASSO, <code>bridgr</code> is aimed at lower-dimensional applied forecasting settings where transparent bridge-model specification, interpretation, and standard forecasting methods are the priority.</p>
+<p>Compared with <a href="https://CRAN.R-project.org/package=midasr" class="external-link"><code>midasr</code></a>, which is a broad toolkit for estimating, testing, selecting, and forecasting MIDAS regressions, <code>bridgr</code> focuses on end-to-end nowcasting workflows with automatic frequency alignment, indicator extension, aggregation, and a simpler interface from raw series to forecast. Compared with <a href="https://CRAN.R-project.org/package=midasml" class="external-link"><code>midasml</code></a>, which targets high-dimensional mixed-frequency time-series and panel models with regularization methods such as sparse-group LASSO, <code>bridgr</code> is aimed at lower-dimensional applied forecasting settings where transparent specification, interpretation, and standard forecasting tooling are the priority.</p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
@@ -127,10 +127,9 @@
 <span><span class="co">#&gt; Simulation paths: 100</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt;   time       mean  se    lower_80 upper_80 lower_95 upper_95</span></span>
-<span><span class="co">#&gt; 1 2023-01-01 0.808 0.794 -0.215   1.870    -1.005   2.059   </span></span>
-<span><span class="co">#&gt; 2 2023-04-01 0.468 0.836 -0.612   1.748    -1.054   2.420</span></span></code></pre></div>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
+<span><span class="co">#&gt; 1 2023-01-01 0.808 0.572 -0.075   1.412    -0.265   1.896   </span></span>
+<span><span class="co">#&gt; 2 2023-04-01 0.468 0.678 -0.304   1.343    -0.642   2.788</span></span>
+<span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">bridge_model</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Mixed-frequency model summary</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
@@ -148,6 +147,12 @@
 <span><span class="co">#&gt; baro_lag2      0.042  0.019</span></span>
 <span><span class="co">#&gt; gdp_lag1       0.223  0.143</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
+<span><span class="co">#&gt; Model fit:</span></span>
+<span><span class="co">#&gt;  Statistic               Value</span></span>
+<span><span class="co">#&gt;  R-squared               0.712</span></span>
+<span><span class="co">#&gt;  Adjusted R-squared      0.694</span></span>
+<span><span class="co">#&gt;  Residual standard error 0.747</span></span>
+<span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Indicator summary:</span></span>
 <span><span class="co">#&gt;      Frequency Predict    Aggregation</span></span>
 <span><span class="co">#&gt; baro month     auto.arima mean       </span></span>
@@ -159,7 +164,7 @@
 <span><span class="co">#&gt; -----------------------------------</span></span></code></pre></div>
 <p>With <code>se = TRUE</code>, <code>bridgr</code> reports HAC or Delta-HAC coefficient standard errors and residual-resampling prediction intervals.</p>
 <p>If you want data-driven within-period weights instead of a simple deterministic aggregator, you can switch the indicator aggregator to <code>expalmon</code>. The corresponding weights are estimated jointly within the bridge model, and <code>solver_options</code> let you control the optimization.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">expalmon_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/mf_model.html">mf_model</a></span><span class="op">(</span></span>
 <span>  target <span class="op">=</span> <span class="va">gdp</span>,</span>
 <span>  indic <span class="op">=</span> <span class="va">baro</span>,</span>
@@ -182,6 +187,12 @@
 <span><span class="co">#&gt;             Estimate</span></span>
 <span><span class="co">#&gt; (Intercept)   -9.371</span></span>
 <span><span class="co">#&gt; baro           0.098</span></span>
+<span><span class="co">#&gt; -----------------------------------</span></span>
+<span><span class="co">#&gt; Model fit:</span></span>
+<span><span class="co">#&gt;  Statistic               Value</span></span>
+<span><span class="co">#&gt;  R-squared               0.533</span></span>
+<span><span class="co">#&gt;  Adjusted R-squared      0.527</span></span>
+<span><span class="co">#&gt;  Residual standard error 0.913</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt; Indicator summary:</span></span>
 <span><span class="co">#&gt;      Frequency Predict    Aggregation</span></span>
