@@ -13,12 +13,14 @@ The relevant estimation arguments are:
   prediction intervals.
 - `bootstrap = list(N = 100, block_length = NULL)`: control the number
   of predictive simulation paths. `block_length` is only used when
-  `full_system_bootstrap = TRUE`.
+  `full_system_bootstrap = TRUE`, where it sets the size of the
+  contiguous target-period blocks resampled in each bootstrap draw —
+  larger blocks preserve more temporal dependence.
 - `full_system_bootstrap = TRUE`: replace the default
   residual-resampling prediction intervals and HAC / Delta-HAC
   coefficient standard errors with a full-system target-period block
-  bootstrap. Because this refits the full bridge workflow on every draw,
-  it can be substantially slower.
+  bootstrap. Because this refits the full mixed-frequency workflow on
+  every draw, it can be substantially slower.
 
 ## Fitting a Model with Default Uncertainty
 
@@ -39,7 +41,7 @@ boot_model <- mf_model(
 )
 ```
 
-`bridgr` computes HAC standard errors for the linear bridge equation, or
+`bridgr` computes HAC standard errors for the linear target equation, or
 Delta-HAC standard errors when parametric aggregation weights are
 estimated jointly. Forecast uncertainty is obtained by simulating from
 resampled centered residuals of the fitted target equation.
@@ -70,8 +72,8 @@ fc
 #> Simulation paths: 20
 #> -----------------------------------
 #>   time       mean  se    lower_80 upper_80 lower_95 upper_95
-#> 1 2023-01-01 0.875 0.949 -0.430   1.794    -1.461   2.943   
-#> 2 2023-04-01 0.678 0.671 -0.470   1.030    -1.670   1.225
+#> 1 2023-01-01 0.875 0.742 -0.401   1.859    -0.522   2.120   
+#> 2 2023-04-01 0.678 0.598 0.035    1.623    -0.317   1.970
 fc$bootstrap
 #> $requested
 #> [1] FALSE
@@ -90,15 +92,15 @@ fc$bootstrap
 ```
 
 The intervals are empirical prediction intervals based on the stored
-residual- resampling forecast draws.
+residual-resampling forecast draws.
 
-## Trimming Forecasts by Error Margin
+## Reporting Only Forecasts Below a Width Tolerance
 
-One simple way to trim forecasts is to keep only those horizons whose
-prediction interval width stays below an application-specific tolerance.
-For illustration, the example below uses the one-step-ahead 95% interval
-width as the cutoff and keeps only horizons that are no wider than that
-baseline.
+In practice prediction intervals widen with horizon. A common reporting
+choice is to publish only forecast horizons whose interval is narrower
+than some application-specific tolerance — for example, only publish
+when the 95% half-width is below a chosen threshold. The example below
+applies that rule with a tolerance of `1.5` percentage points.
 
 ``` r
 
@@ -108,20 +110,21 @@ forecast_table <- dplyr::tibble(
   lower_95 = fc$lower[, "95%"],
   upper_95 = fc$upper[, "95%"]
 ) |>
-  dplyr::mutate(width_95 = .data$upper_95 - .data$lower_95)
+  dplyr::mutate(
+    half_width_95 = (.data$upper_95 - .data$lower_95) / 2
+  )
 
-tolerance_95 <- forecast_table$width_95[1]
-
-dplyr::filter(forecast_table, .data$width_95 <= tolerance_95)
+tolerance <- 1.5
+dplyr::filter(forecast_table, .data$half_width_95 <= tolerance)
 #> # A tibble: 2 × 5
-#>   time        mean lower_95 upper_95 width_95
-#>   <date>     <dbl>    <dbl>    <dbl>    <dbl>
-#> 1 2023-01-01 0.875    -1.46     2.94     4.40
-#> 2 2023-04-01 0.678    -1.67     1.22     2.89
+#>   time        mean lower_95 upper_95 half_width_95
+#>   <date>     <dbl>    <dbl>    <dbl>         <dbl>
+#> 1 2023-01-01 0.875   -0.522     2.12          1.32
+#> 2 2023-04-01 0.678   -0.317     1.97          1.14
 ```
 
-The threshold can be tightened or relaxed depending on how much forecast
-uncertainty is acceptable in the use case.
+Tighten or relax `tolerance` depending on how much uncertainty is
+acceptable in the use case.
 
 ## Summary Output
 
@@ -175,44 +178,76 @@ path, pass a custom `xreg` object to
 custom regressor names must match the ones used in the fitted target
 equation.
 
+The example below defines a *baseline* scenario (the indicator continues
+on its model-implied path) and a *negative shock* scenario (the
+indicator drops by 5 points relative to baseline). Both scenarios share
+the fitted target equation and the same uncertainty method.
+
 ``` r
 
-scenario_xreg <- dplyr::tibble(
-  id = rep(boot_model$xreg_names, each = nrow(boot_model$forecast_base_set)),
-  time = rep(
-    boot_model$forecast_base_set$time,
-    times = length(boot_model$xreg_names)
+make_xreg <- function(level_shift) {
+  dplyr::tibble(
+    id = rep(boot_model$xreg_names, each = nrow(boot_model$forecast_base_set)),
+    time = rep(
+      boot_model$forecast_base_set$time,
+      times = length(boot_model$xreg_names)
+    ),
+    value = c(
+      boot_model$forecast_base_set$baro + level_shift,
+      boot_model$forecast_base_set$baro_lag1 + level_shift
+    )
+  )
+}
+
+fc_baseline <- forecast(boot_model, xreg = make_xreg(0))
+fc_shock    <- forecast(boot_model, xreg = make_xreg(-5))
+
+scenario_df <- dplyr::bind_rows(
+  dplyr::tibble(
+    scenario = "baseline",
+    time = fc_baseline$time,
+    mean = as.numeric(fc_baseline$mean),
+    lower = fc_baseline$lower[, "95%"],
+    upper = fc_baseline$upper[, "95%"]
   ),
-  value = c(
-    boot_model$forecast_base_set$baro + 5,
-    boot_model$forecast_base_set$baro_lag1 + 5
+  dplyr::tibble(
+    scenario = "shock (-5)",
+    time = fc_shock$time,
+    mean = as.numeric(fc_shock$mean),
+    lower = fc_shock$lower[, "95%"],
+    upper = fc_shock$upper[, "95%"]
   )
 )
 
-scenario_fc <- forecast(boot_model, xreg = scenario_xreg)
-
-dplyr::tibble(
-  time = fc$time,
-  baseline = as.numeric(fc$mean),
-  scenario = as.numeric(scenario_fc$mean)
-)
-#> # A tibble: 2 × 3
-#>   time       baseline scenario
-#>   <date>        <dbl>    <dbl>
-#> 1 2023-01-01    0.875     1.21
-#> 2 2023-04-01    0.678     1.02
+ggplot2::ggplot(
+  scenario_df,
+  ggplot2::aes(x = .data$time, color = .data$scenario, fill = .data$scenario)
+) +
+  ggplot2::geom_ribbon(
+    ggplot2::aes(ymin = .data$lower, ymax = .data$upper),
+    alpha = 0.2, color = NA
+  ) +
+  ggplot2::geom_line(ggplot2::aes(y = .data$mean), linewidth = 0.8) +
+  ggplot2::geom_point(ggplot2::aes(y = .data$mean), size = 2) +
+  ggplot2::labs(
+    title = "Forecast under baseline and shock scenarios",
+    x = NULL, y = "GDP growth forecast"
+  ) +
+  theme_bridgr()
 ```
+
+![](uncertainty-and-scenarios_files/figure-html/scenarios-1.png)
 
 Scenario forecasts reuse the same uncertainty method and evaluate it on
 the supplied regressor path.
 
 ## Optional Full-System Bootstrap
 
-If you want to propagate uncertainty through the full bridge workflow,
-including indicator completion and aggregation, set
+If you want to propagate uncertainty through the full mixed-frequency
+workflow, including indicator completion and aggregation, set
 `full_system_bootstrap = TRUE`. This can be substantially slower than
 the default residual-resampling intervals because each bootstrap draw
-re-estimates the full bridge pipeline. In that mode, both the reported
+re-estimates the full pipeline. In that mode, both the reported
 coefficient standard errors and the forecast intervals are based on the
 bootstrap draws.
 
@@ -282,11 +317,11 @@ forecast(point_model)
 
 ## Interpretation
 
-With the default `se = TRUE`, these intervals are residual-resampling
-prediction intervals for the fitted target equation, while coefficient
+With the default `se = TRUE`, intervals are residual-resampling
+prediction intervals for the fitted target equation, and coefficient
 standard errors come from HAC or Delta-HAC estimation. When
 `full_system_bootstrap = TRUE`, both the coefficient standard errors and
 the forecast intervals come from a full-system block bootstrap that
 resamples target-period blocks from the aligned mixed-frequency system,
-refits the bridge workflow on each draw, and evaluates the resulting
-future paths.
+refits the workflow on each draw, and evaluates the resulting future
+paths.

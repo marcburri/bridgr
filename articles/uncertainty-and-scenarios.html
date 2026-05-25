@@ -47,6 +47,7 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/mixed-frequency-modeling.html">Aggregation and Mixed-Frequency Modeling in bridgr</a></li>
     <li><a class="dropdown-item" href="../articles/ragged-edge-nowcasting.html">Ragged-Edge Nowcasting with bridgr</a></li>
+    <li><a class="dropdown-item" href="../articles/real-time-nowcasting.html">A Real-Time Nowcasting Exercise</a></li>
     <li><a class="dropdown-item" href="../articles/uncertainty-and-scenarios.html">Uncertainty and Scenario Forecasting</a></li>
   </ul>
 </li>
@@ -102,13 +103,15 @@ uncertainty and prediction intervals.</li>
 <li>
 <code>bootstrap = list(N = 100, block_length = NULL)</code>: control
 the number of predictive simulation paths. <code>block_length</code> is
-only used when <code>full_system_bootstrap = TRUE</code>.</li>
+only used when <code>full_system_bootstrap = TRUE</code>, where it sets
+the size of the contiguous target-period blocks resampled in each
+bootstrap draw — larger blocks preserve more temporal dependence.</li>
 <li>
 <code>full_system_bootstrap = TRUE</code>: replace the default
 residual-resampling prediction intervals and HAC / Delta-HAC coefficient
 standard errors with a full-system target-period block bootstrap.
-Because this refits the full bridge workflow on every draw, it can be
-substantially slower.</li>
+Because this refits the full mixed-frequency workflow on every draw, it
+can be substantially slower.</li>
 </ul>
 </div>
 <div class="section level2">
@@ -129,7 +132,7 @@ substantially slower.</li>
 <span>  bootstrap <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fl">20</span>, block_length <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p><code>bridgr</code> computes HAC standard errors for the linear
-bridge equation, or Delta-HAC standard errors when parametric
+target equation, or Delta-HAC standard errors when parametric
 aggregation weights are estimated jointly. Forecast uncertainty is
 obtained by simulating from resampled centered residuals of the fitted
 target equation.</p>
@@ -159,8 +162,8 @@ target equation.</p>
 <span><span class="co">#&gt; Simulation paths: 20</span></span>
 <span><span class="co">#&gt; -----------------------------------</span></span>
 <span><span class="co">#&gt;   time       mean  se    lower_80 upper_80 lower_95 upper_95</span></span>
-<span><span class="co">#&gt; 1 2023-01-01 0.875 0.949 -0.430   1.794    -1.461   2.943   </span></span>
-<span><span class="co">#&gt; 2 2023-04-01 0.678 0.671 -0.470   1.030    -1.670   1.225</span></span>
+<span><span class="co">#&gt; 1 2023-01-01 0.875 0.742 -0.401   1.859    -0.522   2.120   </span></span>
+<span><span class="co">#&gt; 2 2023-04-01 0.678 0.598 0.035    1.623    -0.317   1.970</span></span>
 <span><span class="va">fc</span><span class="op">$</span><span class="va">bootstrap</span></span>
 <span><span class="co">#&gt; $requested</span></span>
 <span><span class="co">#&gt; [1] FALSE</span></span>
@@ -177,16 +180,17 @@ target equation.</p>
 <span><span class="co">#&gt; $block_length</span></span>
 <span><span class="co">#&gt; NULL</span></span></code></pre></div>
 <p>The intervals are empirical prediction intervals based on the stored
-residual- resampling forecast draws.</p>
+residual-resampling forecast draws.</p>
 </div>
 <div class="section level2">
-<h2 id="trimming-forecasts-by-error-margin">Trimming Forecasts by Error Margin<a class="anchor" aria-label="anchor" href="#trimming-forecasts-by-error-margin"></a>
+<h2 id="reporting-only-forecasts-below-a-width-tolerance">Reporting Only Forecasts Below a Width Tolerance<a class="anchor" aria-label="anchor" href="#reporting-only-forecasts-below-a-width-tolerance"></a>
 </h2>
-<p>One simple way to trim forecasts is to keep only those horizons whose
-prediction interval width stays below an application-specific tolerance.
-For illustration, the example below uses the one-step-ahead 95% interval
-width as the cutoff and keeps only horizons that are no wider than that
-baseline.</p>
+<p>In practice prediction intervals widen with horizon. A common
+reporting choice is to publish only forecast horizons whose interval is
+narrower than some application-specific tolerance — for example, only
+publish when the 95% half-width is below a chosen threshold. The example
+below applies that rule with a tolerance of <code>1.5</code> percentage
+points.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">forecast_table</span> <span class="op">&lt;-</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
 <span>  time <span class="op">=</span> <span class="va">fc</span><span class="op">$</span><span class="va">time</span>,</span>
@@ -194,18 +198,19 @@ baseline.</p>
 <span>  lower_95 <span class="op">=</span> <span class="va">fc</span><span class="op">$</span><span class="va">lower</span><span class="op">[</span>, <span class="st">"95%"</span><span class="op">]</span>,</span>
 <span>  upper_95 <span class="op">=</span> <span class="va">fc</span><span class="op">$</span><span class="va">upper</span><span class="op">[</span>, <span class="st">"95%"</span><span class="op">]</span></span>
 <span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>width_95 <span class="op">=</span> <span class="va">.data</span><span class="op">$</span><span class="va">upper_95</span> <span class="op">-</span> <span class="va">.data</span><span class="op">$</span><span class="va">lower_95</span><span class="op">)</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span></span>
+<span>    half_width_95 <span class="op">=</span> <span class="op">(</span><span class="va">.data</span><span class="op">$</span><span class="va">upper_95</span> <span class="op">-</span> <span class="va">.data</span><span class="op">$</span><span class="va">lower_95</span><span class="op">)</span> <span class="op">/</span> <span class="fl">2</span></span>
+<span>  <span class="op">)</span></span>
 <span></span>
-<span><span class="va">tolerance_95</span> <span class="op">&lt;-</span> <span class="va">forecast_table</span><span class="op">$</span><span class="va">width_95</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span></span>
-<span></span>
-<span><span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">forecast_table</span>, <span class="va">.data</span><span class="op">$</span><span class="va">width_95</span> <span class="op">&lt;=</span> <span class="va">tolerance_95</span><span class="op">)</span></span>
+<span><span class="va">tolerance</span> <span class="op">&lt;-</span> <span class="fl">1.5</span></span>
+<span><span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">forecast_table</span>, <span class="va">.data</span><span class="op">$</span><span class="va">half_width_95</span> <span class="op">&lt;=</span> <span class="va">tolerance</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 5</span></span></span>
-<span><span class="co">#&gt;   time        mean lower_95 upper_95 width_95</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;date&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 2023-01-01 0.875    -<span style="color: #BB0000;">1.46</span>     2.94     4.40</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> 2023-04-01 0.678    -<span style="color: #BB0000;">1.67</span>     1.22     2.89</span></span></code></pre></div>
-<p>The threshold can be tightened or relaxed depending on how much
-forecast uncertainty is acceptable in the use case.</p>
+<span><span class="co">#&gt;   time        mean lower_95 upper_95 half_width_95</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;date&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 2023-01-01 0.875   -<span style="color: #BB0000;">0.522</span>     2.12          1.32</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> 2023-04-01 0.678   -<span style="color: #BB0000;">0.317</span>     1.97          1.14</span></span></code></pre></div>
+<p>Tighten or relax <code>tolerance</code> depending on how much
+uncertainty is acceptable in the use case.</p>
 </div>
 <div class="section level2">
 <h2 id="summary-output">Summary Output<a class="anchor" aria-label="anchor" href="#summary-output"></a>
@@ -255,43 +260,74 @@ available.</p>
 path, pass a custom <code>xreg</code> object to <code><a href="https://generics.r-lib.org/reference/forecast.html" class="external-link">forecast()</a></code>.
 The custom regressor names must match the ones used in the fitted target
 equation.</p>
+<p>The example below defines a <em>baseline</em> scenario (the indicator
+continues on its model-implied path) and a <em>negative shock</em>
+scenario (the indicator drops by 5 points relative to baseline). Both
+scenarios share the fitted target equation and the same uncertainty
+method.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">scenario_xreg</span> <span class="op">&lt;-</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
-<span>  id <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">boot_model</span><span class="op">$</span><span class="va">xreg_names</span>, each <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">boot_model</span><span class="op">$</span><span class="va">forecast_base_set</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span></span>
-<span>    <span class="va">boot_model</span><span class="op">$</span><span class="va">forecast_base_set</span><span class="op">$</span><span class="va">time</span>,</span>
-<span>    times <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">boot_model</span><span class="op">$</span><span class="va">xreg_names</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">make_xreg</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">level_shift</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
+<span>    id <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">boot_model</span><span class="op">$</span><span class="va">xreg_names</span>, each <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">boot_model</span><span class="op">$</span><span class="va">forecast_base_set</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span></span>
+<span>      <span class="va">boot_model</span><span class="op">$</span><span class="va">forecast_base_set</span><span class="op">$</span><span class="va">time</span>,</span>
+<span>      times <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">boot_model</span><span class="op">$</span><span class="va">xreg_names</span><span class="op">)</span></span>
+<span>    <span class="op">)</span>,</span>
+<span>    value <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>      <span class="va">boot_model</span><span class="op">$</span><span class="va">forecast_base_set</span><span class="op">$</span><span class="va">baro</span> <span class="op">+</span> <span class="va">level_shift</span>,</span>
+<span>      <span class="va">boot_model</span><span class="op">$</span><span class="va">forecast_base_set</span><span class="op">$</span><span class="va">baro_lag1</span> <span class="op">+</span> <span class="va">level_shift</span></span>
+<span>    <span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">fc_baseline</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://generics.r-lib.org/reference/forecast.html" class="external-link">forecast</a></span><span class="op">(</span><span class="va">boot_model</span>, xreg <span class="op">=</span> <span class="fu">make_xreg</span><span class="op">(</span><span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">fc_shock</span>    <span class="op">&lt;-</span> <span class="fu"><a href="https://generics.r-lib.org/reference/forecast.html" class="external-link">forecast</a></span><span class="op">(</span><span class="va">boot_model</span>, xreg <span class="op">=</span> <span class="fu">make_xreg</span><span class="op">(</span><span class="op">-</span><span class="fl">5</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">scenario_df</span> <span class="op">&lt;-</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
+<span>    scenario <span class="op">=</span> <span class="st">"baseline"</span>,</span>
+<span>    time <span class="op">=</span> <span class="va">fc_baseline</span><span class="op">$</span><span class="va">time</span>,</span>
+<span>    mean <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">fc_baseline</span><span class="op">$</span><span class="va">mean</span><span class="op">)</span>,</span>
+<span>    lower <span class="op">=</span> <span class="va">fc_baseline</span><span class="op">$</span><span class="va">lower</span><span class="op">[</span>, <span class="st">"95%"</span><span class="op">]</span>,</span>
+<span>    upper <span class="op">=</span> <span class="va">fc_baseline</span><span class="op">$</span><span class="va">upper</span><span class="op">[</span>, <span class="st">"95%"</span><span class="op">]</span></span>
 <span>  <span class="op">)</span>,</span>
-<span>  value <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
-<span>    <span class="va">boot_model</span><span class="op">$</span><span class="va">forecast_base_set</span><span class="op">$</span><span class="va">baro</span> <span class="op">+</span> <span class="fl">5</span>,</span>
-<span>    <span class="va">boot_model</span><span class="op">$</span><span class="va">forecast_base_set</span><span class="op">$</span><span class="va">baro_lag1</span> <span class="op">+</span> <span class="fl">5</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
+<span>    scenario <span class="op">=</span> <span class="st">"shock (-5)"</span>,</span>
+<span>    time <span class="op">=</span> <span class="va">fc_shock</span><span class="op">$</span><span class="va">time</span>,</span>
+<span>    mean <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">fc_shock</span><span class="op">$</span><span class="va">mean</span><span class="op">)</span>,</span>
+<span>    lower <span class="op">=</span> <span class="va">fc_shock</span><span class="op">$</span><span class="va">lower</span><span class="op">[</span>, <span class="st">"95%"</span><span class="op">]</span>,</span>
+<span>    upper <span class="op">=</span> <span class="va">fc_shock</span><span class="op">$</span><span class="va">upper</span><span class="op">[</span>, <span class="st">"95%"</span><span class="op">]</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">scenario_fc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://generics.r-lib.org/reference/forecast.html" class="external-link">forecast</a></span><span class="op">(</span><span class="va">boot_model</span>, xreg <span class="op">=</span> <span class="va">scenario_xreg</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
-<span>  time <span class="op">=</span> <span class="va">fc</span><span class="op">$</span><span class="va">time</span>,</span>
-<span>  baseline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">fc</span><span class="op">$</span><span class="va">mean</span><span class="op">)</span>,</span>
-<span>  scenario <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">scenario_fc</span><span class="op">$</span><span class="va">mean</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 3</span></span></span>
-<span><span class="co">#&gt;   time       baseline scenario</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;date&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 2023-01-01    0.875     1.21</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> 2023-04-01    0.678     1.02</span></span></code></pre></div>
+<span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span></span>
+<span>  <span class="va">scenario_df</span>,</span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">.data</span><span class="op">$</span><span class="va">time</span>, color <span class="op">=</span> <span class="va">.data</span><span class="op">$</span><span class="va">scenario</span>, fill <span class="op">=</span> <span class="va">.data</span><span class="op">$</span><span class="va">scenario</span><span class="op">)</span></span>
+<span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_ribbon.html" class="external-link">geom_ribbon</a></span><span class="op">(</span></span>
+<span>    <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>ymin <span class="op">=</span> <span class="va">.data</span><span class="op">$</span><span class="va">lower</span>, ymax <span class="op">=</span> <span class="va">.data</span><span class="op">$</span><span class="va">upper</span><span class="op">)</span>,</span>
+<span>    alpha <span class="op">=</span> <span class="fl">0.2</span>, color <span class="op">=</span> <span class="cn">NA</span></span>
+<span>  <span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_line</a></span><span class="op">(</span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">.data</span><span class="op">$</span><span class="va">mean</span><span class="op">)</span>, linewidth <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">.data</span><span class="op">$</span><span class="va">mean</span><span class="op">)</span>, size <span class="op">=</span> <span class="fl">2</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span></span>
+<span>    title <span class="op">=</span> <span class="st">"Forecast under baseline and shock scenarios"</span>,</span>
+<span>    x <span class="op">=</span> <span class="cn">NULL</span>, y <span class="op">=</span> <span class="st">"GDP growth forecast"</span></span>
+<span>  <span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="../reference/theme_bridgr.html">theme_bridgr</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p><img src="uncertainty-and-scenarios_files/figure-html/scenarios-1.png" class="r-plt" alt="" width="576"></p>
 <p>Scenario forecasts reuse the same uncertainty method and evaluate it
 on the supplied regressor path.</p>
 </div>
 <div class="section level2">
 <h2 id="optional-full-system-bootstrap">Optional Full-System Bootstrap<a class="anchor" aria-label="anchor" href="#optional-full-system-bootstrap"></a>
 </h2>
-<p>If you want to propagate uncertainty through the full bridge
+<p>If you want to propagate uncertainty through the full mixed-frequency
 workflow, including indicator completion and aggregation, set
 <code>full_system_bootstrap = TRUE</code>. This can be substantially
 slower than the default residual-resampling intervals because each
-bootstrap draw re-estimates the full bridge pipeline. In that mode, both
-the reported coefficient standard errors and the forecast intervals are
+bootstrap draw re-estimates the full pipeline. In that mode, both the
+reported coefficient standard errors and the forecast intervals are
 based on the bootstrap draws.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">full_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/mf_model.html">mf_model</a></span><span class="op">(</span></span>
@@ -356,14 +392,14 @@ and <code><a href="https://generics.r-lib.org/reference/forecast.html" class="ex
 <div class="section level2">
 <h2 id="interpretation">Interpretation<a class="anchor" aria-label="anchor" href="#interpretation"></a>
 </h2>
-<p>With the default <code>se = TRUE</code>, these intervals are
+<p>With the default <code>se = TRUE</code>, intervals are
 residual-resampling prediction intervals for the fitted target equation,
-while coefficient standard errors come from HAC or Delta-HAC estimation.
+and coefficient standard errors come from HAC or Delta-HAC estimation.
 When <code>full_system_bootstrap = TRUE</code>, both the coefficient
 standard errors and the forecast intervals come from a full-system block
 bootstrap that resamples target-period blocks from the aligned
-mixed-frequency system, refits the bridge workflow on each draw, and
-evaluates the resulting future paths.</p>
+mixed-frequency system, refits the workflow on each draw, and evaluates
+the resulting future paths.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

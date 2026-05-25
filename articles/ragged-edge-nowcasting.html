@@ -47,6 +47,7 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/mixed-frequency-modeling.html">Aggregation and Mixed-Frequency Modeling in bridgr</a></li>
     <li><a class="dropdown-item" href="../articles/ragged-edge-nowcasting.html">Ragged-Edge Nowcasting with bridgr</a></li>
+    <li><a class="dropdown-item" href="../articles/real-time-nowcasting.html">A Real-Time Nowcasting Exercise</a></li>
     <li><a class="dropdown-item" href="../articles/uncertainty-and-scenarios.html">Uncertainty and Scenario Forecasting</a></li>
   </ul>
 </li>
@@ -190,19 +191,18 @@ nowcast.</p>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">models</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">predict_methods</span></span>
 <span></span>
-<span><span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span></span>
-<span>    <span class="va">predict_methods</span>,</span>
-<span>    <span class="kw">function</span><span class="op">(</span><span class="va">method</span><span class="op">)</span> <span class="op">{</span></span>
-<span>      <span class="va">fc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://generics.r-lib.org/reference/forecast.html" class="external-link">forecast</a></span><span class="op">(</span><span class="va">models</span><span class="op">[[</span><span class="va">method</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
-<span>      <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
-<span>        method <span class="op">=</span> <span class="va">method</span>,</span>
-<span>        forecast_time <span class="op">=</span> <span class="va">fc</span><span class="op">$</span><span class="va">time</span>,</span>
-<span>        forecast <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">fc</span><span class="op">$</span><span class="va">mean</span><span class="op">)</span></span>
-<span>      <span class="op">)</span></span>
-<span>    <span class="op">}</span></span>
-<span>  <span class="op">)</span></span>
+<span><span class="va">forecast_df</span> <span class="op">&lt;-</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">predict_methods</span>, <span class="kw">function</span><span class="op">(</span><span class="va">method</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="va">fc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://generics.r-lib.org/reference/forecast.html" class="external-link">forecast</a></span><span class="op">(</span><span class="va">models</span><span class="op">[[</span><span class="va">method</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
+<span>    <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
+<span>      method <span class="op">=</span> <span class="va">method</span>,</span>
+<span>      forecast_time <span class="op">=</span> <span class="va">fc</span><span class="op">$</span><span class="va">time</span>,</span>
+<span>      forecast <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">fc</span><span class="op">$</span><span class="va">mean</span><span class="op">)</span></span>
+<span>    <span class="op">)</span></span>
+<span>  <span class="op">}</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">forecast_df</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 3</span></span></span>
 <span><span class="co">#&gt;   method     forecast_time forecast</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;date&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
@@ -213,42 +213,71 @@ nowcast.</p>
 <p>The model specification is the same in each case. The only difference
 is how the missing monthly observations are completed before the
 indicator is aggregated to the quarterly frequency.</p>
-</div>
-<div class="section level2">
-<h2 id="looking-at-the-forecast-regressor-set">Looking at the Forecast Regressor Set<a class="anchor" aria-label="anchor" href="#looking-at-the-forecast-regressor-set"></a>
-</h2>
-<p>The easiest way to see what each method is doing is to inspect
-<code>forecast_set</code>, which stores the target-period regressors
-used for the final forecast.</p>
+<div class="section level3">
+<h3 id="visualizing-the-completed-indicator-paths">Visualizing the completed indicator paths<a class="anchor" aria-label="anchor" href="#visualizing-the-completed-indicator-paths"></a>
+</h3>
+<p>The plot below shows the tail of the observed monthly indicator
+together with the two extrapolated months that each
+<code>indic_predict</code> rule produces for the partially observed
+forecast quarter.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span></span>
-<span>  <span class="va">models</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"last"</span>, <span class="st">"mean"</span><span class="op">)</span><span class="op">]</span>,</span>
-<span>  <span class="kw">function</span><span class="op">(</span><span class="va">model</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="va">model</span><span class="op">$</span><span class="va">forecast_set</span></span>
-<span>  <span class="op">}</span></span>
+<code class="sourceCode R"><span><span class="va">last_obs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="va">baro_ragged</span><span class="op">$</span><span class="va">time</span><span class="op">)</span></span>
+<span><span class="va">last_obs_value</span> <span class="op">&lt;-</span> <span class="va">baro_ragged</span><span class="op">$</span><span class="va">values</span><span class="op">[</span><span class="va">baro_ragged</span><span class="op">$</span><span class="va">time</span> <span class="op">==</span> <span class="va">last_obs</span><span class="op">]</span></span>
+<span><span class="va">future_months</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="va">last_obs</span>, by <span class="op">=</span> <span class="st">"month"</span>, length.out <span class="op">=</span> <span class="fl">3</span><span class="op">)</span><span class="op">[</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span></span>
+<span></span>
+<span><span class="va">observed_tail</span> <span class="op">&lt;-</span> <span class="va">baro_ragged</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/slice.html" class="external-link">slice_tail</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">9</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/transmute.html" class="external-link">transmute</a></span><span class="op">(</span></span>
+<span>    time <span class="op">=</span> <span class="va">.data</span><span class="op">$</span><span class="va">time</span>,</span>
+<span>    value <span class="op">=</span> <span class="va">.data</span><span class="op">$</span><span class="va">values</span>,</span>
+<span>    method <span class="op">=</span> <span class="st">"observed"</span></span>
+<span>  <span class="op">)</span></span>
+<span></span>
+<span><span class="va">extended</span> <span class="op">&lt;-</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">predict_methods</span>, <span class="kw">function</span><span class="op">(</span><span class="va">method</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="va">indicator_tbl</span> <span class="op">&lt;-</span> <span class="va">models</span><span class="op">[[</span><span class="va">method</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">indic</span></span>
+<span>    <span class="va">extension</span> <span class="op">&lt;-</span> <span class="va">indicator_tbl</span> <span class="op">|&gt;</span></span>
+<span>      <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">.data</span><span class="op">$</span><span class="va">time</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">future_months</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>      <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/transmute.html" class="external-link">transmute</a></span><span class="op">(</span></span>
+<span>        time <span class="op">=</span> <span class="va">.data</span><span class="op">$</span><span class="va">time</span>,</span>
+<span>        value <span class="op">=</span> <span class="va">.data</span><span class="op">$</span><span class="va">values</span>,</span>
+<span>        method <span class="op">=</span> <span class="va">method</span></span>
+<span>      <span class="op">)</span></span>
+<span>    <span class="co"># join to the last observed point for a continuous line</span></span>
+<span>    <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span></span>
+<span>      <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>time <span class="op">=</span> <span class="va">last_obs</span>, value <span class="op">=</span> <span class="va">last_obs_value</span>, method <span class="op">=</span> <span class="va">method</span><span class="op">)</span>,</span>
+<span>      <span class="va">extension</span></span>
+<span>    <span class="op">)</span></span>
+<span>  <span class="op">}</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; $last</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 3</span></span></span>
-<span><span class="co">#&gt;   time       baro_ragged gdp_nowcast_lag1</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;date&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;list&gt;</span>          </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 2022-10-01        87.5 <span style="color: #949494;">&lt;dbl [1]&gt;</span>       </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $mean</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 3</span></span></span>
-<span><span class="co">#&gt;   time       baro_ragged gdp_nowcast_lag1</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;date&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;list&gt;</span>          </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 2022-10-01        88.2 <span style="color: #949494;">&lt;dbl [1]&gt;</span></span></span></code></pre></div>
-<p>With <code>"last"</code>, the last observed monthly value is extended
-forward. With <code>"mean"</code>, the mean of the latest available
-high-frequency block is extended forward instead.</p>
+<span></span>
+<span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span><span class="va">observed_tail</span>, <span class="va">extended</span><span class="op">)</span>,</span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">.data</span><span class="op">$</span><span class="va">time</span>, y <span class="op">=</span> <span class="va">.data</span><span class="op">$</span><span class="va">value</span>, color <span class="op">=</span> <span class="va">.data</span><span class="op">$</span><span class="va">method</span><span class="op">)</span></span>
+<span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_line</a></span><span class="op">(</span>linewidth <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span>size <span class="op">=</span> <span class="fl">1.6</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span></span>
+<span>    title <span class="op">=</span> <span class="st">"Indicator completion at the ragged edge"</span>,</span>
+<span>    x <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>    y <span class="op">=</span> <span class="st">"KOF barometer"</span>,</span>
+<span>    color <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  <span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="../reference/theme_bridgr.html">theme_bridgr</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p><img src="ragged-edge-nowcasting_files/figure-html/extension-plot-1.png" class="r-plt" alt="" width="576"></p>
+<p>The differences across rules are exactly what their names suggest:
+<code>"last"</code> holds the last value flat, <code>"mean"</code>
+extends the mean of the recent block, and <code>auto.arima</code> /
+<code>ets</code> produce model-based paths.</p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="direct-alignment">Direct Alignment<a class="anchor" aria-label="anchor" href="#direct-alignment"></a>
 </h2>
 <p><code>"direct"</code> takes a different route. The indicator is not
 forecasted. Instead, <code>bridgr</code> assigns the latest complete
-high-frequency blocks backward to the target periods and averages them
-within each target period.</p>
+high-frequency blocks <em>backward</em> to the target periods and
+averages them within each target period.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">direct_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/mf_model.html">mf_model</a></span><span class="op">(</span></span>
 <span>  target <span class="op">=</span> <span class="va">gdp_nowcast</span>,</span>
@@ -269,6 +298,66 @@ within each target period.</p>
 <p>This is especially useful when you want to avoid a separate indicator
 forecasting step and prefer to work only with observed high-frequency
 data.</p>
+</div>
+<div class="section level2">
+<h2 id="explicit-missing-values">Explicit Missing Values<a class="anchor" aria-label="anchor" href="#explicit-missing-values"></a>
+</h2>
+<p>Real-time indicator data sometimes contain explicit <code>NA</code>
+cells inside the sample, for example because of late releases or
+reporting holidays. Implicit ragged edges (a shorter indicator tail with
+no <code>NA</code> cells) are always supported through
+<code>indic_predict</code>. By default <code>bridgr</code> errors on
+explicit <code>NA</code> values; the <code>missing</code> argument
+controls what to do instead.</p>
+<p><code>missing = "impute"</code> interpolates linearly inside each
+series and is the most generally useful choice. The example below
+introduces a single internal gap and re-fits the model under both
+<code>"error"</code> (default, captured here) and
+<code>"impute"</code>.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">baro_internal_na</span> <span class="op">&lt;-</span> <span class="va">baro_ragged</span></span>
+<span><span class="va">internal_gap</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">baro_internal_na</span><span class="op">)</span> <span class="op">-</span> <span class="fl">14</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">baro_internal_na</span><span class="op">)</span> <span class="op">-</span> <span class="fl">13</span><span class="op">)</span></span>
+<span><span class="va">baro_internal_na</span><span class="op">$</span><span class="va">values</span><span class="op">[</span><span class="va">internal_gap</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="cn">NA_real_</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="../reference/mf_model.html">mf_model</a></span><span class="op">(</span></span>
+<span>    target <span class="op">=</span> <span class="va">gdp_nowcast</span>,</span>
+<span>    indic <span class="op">=</span> <span class="va">baro_internal_na</span>,</span>
+<span>    indic_predict <span class="op">=</span> <span class="st">"last"</span>,</span>
+<span>    indic_aggregators <span class="op">=</span> <span class="st">"mean"</span>,</span>
+<span>    h <span class="op">=</span> <span class="fl">1</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="st">"Error captured: "</span>, <span class="fu"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">conditionMessage</a></span><span class="op">(</span><span class="va">e</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error captured: `indic` contains missing values.</span></span>
+<span></span>
+<span><span class="va">imputed_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/mf_model.html">mf_model</a></span><span class="op">(</span></span>
+<span>  target <span class="op">=</span> <span class="va">gdp_nowcast</span>,</span>
+<span>  indic <span class="op">=</span> <span class="va">baro_internal_na</span>,</span>
+<span>  indic_predict <span class="op">=</span> <span class="st">"last"</span>,</span>
+<span>  indic_aggregators <span class="op">=</span> <span class="st">"mean"</span>,</span>
+<span>  h <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  missing <span class="op">=</span> <span class="st">"impute"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning in mf_model(target = gdp_nowcast, indic = baro_internal_na,</span></span>
+<span><span class="co">#&gt; indic_predict = "last", : `indic` contains 2 missing values; imputing them by</span></span>
+<span><span class="co">#&gt; linear interpolation within each series.</span></span>
+<span></span>
+<span><span class="fu"><a href="https://generics.r-lib.org/reference/forecast.html" class="external-link">forecast</a></span><span class="op">(</span><span class="va">imputed_model</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Mixed-frequency forecast</span></span>
+<span><span class="co">#&gt; -----------------------------------</span></span>
+<span><span class="co">#&gt; Target series: gdp_nowcast</span></span>
+<span><span class="co">#&gt; Forecast horizon: 1</span></span>
+<span><span class="co">#&gt; Uncertainty: point forecast only</span></span>
+<span><span class="co">#&gt; -----------------------------------</span></span>
+<span><span class="co">#&gt;   time       mean  </span></span>
+<span><span class="co">#&gt; 1 2022-10-01 -0.897</span></span></code></pre></div>
+<p><code>missing = "drop"</code> removes <code>NA</code> rows entirely
+and is useful when those rows do not break the per-period completeness
+required by the inferred frequency ladder — for example when they sit
+beyond the estimation sample. In most ragged-edge workflows
+<code>indic_predict</code> is the better mechanism for handling trailing
+gaps.</p>
 </div>
 <div class="section level2">
 <h2 id="when-to-use-which-option">When to Use Which Option<a class="anchor" aria-label="anchor" href="#when-to-use-which-option"></a>
