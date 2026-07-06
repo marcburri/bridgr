@@ -2,6 +2,22 @@
 
 ## bridgr (development version)
 
+- Fix ragged-edge completion for sub-monthly indicators at multi-step
+  horizons (`h > 1`). Completion previously filled future target periods
+  with a fixed count of high-frequency grid steps, but calendar periods
+  can hold more observations than the regular ladder implies (a quarter
+  has 13 weekly or up to 92 daily observations versus the 12 or 84 the
+  ladder expects), so early future periods absorbed the surplus and
+  later ones failed block validation. Completion is now period-aware:
+  candidate grid times are assigned to their calendar periods and each
+  future period receives exactly the observations it still needs.
+
+- Ignore indicator observations dated beyond the last forecast period
+  during alignment. Such observations cannot enter any regressor and
+  previously made block validation fail on a partially observed
+  beyond-horizon period, for example when a weekly series extends past
+  the target quarter of an `h = 1` nowcast.
+
 - Rename the main model-construction entry point to
   [`mf_model()`](https://marcburri.github.io/bridgr/reference/mf_model.md),
   rename the fitted-model class and S3 methods to `mf_model`, and keep
