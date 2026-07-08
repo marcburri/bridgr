@@ -19,7 +19,7 @@ aggregating them within each target period."><meta property="og:image" content="
 
     <a class="navbar-brand me-2" href="../index.html">bridgr</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.2.9001</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.2.9002</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -118,11 +118,15 @@ carry before model fitting. Missing timestamps are always an error.</p></dd>
 <dd><p>A character vector of indicator forecasting methods.
 Length must be <code>1</code> or equal to the number of indicator series. Setting
 <code>indic_predict = "direct"</code> switches to direct MIDAS-style alignment: the
-indicators are not forecasted, and the most recent complete
-high-frequency blocks are assigned backward to the target periods. Direct
-alignment must be used for all indicators at once. When <code>h &gt; 1</code>, the latest
-complete block is assigned to the farthest requested forecast horizon and
-earlier complete blocks are assigned backward from there. For
+indicators are not forecasted. Each target period that overlaps the
+observed sample receives the most recent complete high-frequency block at
+the same period-relative position that the newest observation occupies
+within its own period – a MIDAS-with-leads alignment that stays
+calendar-consistent when target periods hold varying numbers of
+high-frequency observations (e.g. 13-Saturday quarters on a 12-slot
+weekly ladder). Forecast periods beyond the newest observation receive
+complete blocks assigned backward from the end of the sample. Direct
+alignment must be used for all indicators at once. For
 <code>indic_predict = "mean"</code>, missing high-frequency observations are filled
 with the mean of the latest available <code>obs_per_target</code> high-frequency
 observations, and that same mean is extended across the forecast horizon.</p></dd>
@@ -401,7 +405,7 @@ Statistics</em>, 1-25. <a href="https://doi.org/10.1111/obes.70073" class="exter
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

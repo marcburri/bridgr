@@ -62,15 +62,19 @@ bridge(...)
   A character vector of indicator forecasting methods. Length must be
   `1` or equal to the number of indicator series. Setting
   `indic_predict = "direct"` switches to direct MIDAS-style alignment:
-  the indicators are not forecasted, and the most recent complete
-  high-frequency blocks are assigned backward to the target periods.
-  Direct alignment must be used for all indicators at once. When
-  `h > 1`, the latest complete block is assigned to the farthest
-  requested forecast horizon and earlier complete blocks are assigned
-  backward from there. For `indic_predict = "mean"`, missing
-  high-frequency observations are filled with the mean of the latest
-  available `obs_per_target` high-frequency observations, and that same
-  mean is extended across the forecast horizon.
+  the indicators are not forecasted. Each target period that overlaps
+  the observed sample receives the most recent complete high-frequency
+  block at the same period-relative position that the newest observation
+  occupies within its own period – a MIDAS-with-leads alignment that
+  stays calendar-consistent when target periods hold varying numbers of
+  high-frequency observations (e.g. 13-Saturday quarters on a 12-slot
+  weekly ladder). Forecast periods beyond the newest observation receive
+  complete blocks assigned backward from the end of the sample. Direct
+  alignment must be used for all indicators at once. For
+  `indic_predict = "mean"`, missing high-frequency observations are
+  filled with the mean of the latest available `obs_per_target`
+  high-frequency observations, and that same mean is extended across the
+  forecast horizon.
 
 - indic_aggregators:
 

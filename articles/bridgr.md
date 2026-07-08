@@ -286,8 +286,8 @@ forecast(direct_model)
 #> Forecast horizon: 1
 #> Uncertainty: point forecast only
 #> -----------------------------------
-#>   time       mean 
-#> 1 2023-01-01 0.483
+#>   time       mean  
+#> 1 2023-01-01 -0.497
 ```
 
 This is particularly useful at the ragged edge when you want to work

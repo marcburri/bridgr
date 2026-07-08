@@ -18,6 +18,19 @@
   beyond-horizon period, for example when a weekly series extends past
   the target quarter of an `h = 1` nowcast.
 
+- Make direct alignment (`indic_predict = "direct"`) period-aware.
+  Blocks of high-frequency observations were strided backward from the
+  end of the sample and paired with target periods by position, so on
+  calendar ladders (13-Saturday quarters on a 12-slot weekly ladder)
+  historical blocks drifted out of their calendar periods – about one
+  week per quarter, compounding over the sample – and the stride count
+  could overrun the number of target periods and fail outright. Each
+  target period that overlaps the observed sample is now anchored at the
+  newest observation’s position within its own period (a
+  MIDAS-with-leads alignment), which reproduces fixed strides exactly on
+  regular ladders; periods beyond the observed sample keep the
+  documented lead convention.
+
 - Rename the main model-construction entry point to
   [`mf_model()`](https://marcburri.github.io/bridgr/reference/mf_model.md),
   rename the fitted-model class and S3 methods to `mf_model`, and keep
