@@ -185,16 +185,18 @@ the fitted target equation and the same uncertainty method.
 
 ``` r
 
+# `model.frame(which = "forecast")` returns the regressor path the baseline
+# forecast is built from; shifting it is all a scenario needs.
+baseline_xreg <- model.frame(boot_model, which = "forecast")
+xreg_names <- variable.names(boot_model, which = "xreg")
+
 make_xreg <- function(level_shift) {
   dplyr::tibble(
-    id = rep(boot_model$xreg_names, each = nrow(boot_model$forecast_base_set)),
-    time = rep(
-      boot_model$forecast_base_set$time,
-      times = length(boot_model$xreg_names)
-    ),
+    id = rep(xreg_names, each = nrow(baseline_xreg)),
+    time = rep(baseline_xreg$time, times = length(xreg_names)),
     value = c(
-      boot_model$forecast_base_set$baro + level_shift,
-      boot_model$forecast_base_set$baro_lag1 + level_shift
+      baseline_xreg$baro + level_shift,
+      baseline_xreg$baro_lag1 + level_shift
     )
   )
 }

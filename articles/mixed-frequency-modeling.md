@@ -197,12 +197,25 @@ beta_model <- mf_model(
 )
 ```
 
-The fitted object stores both the estimated weight profile and the
-underlying parametric coefficients.
+The estimated weight profile is available through
+[`weights()`](https://rdrr.io/r/stats/weights.html), and the underlying
+parametric coefficients through
+[`aggregation_parameters()`](https://marcburri.github.io/bridgr/reference/aggregation_parameters.md).
+Both accept an indicator name or position;
+[`indicators()`](https://marcburri.github.io/bridgr/reference/indicators.md)
+lists the available names.
 
 ``` r
 
-indicator_id <- expalmon_model$indic_name[[1]]
+indicators(expalmon_model)
+#> [1] "monthly_indicator"
+weights(expalmon_model, indicator = 1)
+#> [1] 0.1985231 0.5965561 0.2049208
+aggregation_parameters(expalmon_model, indicator = 1)
+#> [1]  0.01585907 -1.08440890
+```
+
+``` r
 
 equal_weights <- rep(1 / 3, 3)
 last_weights <- c(0, 0, 1)
@@ -213,9 +226,9 @@ weights_df <- dplyr::bind_rows(
   dplyr::tibble(model = "last",        month = 1:3, weight = last_weights),
   dplyr::tibble(model = "true DGP",    month = 1:3, weight = true_weights),
   dplyr::tibble(model = "expalmon",    month = 1:3,
-                weight = expalmon_model$parametric_weights[[indicator_id]]),
+                weight = weights(expalmon_model, indicator = 1)),
   dplyr::tibble(model = "beta",        month = 1:3,
-                weight = beta_model$parametric_weights[[indicator_id]])
+                weight = weights(beta_model, indicator = 1))
 )
 
 ggplot2::ggplot(

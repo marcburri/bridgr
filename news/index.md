@@ -1,6 +1,104 @@
 # Changelog
 
-## bridgr (development version)
+## bridgr 0.2.0
+
+### Breaking changes
+
+- [`summary()`](https://rdrr.io/r/base/summary.html) on an `"mf_model"`
+  object now returns a `"summary.mf_model"` object instead of printing
+  and returning the model unchanged, following the convention of
+  [`summary.lm()`](https://rdrr.io/r/stats/summary.lm.html). The printed
+  report is unchanged and is now produced by the new
+  [`print.summary.mf_model()`](https://marcburri.github.io/bridgr/reference/print.summary.mf_model.md)
+  method. The returned object exposes the summary quantities
+  programmatically, including a standard `coefficients` matrix with
+  `Estimate`, `Std. Error`, `t value` and `Pr(>|t|)` columns, so
+  `coef(summary(model))` works as it does for
+  [`lm()`](https://rdrr.io/r/stats/lm.html). Standard errors respect the
+  HAC, Delta-HAC or bootstrap covariance when the model was fitted with
+  `se = TRUE`.
+
+- Objects returned by
+  [`forecast()`](https://generics.r-lib.org/reference/forecast.html) no
+  longer inherit from the `forecast` package’s `"forecast"` class; they
+  are now plain `"mf_model_forecast"` objects. The previous inheritance
+  was not honoured –
+  [`plot()`](https://rdrr.io/r/graphics/plot.default.html) and
+  [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
+  failed on the result, and `accuracy()` returned misleading values –
+  because target frequencies such as daily and weekly cannot be
+  represented by [`stats::ts()`](https://rdrr.io/r/stats/ts.html), which
+  those methods require.
+  [`plot()`](https://rdrr.io/r/graphics/plot.default.html) and
+  [`ggplot2::autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
+  methods are now provided directly for `"mf_model_forecast"` and work
+  at every supported target frequency, and the new
+  [`as.forecast()`](https://marcburri.github.io/bridgr/reference/as.forecast.md)
+  converts to a genuine `"forecast"` object for use with functions such
+  as
+  [`forecast::accuracy()`](https://generics.r-lib.org/reference/accuracy.html)
+  whenever the target frequency has an exact `ts` representation
+  (annual, semi-annual, quarterly, bi-monthly or monthly).
+
+### New features
+
+- New accessor methods replace reaching into the fitted object’s
+  internal structure:
+  [`weights()`](https://rdrr.io/r/stats/weights.html) returns
+  aggregation weights (estimated parametric weights or user-supplied
+  numeric weights),
+  [`aggregation_parameters()`](https://marcburri.github.io/bridgr/reference/aggregation_parameters.md)
+  returns the estimated parameters of parametric aggregation schemes,
+  [`indicators()`](https://marcburri.github.io/bridgr/reference/indicators.md)
+  returns the indicator names,
+  [`variable.names()`](https://rdrr.io/r/stats/case.names.html) returns
+  the bridge-equation regressor names, and
+  [`model.frame()`](https://rdrr.io/r/stats/model.frame.html) returns
+  the estimation data or the forecast regressor path.
+  [`weights()`](https://rdrr.io/r/stats/weights.html) and
+  [`aggregation_parameters()`](https://marcburri.github.io/bridgr/reference/aggregation_parameters.md)
+  accept an indicator name or position. The vignettes now use these
+  accessors throughout.
+
+- [`variable.names()`](https://rdrr.io/r/stats/case.names.html) replaces
+  `model$xreg_names` and `model$regressor_names`.
+  `variable.names(model, which = "xreg")` returns the non-target-lag
+  regressors, which are exactly the series a custom `xreg` must supply
+  when forecasting a scenario, and so pairs with
+  `model.frame(model, which = "forecast")`.
+
+- [`weights()`](https://rdrr.io/r/stats/weights.html) now also returns
+  the fixed weight vectors implied by the deterministic aggregators,
+  rather than `NULL`: `"mean"` gives `1/M`, `"last"` gives a one in the
+  final slot, and `"sum"` gives ones. The accessor therefore reports the
+  weights actually applied for every aggregator except `"unrestricted"`,
+  which estimates one coefficient per within-period observation and so
+  implies no weight vector.
+
+### Performance
+
+- The full-system block bootstrap is substantially faster. Calendar
+  shifts were applied one step at a time and recomputed for every
+  observation, which made timezone normalisation inside
+  `lubridate::%m+%` the dominant cost of a bootstrap resample. Shifts
+  are now vectorised and computed once per distinct shift amount. On a
+  quarterly target with a monthly indicator, a 50-draw full-system
+  bootstrap runs about 3.6 times faster, with bit-identical coefficients
+  and forecasts.
+
+- Month, quarter and year shifts of `Date` vectors no longer go through
+  `lubridate::%m+%`, which routes through
+  [`as.POSIXlt()`](https://rdrr.io/r/base/as.POSIXlt.html) and
+  `force_tz()`. Profiling showed that timezone coercion alone accounted
+  for roughly 44% of the remaining self time in a full-system bootstrap.
+  These shifts now use direct integer calendar arithmetic, preserving
+  the end-of-month rollback semantics of `%m+%` exactly; `POSIXct`
+  inputs, missing values and fractional shifts still use `%m+%`. The
+  isolated shift is about 10 times faster and a 50-draw full-system
+  bootstrap about 1.3 times faster, with bit-identical coefficients,
+  covariances, forecasts and intervals.
+
+### Bug fixes
 
 - Fix ragged-edge completion for sub-monthly indicators at multi-step
   horizons (`h > 1`). Completion previously filled future target periods

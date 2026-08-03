@@ -31,7 +31,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">bridgr</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.2.9002</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -278,12 +278,20 @@ controls.</p>
 <span>  <span class="op">)</span>,</span>
 <span>  h <span class="op">=</span> <span class="fl">1</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>The fitted object stores both the estimated weight profile and the
-underlying parametric coefficients.</p>
+<p>The estimated weight profile is available through
+<code><a href="https://rdrr.io/r/stats/weights.html" class="external-link">weights()</a></code>, and the underlying parametric coefficients
+through <code><a href="../reference/aggregation_parameters.html">aggregation_parameters()</a></code>. Both accept an indicator
+name or position; <code><a href="../reference/indicators.html">indicators()</a></code> lists the available
+names.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">indicator_id</span> <span class="op">&lt;-</span> <span class="va">expalmon_model</span><span class="op">$</span><span class="va">indic_name</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
-<span></span>
-<span><span class="va">equal_weights</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span> <span class="op">/</span> <span class="fl">3</span>, <span class="fl">3</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/indicators.html">indicators</a></span><span class="op">(</span><span class="va">expalmon_model</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "monthly_indicator"</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/weights.html" class="external-link">weights</a></span><span class="op">(</span><span class="va">expalmon_model</span>, indicator <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 0.1985231 0.5965561 0.2049208</span></span>
+<span><span class="fu"><a href="../reference/aggregation_parameters.html">aggregation_parameters</a></span><span class="op">(</span><span class="va">expalmon_model</span>, indicator <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1]  0.01585907 -1.08440890</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">equal_weights</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span> <span class="op">/</span> <span class="fl">3</span>, <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="va">last_weights</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">true_weights</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.2</span>, <span class="fl">0.6</span>, <span class="fl">0.2</span><span class="op">)</span></span>
 <span></span>
@@ -292,9 +300,9 @@ underlying parametric coefficients.</p>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>model <span class="op">=</span> <span class="st">"last"</span>,        month <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">3</span>, weight <span class="op">=</span> <span class="va">last_weights</span><span class="op">)</span>,</span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>model <span class="op">=</span> <span class="st">"true DGP"</span>,    month <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">3</span>, weight <span class="op">=</span> <span class="va">true_weights</span><span class="op">)</span>,</span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>model <span class="op">=</span> <span class="st">"expalmon"</span>,    month <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">3</span>,</span>
-<span>                weight <span class="op">=</span> <span class="va">expalmon_model</span><span class="op">$</span><span class="va">parametric_weights</span><span class="op">[[</span><span class="va">indicator_id</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>,</span>
+<span>                weight <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/weights.html" class="external-link">weights</a></span><span class="op">(</span><span class="va">expalmon_model</span>, indicator <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>model <span class="op">=</span> <span class="st">"beta"</span>,        month <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">3</span>,</span>
-<span>                weight <span class="op">=</span> <span class="va">beta_model</span><span class="op">$</span><span class="va">parametric_weights</span><span class="op">[[</span><span class="va">indicator_id</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
+<span>                weight <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/weights.html" class="external-link">weights</a></span><span class="op">(</span><span class="va">beta_model</span>, indicator <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span></span>
@@ -320,7 +328,7 @@ final month.</p>
 <h2 id="forecast-comparison">Forecast Comparison<a class="anchor" aria-label="anchor" href="#forecast-comparison"></a>
 </h2>
 <p>All of these models share the same downstream interface.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">forecasts_df</span> <span class="op">&lt;-</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span></span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>model <span class="op">=</span> <span class="st">"mean"</span>,</span>
 <span>                forecast <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://generics.r-lib.org/reference/forecast.html" class="external-link">forecast</a></span><span class="op">(</span><span class="va">mean_model</span><span class="op">)</span><span class="op">$</span><span class="va">mean</span><span class="op">)</span><span class="op">)</span>,</span>
@@ -354,7 +362,7 @@ of this vignette. In practice the best way to choose is to evaluate
 candidate models on out-of-sample forecasts. The example below uses a
 short pseudo-real-time rolling-origin scheme on the simulated data, with
 one-quarter-ahead forecasts.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">origins</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="va">n_quarters</span> <span class="op">-</span> <span class="fl">13</span><span class="op">)</span><span class="op">:</span><span class="op">(</span><span class="va">n_quarters</span> <span class="op">-</span> <span class="fl">4</span><span class="op">)</span></span>
 <span><span class="va">methods</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mean"</span>, <span class="st">"unrestricted"</span>, <span class="st">"expalmon"</span><span class="op">)</span></span>
 <span></span>

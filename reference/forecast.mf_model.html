@@ -13,7 +13,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">bridgr</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.2.9002</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -96,8 +96,8 @@ returns the <code>se</code>, <code>lower</code>, and <code>upper</code> componen
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>An object of class <code>"mf_model_forecast"</code> and <code>"forecast"</code> containing
-point forecasts, predictive uncertainty summaries, the
+    <p>An object of class <code>"mf_model_forecast"</code> containing point forecasts,
+predictive uncertainty summaries, the observed target history, the
 target-period regressors used for forecasting, and optional full-system
 bootstrap metadata.</p>
 <p><code>x</code>, invisibly.</p>
@@ -112,6 +112,21 @@ simulated disturbances accumulate across steps, so standard errors and
 interval widths can widen as the forecast horizon extends. The
 <code>uncertainty-and-scenarios</code> vignette includes one worked example that trims
 forecast rows by an acceptable prediction-interval width.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="interoperability-with-the-forecast-package">Interoperability with the forecast package<a class="anchor" aria-label="anchor" href="#interoperability-with-the-forecast-package"></a></h2>
+
+
+<p><code>"mf_model_forecast"</code> deliberately does <em>not</em> inherit from the <code>forecast</code>
+package's <code>"forecast"</code> class. Target frequencies supported by <code><a href="mf_model.html">mf_model()</a></code>
+include daily, weekly and sub-daily series, which <code><a href="https://rdrr.io/r/stats/ts.html" class="external-link">stats::ts()</a></code> cannot
+represent without silently approximating the calendar, so an object that
+claimed <code>"forecast"</code> inheritance could not honour it for every model this
+package fits. Instead, <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> and <code><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">ggplot2::autoplot()</a></code> methods are
+provided directly for <code>"mf_model_forecast"</code>, and <code><a href="as.forecast.html">as.forecast()</a></code> converts to
+a genuine <code>"forecast"</code> object whenever the target frequency is regular
+enough to allow it, for use with functions such as
+<code><a href="https://pkg.robjhyndman.com/forecast/reference/reexports.html" class="external-link">forecast::accuracy()</a></code>.</p>
     </div>
 
     <div class="section level2">

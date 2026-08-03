@@ -29,15 +29,24 @@ fitted(object, ...)
 residuals(object, ...)
 
 # S3 method for class 'mf_model'
+model.frame(formula, which = c("estimation", "forecast"), ...)
+
+# S3 method for class 'mf_model'
+variable.names(object, which = c("all", "xreg", "target_lags"), ...)
+
+# S3 method for class 'mf_model'
 print(x, ...)
 ```
 
 ## Arguments
 
-- object, x:
+- object, x, formula:
 
   A fitted `"mf_model"` object returned by
   [`mf_model()`](https://marcburri.github.io/bridgr/reference/mf_model.md).
+  The `formula` spelling is required by the
+  [`stats::model.frame()`](https://rdrr.io/r/stats/model.frame.html)
+  generic and carries the same meaning.
 
 - ...:
 
@@ -54,6 +63,14 @@ print(x, ...)
   equation; this is conservative relative to asymptotic normal critical
   values but is common practice in applied econometrics.
 
+- which:
+
+  For [`model.frame()`](https://rdrr.io/r/stats/model.frame.html), which
+  modelling frame to return, `"estimation"` (default) or `"forecast"`.
+  For [`variable.names()`](https://rdrr.io/r/stats/case.names.html),
+  which group of regressor names to return, `"all"` (default), `"xreg"`
+  or `"target_lags"`.
+
 ## Value
 
 The requested model summary, usually delegated from the stored target
@@ -66,6 +83,18 @@ regression fit.
 `residuals.mf_model()` returns target-equation residuals on the same
 standardized scale as the fitted target series, so they can be passed
 directly to downstream residual diagnostics.
+
+`model.frame.mf_model()` returns the aligned modelling data. Use
+`which = "estimation"` for the in-sample bridge-equation data, and
+`which = "forecast"` for the future target-period regressor path the
+forecast is produced from. The latter is the frame to modify and pass
+back as `xreg` when constructing scenarios.
+
+`variable.names.mf_model()` returns the names of the bridge-equation
+regressors. `which = "xreg"` returns the non-target-lag regressors,
+which are exactly the series a custom `xreg` must supply when
+forecasting a scenario, and pairs with
+`model.frame(object, which = "forecast")`.
 
 ## Examples
 

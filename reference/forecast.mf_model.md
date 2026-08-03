@@ -47,10 +47,10 @@ print(x, ...)
 
 ## Value
 
-An object of class `"mf_model_forecast"` and `"forecast"` containing
-point forecasts, predictive uncertainty summaries, the target-period
-regressors used for forecasting, and optional full-system bootstrap
-metadata.
+An object of class `"mf_model_forecast"` containing point forecasts,
+predictive uncertainty summaries, the observed target history, the
+target-period regressors used for forecasting, and optional full-system
+bootstrap metadata.
 
 `x`, invisibly.
 
@@ -64,6 +64,24 @@ those simulated disturbances accumulate across steps, so standard errors
 and interval widths can widen as the forecast horizon extends. The
 `uncertainty-and-scenarios` vignette includes one worked example that
 trims forecast rows by an acceptable prediction-interval width.
+
+## Interoperability with the forecast package
+
+`"mf_model_forecast"` deliberately does *not* inherit from the
+`forecast` package's `"forecast"` class. Target frequencies supported by
+[`mf_model()`](https://marcburri.github.io/bridgr/reference/mf_model.md)
+include daily, weekly and sub-daily series, which
+[`stats::ts()`](https://rdrr.io/r/stats/ts.html) cannot represent
+without silently approximating the calendar, so an object that claimed
+`"forecast"` inheritance could not honour it for every model this
+package fits. Instead,
+[`plot()`](https://rdrr.io/r/graphics/plot.default.html) and
+[`ggplot2::autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
+methods are provided directly for `"mf_model_forecast"`, and
+[`as.forecast()`](https://marcburri.github.io/bridgr/reference/as.forecast.md)
+converts to a genuine `"forecast"` object whenever the target frequency
+is regular enough to allow it, for use with functions such as
+[`forecast::accuracy()`](https://pkg.robjhyndman.com/forecast/reference/reexports.html).
 
 ## Examples
 

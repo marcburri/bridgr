@@ -13,7 +13,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">bridgr</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.2.9002</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -80,6 +80,12 @@
 <span><span class="fu"><a href="https://rdrr.io/r/stats/residuals.html" class="external-link">residuals</a></span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># S3 method for class 'mf_model'</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/model.frame.html" class="external-link">model.frame</a></span><span class="op">(</span><span class="va">formula</span>, which <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"estimation"</span>, <span class="st">"forecast"</span><span class="op">)</span>, <span class="va">...</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># S3 method for class 'mf_model'</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/case.names.html" class="external-link">variable.names</a></span><span class="op">(</span><span class="va">object</span>, which <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"all"</span>, <span class="st">"xreg"</span>, <span class="st">"target_lags"</span><span class="op">)</span>, <span class="va">...</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># S3 method for class 'mf_model'</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -87,8 +93,10 @@
     <h2 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h2>
 
 
-<dl><dt id="arg-object-x">object, x<a class="anchor" aria-label="anchor" href="#arg-object-x"></a></dt>
-<dd><p>A fitted <code>"mf_model"</code> object returned by <code><a href="mf_model.html">mf_model()</a></code>.</p></dd>
+<dl><dt id="arg-object-x-formula">object, x, formula<a class="anchor" aria-label="anchor" href="#arg-object-x-formula"></a></dt>
+<dd><p>A fitted <code>"mf_model"</code> object returned by
+<code><a href="mf_model.html">mf_model()</a></code>. The <code>formula</code> spelling is required by the
+<code><a href="https://rdrr.io/r/stats/model.frame.html" class="external-link">stats::model.frame()</a></code> generic and carries the same meaning.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
@@ -103,6 +111,13 @@ use a t-distribution with residual degrees of freedom from the fitted
 target equation; this is conservative relative to asymptotic normal
 critical values but is common practice in applied econometrics.</p></dd>
 
+
+<dt id="arg-which">which<a class="anchor" aria-label="anchor" href="#arg-which"></a></dt>
+<dd><p>For <code><a href="https://rdrr.io/r/stats/model.frame.html" class="external-link">model.frame()</a></code>, which modelling frame to return,
+<code>"estimation"</code> (default) or <code>"forecast"</code>. For <code><a href="https://rdrr.io/r/stats/case.names.html" class="external-link">variable.names()</a></code>, which
+group of regressor names to return, <code>"all"</code> (default), <code>"xreg"</code> or
+<code>"target_lags"</code>.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -115,6 +130,16 @@ regression fit.</p>
     <p><code>residuals.mf_model()</code> returns target-equation residuals on the same
 standardized scale as the fitted target series, so they can be passed
 directly to downstream residual diagnostics.</p>
+<p><code>model.frame.mf_model()</code> returns the aligned modelling data. Use
+<code>which = "estimation"</code> for the in-sample bridge-equation data, and
+<code>which = "forecast"</code> for the future target-period regressor path the
+forecast is produced from. The latter is the frame to modify and pass back
+as <code>xreg</code> when constructing scenarios.</p>
+<p><code>variable.names.mf_model()</code> returns the names of the
+bridge-equation regressors. <code>which = "xreg"</code> returns the non-target-lag
+regressors, which are exactly the series a custom <code>xreg</code> must supply when
+forecasting a scenario, and pairs with
+<code>model.frame(object, which = "forecast")</code>.</p>
     </div>
 
     <div class="section level2">

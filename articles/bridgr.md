@@ -125,12 +125,13 @@ The default `"mean"` aggregator is the classic bridge-model setup: each
 monthly block is completed first, then averaged to the quarterly
 frequency before the target equation is estimated.
 
-The fitted object stores the aligned data that went into estimation and
-the future target-period regressor path used for forecasting.
+[`model.frame()`](https://rdrr.io/r/stats/model.frame.html) returns the
+aligned data that went into estimation, and the future target-period
+regressor path used for forecasting.
 
 ``` r
 
-tail(bridge_model$estimation_set)
+tail(model.frame(bridge_model))
 #> # A tibble: 6 × 5
 #>   time       gdp_growth  baro baro_lag1 gdp_growth_lag1
 #>   <date>          <dbl> <dbl>     <dbl>           <dbl>
@@ -140,12 +141,12 @@ tail(bridge_model$estimation_set)
 #> 4 2022-04-01      1.03   94.3      97.4           0.105
 #> 5 2022-07-01      0.255  90.0      94.3           1.03 
 #> 6 2022-10-01      0.102  90.7      90.0           0.255
-bridge_model$forecast_set
-#> # A tibble: 2 × 4
-#>   time        baro baro_lag1 gdp_growth_lag1
-#>   <date>     <dbl>     <dbl> <list>         
-#> 1 2023-01-01  97.4      90.7 <dbl [1]>      
-#> 2 2023-04-01  99.8      97.4 <dbl [1]>
+model.frame(bridge_model, which = "forecast")
+#> # A tibble: 2 × 3
+#>   time        baro baro_lag1
+#>   <date>     <dbl>     <dbl>
+#> 1 2023-01-01  97.4      90.7
+#> 2 2023-04-01  99.8      97.4
 ```
 
 ### Lags in the target equation
@@ -246,7 +247,7 @@ multi_model <- mf_model(
   h = 1
 )
 
-multi_model$regressor_names
+variable.names(multi_model)
 #> [1] "baro_level"      "baro_yoy"        "gdp_growth_lag1"
 forecast(multi_model)
 #> Mixed-frequency forecast

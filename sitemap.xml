@@ -13,15 +13,21 @@
 <url><loc>https://marcburri.github.io/bridgr/authors.html</loc></url>
 <url><loc>https://marcburri.github.io/bridgr/index.html</loc></url>
 <url><loc>https://marcburri.github.io/bridgr/news/index.html</loc></url>
+<url><loc>https://marcburri.github.io/bridgr/reference/aggregation_parameters.html</loc></url>
+<url><loc>https://marcburri.github.io/bridgr/reference/as.forecast.html</loc></url>
 <url><loc>https://marcburri.github.io/bridgr/reference/bridgr-package.html</loc></url>
 <url><loc>https://marcburri.github.io/bridgr/reference/forecast.mf_model.html</loc></url>
 <url><loc>https://marcburri.github.io/bridgr/reference/gdp.html</loc></url>
 <url><loc>https://marcburri.github.io/bridgr/reference/index.html</loc></url>
+<url><loc>https://marcburri.github.io/bridgr/reference/indicators.html</loc></url>
 <url><loc>https://marcburri.github.io/bridgr/reference/mf_model-accessors.html</loc></url>
 <url><loc>https://marcburri.github.io/bridgr/reference/mf_model.html</loc></url>
 <url><loc>https://marcburri.github.io/bridgr/reference/plot.mf_model.html</loc></url>
+<url><loc>https://marcburri.github.io/bridgr/reference/plot.mf_model_forecast.html</loc></url>
+<url><loc>https://marcburri.github.io/bridgr/reference/print.summary.mf_model.html</loc></url>
 <url><loc>https://marcburri.github.io/bridgr/reference/reexports.html</loc></url>
 <url><loc>https://marcburri.github.io/bridgr/reference/summary.mf_model.html</loc></url>
 <url><loc>https://marcburri.github.io/bridgr/reference/theme_bridgr.html</loc></url>
+<url><loc>https://marcburri.github.io/bridgr/reference/weights.mf_model.html</loc></url>
 </urlset>
 
