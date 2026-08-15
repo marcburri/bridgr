@@ -188,6 +188,19 @@ deprecation cycle.
 
 ### Bug fixes
 
+- Fix
+  [`mf_model()`](https://marcburri.github.io/bridgr/reference/mf_model.md)
+  failing when the ‘xts’ package is not installed. Indicator forecasting
+  with `indic_predict = "auto.arima"` (the default) or `"ets"` routed
+  the series through
+  [`tsbox::ts_xts()`](https://docs.ropensci.org/tsbox/reference/ts_ts.html),
+  which requires ‘xts’, so the default code path errored for users
+  without it even though ‘xts’ was only a suggested dependency. The
+  fitters are now given the indicator observations directly. Results are
+  unchanged: the ‘xts’ index carried no `tsp` attribute, so both fitters
+  already saw a frequency-1 series at every supported indicator
+  frequency. ‘xts’ is no longer a dependency of any kind.
+
 - Fix ragged-edge completion for sub-monthly indicators at multi-step
   horizons (`h > 1`). Completion previously filled future target periods
   with a fixed count of high-frequency grid steps, but calendar periods
