@@ -403,15 +403,18 @@ forecast_indicator_values <- function(
     ))
   }
 
-  xts_series <- suppressMessages(tsbox::ts_xts(indicator_tbl))
+  # The observations are passed as a plain vector: an xts index carries no
+  # `tsp`, so both fitters already saw a frequency-1 series whatever the
+  # indicator frequency, and going through xts would make it a hard dependency.
+  series <- indicator_tbl$values
   if (method == "auto.arima") {
-    model <- forecast::auto.arima(xts_series)
+    model <- forecast::auto.arima(series)
     values <- as.numeric(forecast::forecast(model, h = n_ahead)$mean)
     return(list(values = values, model = model))
   }
 
   if (method == "ets") {
-    model <- forecast::ets(xts_series)
+    model <- forecast::ets(series)
     values <- as.numeric(forecast::forecast(model, h = n_ahead)$mean)
     return(list(values = values, model = model))
   }

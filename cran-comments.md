@@ -1,14 +1,9 @@
 ## R CMD check results
 
-0 errors | 0 warnings | 3 notes
+0 errors | 0 warnings | 2 notes
 
-All three notes are local to the check machine (macOS, R 4.4.0):
+Both notes are local to the check machine (macOS, R 4.4.0):
 
-* The maintainer note that accompanies every submission, together with
-  "Availability using Additional_repositories specification: ? ?" for
-  <https://ropensci.r-universe.dev>. That repository hosts 'srr', which is used
-  only to generate rOpenSci standards documentation and is listed in Suggests;
-  the check machine could not reach the repository to verify it.
 * "checking for future file timestamps ... unable to verify current time",
   which is the time server being unreachable.
 * "checking HTML version of manual", from an HTML Tidy build dating to 2006

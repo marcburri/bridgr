@@ -101,7 +101,7 @@ test_that("forecast method `auto.arima` matches direct indicator forecasting", {
     h = 1
   )
 
-  direct_fit <- forecast::auto.arima(tsbox::ts_xts(indic))
+  direct_fit <- forecast::auto.arima(indic$value)
   expected <- mean(as.numeric(forecast::forecast(direct_fit, h = 7)$mean))
 
   expect_s3_class(model$indic_models[[model$indic_name[[1]]]], "Arima")
@@ -135,7 +135,7 @@ test_that("forecast method `ets` matches direct indicator forecasting", {
     h = 1
   )
 
-  direct_fit <- forecast::ets(tsbox::ts_xts(indic))
+  direct_fit <- forecast::ets(indic$value)
   expected <- mean(as.numeric(forecast::forecast(direct_fit, h = 7)$mean))
 
   expect_s3_class(model$indic_models[[model$indic_name[[1]]]], "ets")
