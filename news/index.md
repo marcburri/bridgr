@@ -2,6 +2,8 @@
 
 ## bridgr 1.0.0
 
+CRAN release: 2026-08-21
+
 First stable release. Since 0.1.2 the model-construction entry point and
 the fitted-model class have been renamed, the aggregation library and
 the uncertainty machinery have been substantially extended, and two
